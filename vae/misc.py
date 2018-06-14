@@ -106,23 +106,26 @@ class LogPlotter:
 
 
 class SamplePlotter:
-    def __init__(self, vocab, model, sample_params=None):
-        self.vocab = vocab
+    def __init__(self, corpus, model, sample_params=None):
+        self.corpus = corpus
         self.model = model
         if sample_params is None:
             sample_params = {}
         self.sample_params = sample_params
 
-    def plot(self, size=8):
+    def plot_one(self, size=8):
         _, _, x, a = self.model.sample_sentence(1, **self.sample_params)
-        sent = [self.vocab.itos[i] for i in x[0]]
+        print(f"sent: '{self.corpus.reverse(x)[0]}'")
+        vocab = self.corpus.vocab('x')
+        sent = [vocab.itos[i] for i in x[0]]
         _, ax = plt.subplots(figsize=(size, size))
-        ax.imshow(a[0].t().cpu().detach().numpy())
+        a = a[0].t().cpu().detach().numpy()[::-1, :]
+        ax.imshow(a)
         ax.set_xticks(np.arange(len(sent)))
         ax.set_yticks(np.arange(len(sent)))
         plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
                  rotation_mode="anchor")
         ax.set_xticklabels(sent)
-        ax.set_yticklabels(sent)
+        ax.set_yticklabels(sent[::-1])
         ax.set_xlabel('generated sequence')
         ax.set_ylabel('context')

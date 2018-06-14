@@ -3,11 +3,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from text_vae.sru import SRU
-from text_vae.attention import SelfAttention
-from text_vae.disc import CNNEncoder
-
-from text_vae.utils import assert_check
+from vae.attention import SelfAttention
+from vae.disc import CNNEncoder
+from vae.sru import SRU
+from vae.utils import assert_check
 
 
 class RnnVae(nn.Module):
@@ -27,6 +26,7 @@ class RnnVae(nn.Module):
         self.eos = x_vocab.stoi['<eos>']
         self.n_vocab = len(x_vocab)
         self.attention = kwargs['attention']
+        self.decoder_n_layers = g.n_layers
 
         # Word embeddings layer
         if x_vocab is None:
@@ -43,25 +43,45 @@ class RnnVae(nn.Module):
                 self.x_emb.weight.requires_grad = False
 
         # Encoder
-        self.encoder_rnn = SRU(
-            self.d_emb,
-            q.d_h,
-            num_layers=q.n_layers,
-            dropout=q.s_dropout,
-            rnn_dropout=q.r_dropout
-        )
+        if q.cell == 'gru':
+            self.encoder_rnn = nn.GRU(
+                self.d_emb,
+                q.d_h,
+                num_layers=q.n_layers,
+                dropout=q.r_dropout if q.n_layers > 1 else 0
+            )
+        elif q.cell == 'sru':
+            self.encoder_rnn = SRU(
+                self.d_emb,
+                q.d_h,
+                num_layers=q.n_layers,
+                dropout=q.s_dropout,
+                rnn_dropout=q.r_dropout
+            )
+        else:
+            raise ValueError("Invalid q.cell type")
         self.q_mu = nn.Linear(q.d_h, self.d_z)
         self.q_logvar = nn.Linear(q.d_h, self.d_z)
 
         # Decoder
-        self.decoder_rnn = SRU(
-            self.d_emb + self.d_z + self.d_c,
-            self.d_z + self.d_c,
-            num_layers=g.n_layers,
-            dropout=g.s_dropout,
-            rnn_dropout=g.r_dropout
-        )
-        self.decoder_a = SelfAttention(self.d_z + self.d_c)
+        if g.cell == 'gru':
+            self.decoder_rnn = nn.GRU(
+                self.d_emb + self.d_z + self.d_c,
+                self.d_z + self.d_c,
+                num_layers=g.n_layers,
+                dropout=g.r_dropout if g.n_layers > 1 else 0
+            )
+        elif g.cell == 'sru':
+            self.decoder_rnn = SRU(
+                self.d_emb + self.d_z + self.d_c,
+                self.d_z + self.d_c,
+                num_layers=g.n_layers,
+                dropout=g.s_dropout,
+                rnn_dropout=g.r_dropout
+            )
+        else:
+            raise ValueError("Invalid g.cell type")
+        self.decoder_a = SelfAttention(self.d_z + self.d_c, nn.SELU())
         self.decoder_fc = nn.Linear(self.d_z + self.d_c, self.n_vocab)
 
         # Discriminator
@@ -91,6 +111,7 @@ class RnnVae(nn.Module):
         """Do the VAE forward step with prior c
 
         :param x: (n_batch, n_len) of longs, input sentence x
+        :param use_c_prior: bool, if to sample c from prior or not
         :return: float, kl term component of loss
         :return: float, recon component of loss
         """
@@ -176,10 +197,7 @@ class RnnVae(nn.Module):
         assert_check(c, [-1, self.d_c], torch.float, z.device)
 
         # Init
-        h_init = torch.cat([
-            z.unsqueeze(0),
-            c.unsqueeze(0)
-        ], 2)  # (1, n_batch, d_z + d_c)
+        h_init = torch.cat([z, c], 1).unsqueeze(0)  # (1, n_batch, d_z + d_c)
 
         # Inputs
         x_drop = self.word_dropout(x)  # (n_batch, n_len)
@@ -192,12 +210,12 @@ class RnnVae(nn.Module):
         # Rnn step
         outputs, _ = self.decoder_rnn(
             x_emb,
-            h_init.expand(self.decoder_rnn.depth, -1, -1)
+            h_init.repeat(self.decoder_n_layers, 1, 1)
         )  # (n_len, n_batch, d_z + d_c)
 
         # Attention
         if self.attention:
-            outputs, _ = self.decoder_a(outputs)
+            outputs = self.decoder_a(outputs)
 
         # FC to vocab
         n_len, n_batch, _ = outputs.shape  # (n_len, n_batch)
@@ -207,9 +225,9 @@ class RnnVae(nn.Module):
 
         # Loss
         recon_loss = F.cross_entropy(
-            y.view(-1, y.size(2)),
-            F.pad(x.t()[1:], (0, 0, 0, 1), 'constant', self.pad).view(-1)
-        )  # 0
+            y[:-1].view(-1, y.size(2)),
+            x.t()[1:].contiguous().view(-1)
+        )
 
         # Output check
         assert_check(recon_loss, [], torch.float, x.device)
@@ -238,7 +256,7 @@ class RnnVae(nn.Module):
             x_emb = x
 
         # CNN
-        c = self.disc_cnn(x)
+        c = self.disc_cnn(x_emb)
 
         # Output check
         assert_check(c, [x.size(0), self.d_c], torch.float, x.device)
@@ -354,7 +372,6 @@ class RnnVae(nn.Module):
         # Params
         device = self.x_emb.weight.device
         n = n_batch * n_beam
-        n_layers = self.decoder_rnn.depth
 
         # `z` and `c`, and then `h0`
         if z is None:
@@ -368,16 +385,16 @@ class RnnVae(nn.Module):
 
         # Initial values
         w = torch.tensor(self.bos, device=device).repeat(n)  # n
-        h = h0.repeat(n_layers, 1, 1)  # (n_layers, n, d_z + d_c)
+        h = h0.repeat(self.decoder_n_layers, 1, 1)  # (n_layers, n, d_z + d_c)
         # Previous context vectors
         context = torch.empty(
-            n, self.n_len - 1, self.d_z + self.d_c,
+            n, self.n_len, self.d_z + self.d_c,
             device=device
         )
         # Attention matrix
         a = torch.zeros(n, self.n_len, self.n_len, device=device)
         # Candidates score for beam search
-        H = torch.zeros(n, device=device)
+        mH = torch.zeros(n, device=device)
         # X values
         x = torch.tensor(self.pad, device=device).repeat(n, self.n_len)
         x[:, 0] = self.bos
@@ -394,15 +411,13 @@ class RnnVae(nn.Module):
             # Step
             o, h = self.decoder_rnn(x_emb, h)  # o: (1, n, d_z + d_c)
             o = o.squeeze(0)
-            context[:, i - 1, :] = o
             if self.attention:
+                context[:, i - 1, :] = o
                 # o: (n, d_z + d_c), aw: (n, i)
                 o, aw = self.decoder_a.forward_inference(
-                    o, context[:, :i, :]
+                    o, None if i == 1 else context[:, :i - 1, :]
                 )
                 a[~eos_mask, i, :i] = aw[~eos_mask]
-                if coverage_penalty:
-                    H[~eos_mask] += aw.sum(1).clamp(max=1).log()[~eos_mask]
             y = F.softmax(self.decoder_fc(o) / temp, dim=-1)  # (n, n_vocab)
 
             # Generating
@@ -410,7 +425,7 @@ class RnnVae(nn.Module):
             pc = y.gather(1, nw)  # (n, n_beam)
             # (n_batch, n_beam, n_beam)
             pc = pc.view(n_batch, n_beam, -1).log()
-            pc = H.view(n_batch, -1, 1) + pc  # (n_batch, n_beam, n_beam)
+            pc = mH.view(n_batch, -1, 1) + pc  # (n_batch, n_beam, n_beam)
             aH, u = pc.view(n_batch, -1).topk(n_beam, 1)  # (n_batch, n_beam)
             w = nw.view(n_batch, -1).gather(1, u).view(-1)  # n
 
@@ -423,8 +438,8 @@ class RnnVae(nn.Module):
             h = h[:, mask, :]
             context = context[mask]
             a = a[mask]
-            H = H[mask]
-            H[~eos_mask] += aH.view(-1)[~eos_mask]
+            mH = mH[mask]
+            mH[~eos_mask] += aH.view(-1)[~eos_mask]
             x = x[mask]
             eos_mask = eos_mask[mask]
             end_pads = end_pads[mask]
@@ -436,7 +451,10 @@ class RnnVae(nn.Module):
             eos_mask |= i_eos_mask
 
         # Choosing best candidate
-        u = H.view(n_batch, -1).argmax(1).unsqueeze(-1).unsqueeze(-1)
+        if coverage_penalty:
+            cpA = a.sum(1).clamp(max=1).log().sum(1)
+            mH += cpA
+        u = mH.view(n_batch, -1).argmax(1).unsqueeze(-1).unsqueeze(-1)
         ux = u.repeat(1, 1, self.n_len)
         x = x.view(n_batch, -1, self.n_len)
         x = x.gather(1, ux).squeeze(1)
@@ -469,10 +487,12 @@ class RnnVae(nn.Module):
 
         return z, c, x, a
 
-    def perplexity(self, x, use_c_prior=False):
+    def perplexity(self, x, use_c_prior=False, max_ppl=100):
         """Calculating ppl score for input sequence x
 
         :param x: (n_batch, n_len) of longs, input sentence x
+        :param use_c_prior: bool, if to sample c from prior or not
+        :param max_ppl: max ppl for unk tokens
         :return: n_batch of floats, ppl scores
         """
 
@@ -499,14 +519,14 @@ class RnnVae(nn.Module):
         x_emb = self.x_emb(x.t())  # (n_len, n_batch, d_emb)
         x_emb = torch.cat([
             x_emb,
-            h_init.expand(x_emb.shape[0], -1, -1)
+            h_init.repeat(x_emb.shape[0], 1, 1)
         ], 2)  # (n_len, n_batch, d_emb + d_z + d_c)
         outputs, _ = self.decoder_rnn(
             x_emb,
-            h_init.expand(self.decoder_rnn.depth, -1, -1)
+            h_init.repeat(self.decoder_n_layers, 1, 1)
         )  # (n_len, n_batch, d_z + d_c)
         if self.attention:
-            outputs, _ = self.decoder_a(outputs)
+            outputs = self.decoder_a(outputs)
         n_len, n_batch, _ = outputs.shape  # (n_len, n_batch)
         y = self.decoder_fc(
             outputs.view(n_len * n_batch, -1)
@@ -520,10 +540,12 @@ class RnnVae(nn.Module):
         ppl = ppl.t()
         scores = []
         for i, xl in enumerate(x):
+            ppl[i, xl[1:] == self.unk] = 1  # lil hack
             threes = (xl == self.eos).nonzero()
             m = self.n_len - 1 if not len(threes) else threes.max().item()
             scores.append(ppl[i, :m].log().sum().exp() ** (-1.0 / (m + 1)))
         ppl = torch.tensor(scores, device=x.device)
+        ppl[ppl == float('inf')] = max_ppl  # lil hack
 
         # Train mode
         self.train()
@@ -533,125 +555,14 @@ class RnnVae(nn.Module):
 
         return ppl
 
-    def old_sample_sentence(self, n_batch=1, z=None, c=None,
-                            temp=1.0, pad=True):
-        """Generating n_batch sentences in eval mode with values (could be
-        not on same device)
-        :param n_batch: number of sentences to generate
-        :param z: (n_batch, d_z) of floats, latent vector z or None
-        :param c: (n_batch, d_c) of floats, code c or None
-        :param temp: temperature of softmax
-        :param pad: if do padding to n_len
-        :return: tuple of four:
-            1. (n_batch, d_z) of floats, latent vector z
-            2. (n_batch, d_c) of floats, code c
-            3. (n_batch, n_len) of longs if pad and list of n_batch len of
-            tensors of longs: generated sents word ids if not
-            4. (n_batch, n_len, n_len) of floats, attention probs
-        """
-
-        # Input check
-        assert isinstance(n_batch, int) and n_batch > 0
-        if z is not None:
-            assert_check(z, [n_batch, self.d_z], torch.float)
-        if c is not None:
-            assert_check(c, [n_batch, self.d_c], torch.float)
-        assert isinstance(temp, float) and 0 < temp <= 1
-        assert isinstance(pad, bool)
-
-        # Enable eval mode
-        self.eval()
-
-        # Initial values
-        device = self.x_emb.weight.device
-        if z is None:
-            z = self.sample_z_prior(n_batch)  # (n_batch, d_z)
-        if c is None:
-            c = self.sample_c_prior(n_batch)  # (n_batch, d_c)
-        z, c = z.to(device), c.to(device)  # device change
-        z1, c1 = z.unsqueeze(0), c.unsqueeze(0)  # +1
-        n_layers = self.decoder_rnn.depth
-        h = torch.cat(
-            [z1, c1], dim=2
-        ).expand(n_layers, -1, -1)  # (n_layers, n_batch, d_z + d_c)
-        w = torch.tensor(self.bos, device=device).expand(n_batch)  # n_batch
-        x = torch.tensor(
-            [self.pad], device=device
-        ).repeat(n_batch, self.n_len)
-        x[:, 0] = self.bos
-        end_pads = torch.tensor(
-            [self.n_len], device=device
-        ).repeat(n_batch)
-        eos_mask = torch.zeros(n_batch, dtype=torch.uint8, device=device)
-        context = torch.empty(
-            n_batch, self.n_len - 1, self.d_z + self.d_c,
-            device=device
-        )
-        a = torch.zeros(
-            n_batch, self.n_len, self.n_len,
-            device=device
-        )
-
-        # Cycle, word by word
-        for i in range(1, self.n_len):
-            # Init
-            x_emb = self.x_emb(w).expand(
-                n_layers, -1, -1
-            )  # (n_layers, n_batch, d_emb)
-            x_emb = torch.cat(
-                [x_emb, z1, c1], 2
-            )  # (n_layers, n_batch, d_emb + d_z + d_c)
-
-            # Step
-            o, h = self.decoder_rnn(x_emb, h)  # (1, n_batch, d_z + d_c)
-            context[:, i - 1, :] = o.t()
-            o, aw = self.decoder_a.forward_inference(
-                o.squeeze(0), context[:, :i, :]
-            )
-            a[~eos_mask, i, :i] = aw[~eos_mask]
-            y = self.decoder_fc(o)
-            y = F.softmax(y / temp, dim=1)
-
-            # Generating
-            w = torch.multinomial(y, 1)[:, 0]
-            x[~eos_mask, i] = w[~eos_mask]
-            i_eos_mask = (w == self.eos)
-            end_pads[i_eos_mask] = i
-            eos_mask = eos_mask | i_eos_mask
-
-        # Pad
-        if not pad:
-            new_x = []
-            for i in range(x.size(0)):
-                new_x.append(x[i, :end_pads[i]])
-            x = new_x
-
-        # Back to train
-        self.train()
-
-        # Output check
-        assert_check(z, [n_batch, self.d_z], torch.float, device)
-        assert_check(c, [n_batch, self.d_c], torch.float, device)
-        if pad:
-            assert_check(x, [n_batch, self.n_len], torch.long, device)
-        else:
-            assert len(x) == n_batch
-            for i_x in x:
-                assert_check(i_x, [-1], torch.long, device)
-                assert len(i_x) <= self.n_len
-        assert_check(a, [n_batch, self.n_len, self.n_len],
-                     torch.float, device)
-
-        return z, c, x, a
-
     def sample_soft_embed(self, n_batch=1, z=None, c=None, temp=1.0):
         """Generating single soft sample x
         TODO: Not working right now
 
+        :param n_batch: ...
         :param z: (n_batch, d_z) of floats, latent vector z / None
         :param c: (n_batch, d_c) of floats, code c / None
         :param temp: temperature of softmax
-        :param device: device to run
         :return: (n_len, d_emb) of floats, sampled soft x
         """
 

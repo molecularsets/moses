@@ -7,79 +7,92 @@ INF = 1e+38
 
 
 class SelfAttention(nn.Module):
-    def __init__(self, dimensions, attention_type='general'):
+    def __init__(self, dims, activation=None):
         super().__init__()
 
-        if attention_type not in ['dot', 'general']:
-            raise ValueError('Invalid attention type selected.')
-
-        self.attention_type = attention_type
-        if self.attention_type == 'general':
-            self.linear_in = nn.Linear(dimensions, dimensions, bias=False)
-
-        self.linear_out = nn.Linear(dimensions * 2, dimensions, bias=False)
+        self.linear_in = nn.Linear(dims, dims, bias=False)
+        self.linear_out = nn.Linear(dims * 2, dims, bias=False)
+        self.activation = activation
 
     def forward(self, query):
+        """Calculating output with attention
+
+        :param query: [B, N, D] of floats, rnn outputs
+        :return: [B, N, D] of floats, new outputs with attention
         """
 
-        :param query: n_len, n_batch, n_d
-        :return:
-        """
-        query = query.t().contiguous()
-        n_batch, n_len, d = query.size()
+        B, N, D = query.size()
 
-        if self.attention_type == "general":
-            query = query.view(n_batch * n_len, d)
-            query = self.linear_in(query)
-            query = query.view(n_batch, n_len, d)
+        # In
+        query = self.linear_in(query)
 
-        attention_scores = torch.bmm(
-            query,
-            query.transpose(1, 2).contiguous()
+        # Scores
+        scores = torch.bmm(query, query.transpose(1, 2))
+        mask = torch.tensor(
+            np.triu(np.ones((N, N))),
+            dtype=torch.uint8, device=query.device
         )
-        mask = torch.tensor(np.triu(np.ones((n_len, n_len))),
-                            dtype=torch.uint8, device=query.device)
-        attention_scores[:, mask] = -INF
+        scores[:, mask] = -INF
 
-        attention_scores = attention_scores.view(n_batch * n_len, n_len)
-        attention_weights = F.softmax(attention_scores, dim=-1)
-        attention_weights = attention_weights.view(n_batch, n_len, n_len)
-        attention_weights = attention_weights.clone()
-        attention_weights[:, 0, :] = 0  # first to go gains nothing
+        # Weights
+        weights = F.softmax(scores, dim=-1)
+        weights = weights.clone()
+        weights[:, 0, :] = 0  # first to go gains nothing
 
-        mix = torch.bmm(attention_weights, query)
+        # Out
+        mix = torch.bmm(weights, query)
         combined = torch.cat([mix, query], dim=2)
-        combined = combined.view(n_batch * n_len, 2 * d)
+        output = self.linear_out(combined)
+        if self.activation:
+            output = self.activation(output)
 
-        output = self.linear_out(combined).view(n_batch, n_len, d)
-        output = F.tanh(output)
-
-        return output.t().contiguous(), attention_weights
+        return output
 
     def forward_inference(self, query, context):
-        n_batch, d_h = query.size()
-        _, n_len, _ = context.size()
+        """Output with attention inference
 
-        if self.attention_type == "general":
+        :param query: [B, D] of floats, current output
+        :param context: [B, N, D] of floats, outputs before
+        :return: tuple of two:
+            1. [B, D] of floats, new outputs
+            2. [B, N] of floats, attention weights
+        """
+
+        if context is None:
             query = self.linear_in(query)
+            mix = torch.zeros_like(query)
+        else:
+            # In
+            query = self.linear_in(query)
+            context = self.linear_in(context)
 
-        attention_scores = torch.bmm(
-            query.unsqueeze(1),
-            context.transpose(1, 2).contiguous()
-        ).squeeze(1)
+            # Calc scores & weights
+            scores = torch.bmm(
+                query.unsqueeze(1),
+                context.transpose(1, 2)
+            ).squeeze(1)
+            weights = F.softmax(scores, dim=-1)
 
+            # Combining vectors
+            mix = torch.bmm(
+                weights.unsqueeze(1),
+                context
+            ).squeeze(1)
 
-        attention_weights = F.softmax(attention_scores, dim=-1)
-
-        mix = torch.bmm(
-            attention_weights.unsqueeze(1),
-            context
-        ).squeeze(1)
-
+        # Out
         combined = torch.cat([mix, query], dim=1)
-
         output = self.linear_out(combined)
-        output = F.tanh(output)
+        if context is not None:
+            a = torch.bmm(
+                output.unsqueeze(1),
+                torch.cat([context, query.unsqueeze(1)], 1).transpose(1, 2)
+            ).squeeze(1)
+            a = F.softmax(a, dim=-1)
+        else:
+            a = torch.ones(query.size(0),
+                           dtype=torch.float, device=query.device)
+            a = a.unsqueeze(1)
+        if self.activation:
+            output = self.activation(output)
 
-        return output, attention_weights
-
+        return output, a

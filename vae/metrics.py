@@ -1,87 +1,58 @@
-from functools import lru_cache
-
-import torch
 import numpy as np
-from nltk.tokenize import word_tokenize
-from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
+
+from rdkit.Chem import AllChem as Chem
+from rdkit import DataStructs
 
 
-class Evaluator:
-    def __init__(self, corpus, n_ref, sample_params=None,
-                 blue_span=(2, 5), blue_smooth='epsilon'):
-        self.corpus = corpus
-        self.n_ref = n_ref
-        self.sample_params = sample_params or {}
+def diversity(smiles, other_smiles=None):
+    def remap(x, x_min, x_max):
+        if x_max == 0 and x_min == 0:
+            return 0
 
-        # BLEU
-        self.blue_weights = [
-            (i, np.array([1 / i] * i + [0] * (blue_span[1] - i)))
-            for i in range(blue_span[0], blue_span[1] + 1)
-        ]
-        if blue_smooth == 'epsilon':
-            # Adds epsilon to zero counts
-            self.blue_smooth = SmoothingFunction().method1
-        else:
-            self.blue_smooth = SmoothingFunction().method0
+        if x_max - x_min == 0:
+            return x
 
-        # Preload some modes, it may require some time...
-        for mode in ('train', 'val', 'test'):
-            self._get_reference(mode)
+        return (x - x_min) / (x_max - x_min)
 
-    def bleu(self, model, n_hypot, mode):
-        """Calculating similarity metric, higher is better"""
-        references = self._get_reference(mode)
-        hypotheses = [
-            word_tokenize(sent)
-            for sent in self.corpus.reverse(
-                model.sample_sentence(n_hypot, **self.sample_params)[2]
-            )
-        ]
+    def calc_diversity(smile, fps):
+        mol = Chem.MolFromSmiles(smile)
+        if smile != '' and mol is not None and mol.GetNumAtoms() > 1:
+            ref_fps = Chem.GetMorganFingerprintAsBitVect(mol, 4, nBits=2048)
+            dist = DataStructs.BulkTanimotoSimilarity(ref_fps, fps, returnDistance=True)
+            mean_dist = np.mean(dist)
 
-        result = {}
-        for i, w in self.blue_weights:
-            result[f'{i}-gram'] = np.mean([
-                sentence_bleu(references, h,
-                              weights=w, smoothing_function=self.blue_smooth)
-                for h in hypotheses
-            ])
-        return result
+            low_rand_dst, mean_div_dst = 0.9, 0.945
+            val = remap(mean_dist, low_rand_dst, mean_div_dst)
+            val = np.clip(val, 0.0, 1.0)
 
-    def self_bleu(self, model, n_hypot):
-        """Calculating diversity metric, lower is better"""
-        hypotheses = [
-            word_tokenize(sent)
-            for sent in self.corpus.reverse(
-                model.sample_sentence(n_hypot, **self.sample_params)[2]
-            )
-        ]
+            return val
 
-        result = {}
-        for i, w in self.blue_weights:
-            result[f'{i}-gram'] = np.mean([
-                sentence_bleu(hypotheses[:j] + hypotheses[j + 1:],
-                              hypotheses[j],
-                              weights=w, smoothing_function=self.blue_smooth)
-                for j in range(len(hypotheses))
-            ])
-        return result
+        return 0
 
-    def perplexity(self, model, split):
-        ppl = []
-        batcher = self.corpus.batcher(split, 'unlabeled')
-        for x in batcher:
-            ppl.append(model.perplexity(x, use_c_prior=True))
-        return torch.stack(ppl).mean().item()
+    if other_smiles is None:
+        other_smiles = smiles
 
-    @lru_cache(maxsize=None)
-    def _get_reference(self, split):
-        batcher = self.corpus.batcher(split, 'unlabeled',
-                                      n_batch=1, device=torch.device('cpu'))
-        result = []
-        for b in batcher:
-            if len(result) == self.n_ref:
-                break
+    mols = [Chem.MolFromSmiles(s) for s in other_smiles]
+    fps = [Chem.GetMorganFingerprintAsBitVect(m, 4, nBits=2048) for m in mols if m is not None]
+    divs = [calc_diversity(s, fps=fps) for s in smiles]
 
-            result.append(word_tokenize(self.corpus.reverse(b, 'x')[0]))
+    return np.mean(divs)
 
-        return result
+
+def validity(smiles):
+    def verify_sequence(smile):
+        mol = Chem.MolFromSmiles(smile)
+
+        return smile != '' and mol is not None and mol.GetNumAtoms() > 1
+
+    n_smiles = len(smiles)
+    n_valid_smiles = sum(map(verify_sequence, smiles))
+
+    return n_valid_smiles / n_smiles
+
+
+def uniqueness(smiles):
+    n_smiles = len(smiles)
+    n_uniq_smiles = len(set(smiles))
+
+    return n_uniq_smiles / n_smiles
