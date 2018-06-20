@@ -50,7 +50,7 @@ class Vocab:
         return len(self.stoi)
 
 
-class Corpus(abc.ABC):
+class Corpus(BaseEstimator, TransformerMixin, abc.ABC):
     @abc.abstractmethod
     def fit(self, dataset):
         pass
@@ -64,7 +64,7 @@ class Corpus(abc.ABC):
         pass
 
 
-class OneHotCorpus(BaseEstimator, TransformerMixin, Corpus):
+class OneHotCorpus(Corpus):
     def __init__(self, n_batch, device):
         self.n_batch = n_batch
         self.device = device
