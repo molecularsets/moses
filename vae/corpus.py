@@ -92,3 +92,12 @@ class OneHotCorpus(Corpus):
                     if i not in t_ss)
             for i_x in x
         ]
+
+    def _collate_fn(self, l_smiles):
+        return [
+            torch.tensor([self.vocab.bos]
+                         + [self.vocab.stoi[c] for c in smiles]
+                         + [self.vocab.eos],
+                         dtype=torch.long, device=self.device)
+            for smiles in l_smiles
+        ]
