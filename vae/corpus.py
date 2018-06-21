@@ -94,6 +94,7 @@ class OneHotCorpus(Corpus):
         ]
 
     def _collate_fn(self, l_smiles):
+        l_smiles.sort(key=len, reverse=True)
         return [
             torch.tensor([self.vocab.bos]
                          + [self.vocab.stoi[c] for c in smiles]
