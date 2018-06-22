@@ -2,21 +2,15 @@ import math
 from collections import UserList, defaultdict
 
 import matplotlib.pyplot as plt
-import numpy as np
 from torch.optim.lr_scheduler import _LRScheduler
 
 
-def reject_outliers(data, m=2):
-    data = np.array(data)
-    return data[abs(data - np.mean(data)) <= m * np.std(data)]
-
-
 class KLAnnealer:
-    def __init__(self, **kwargs):
-        self.i_start = kwargs['i_start']
-        self.w_max = kwargs['w_max']
-        self.w_start = kwargs['w_start']
-        self.n_epoch = kwargs['n_epoch']
+    def __init__(self, n_epoch, config):
+        self.i_start = config.kl_start
+        self.w_start = config.kl_w_start
+        self.w_max = config.kl_w_end
+        self.n_epoch = n_epoch
 
         self.inc = (self.w_max - self.w_start) / (self.n_epoch - self.i_start)
 
@@ -26,10 +20,10 @@ class KLAnnealer:
 
 
 class CosineAnnealingLRWithRestart(_LRScheduler):
-    def __init__(self, optimizer, **kwargs):
-        self.n_period = kwargs['n_period']
-        self.n_mult = kwargs['n_mult']
-        self.lr_min = kwargs['lr_min']
+    def __init__(self, optimizer, config):
+        self.n_period = config.lr_n_period
+        self.n_mult = config.lr_n_mult
+        self.lr_start = config.lr_start
 
         self.current_epoch = 0
         self.t_end = self.n_period
@@ -38,7 +32,7 @@ class CosineAnnealingLRWithRestart(_LRScheduler):
         super().__init__(optimizer, -1)
 
     def get_lr(self):
-        return [self.lr_min + (base_lr - self.lr_min) *
+        return [self.lr_start + (base_lr - self.lr_start) *
                 (1 + math.cos(math.pi * self.current_epoch / self.t_end)) / 2
                 for base_lr in self.base_lrs]
 
@@ -103,29 +97,3 @@ class LogPlotter:
 
         for ax, name in zip(axs.flatten(), names):
             self.line(ax, name)
-
-
-class SamplePlotter:
-    def __init__(self, corpus, model, sample_params=None):
-        self.corpus = corpus
-        self.model = model
-        if sample_params is None:
-            sample_params = {}
-        self.sample_params = sample_params
-
-    def plot_one(self, size=8):
-        _, _, x, a = self.model.sample_sentence(1, **self.sample_params)
-        print(f"sent: '{self.corpus.reverse(x)[0]}'")
-        vocab = self.corpus.vocab('x')
-        sent = [vocab.itos[i] for i in x[0]]
-        _, ax = plt.subplots(figsize=(size, size))
-        a = a[0].t().cpu().detach().numpy()[::-1, :]
-        ax.imshow(a)
-        ax.set_xticks(np.arange(len(sent)))
-        ax.set_yticks(np.arange(len(sent)))
-        plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
-                 rotation_mode="anchor")
-        ax.set_xticklabels(sent)
-        ax.set_yticklabels(sent[::-1])
-        ax.set_xlabel('generated sequence')
-        ax.set_ylabel('context')

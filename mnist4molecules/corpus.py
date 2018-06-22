@@ -73,7 +73,7 @@ class OneHotCorpus(Corpus):
 
     def fit(self, dataset):
         chars = set()
-        for smiles in tqdm.tqdm_notebook(dataset):
+        for smiles in tqdm.tqdm(dataset, desc='Fitting corpus with vocab'):
             chars.update(smiles)
 
         self.vocab = Vocab(chars, SS)

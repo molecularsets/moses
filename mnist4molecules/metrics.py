@@ -1,7 +1,6 @@
 import numpy as np
-
-from rdkit.Chem import AllChem as Chem
 from rdkit import DataStructs
+from rdkit.Chem import AllChem as Chem
 
 
 def diversity(smiles, other_smiles=None):
@@ -14,11 +13,12 @@ def diversity(smiles, other_smiles=None):
 
         return (x - x_min) / (x_max - x_min)
 
-    def calc_diversity(smile, fps):
+    def calc_diversity(smile, fpss):
         mol = Chem.MolFromSmiles(smile)
         if smile != '' and mol is not None and mol.GetNumAtoms() > 1:
             ref_fps = Chem.GetMorganFingerprintAsBitVect(mol, 4, nBits=2048)
-            dist = DataStructs.BulkTanimotoSimilarity(ref_fps, fps, returnDistance=True)
+            dist = DataStructs.BulkTanimotoSimilarity(ref_fps, fpss,
+                                                      returnDistance=True)
             mean_dist = np.mean(dist)
 
             low_rand_dst, mean_div_dst = 0.9, 0.945
@@ -33,8 +33,9 @@ def diversity(smiles, other_smiles=None):
         other_smiles = smiles
 
     mols = [Chem.MolFromSmiles(s) for s in other_smiles]
-    fps = [Chem.GetMorganFingerprintAsBitVect(m, 4, nBits=2048) for m in mols if m is not None]
-    divs = [calc_diversity(s, fps=fps) for s in smiles]
+    fps = [Chem.GetMorganFingerprintAsBitVect(m, 4, nBits=2048) for m in mols
+           if m is not None]
+    divs = [calc_diversity(s, fpss=fps) for s in smiles]
 
     return np.mean(divs)
 
