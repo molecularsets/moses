@@ -26,7 +26,7 @@ def get_all_metrics(ref, gen, k=[1000, 10000], n_jobs=1, gpu=-1):
     if not isinstance(k, (list, tuple)):
         k = [k]
     for k_ in k:
-        metrics['unique@{}'.format(k_)] = fraction_unique(gen)
+        metrics['unique@{}'.format(k_)] = fraction_unique(gen, k_)
 
     metrics['FCD'] = frechet_chembl_distance(ref, gen, gpu=gpu)
     metrics['morgan'] = morgan_similarity(ref, gen, n_jobs=n_jobs, gpu=gpu)
