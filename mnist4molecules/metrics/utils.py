@@ -12,15 +12,37 @@ from rdkit.Chem import MACCSkeys
 from rdkit.Chem.Scaffolds import MurckoScaffold
 from rdkit.Chem.QED import qed
 from rdkit.Chem.AllChem import GetMorganFingerprintAsBitVect as Morgan
+import os
 
 
-def mapper(n_jobs, interactive=False):
+_base_dir = os.path.split(__file__)[0]
+_mcf = pd.read_csv(os.path.join(_base_dir, 'mcf.csv'))
+_pains = pd.read_csv(os.path.join(_base_dir, 'wehi_pains.csv'), names=['smarts', 'names'])
+_filters = [Chem.MolFromSmarts(x) for x in _mcf.append(_pains)['smarts'].values]
+
+
+def mapper(n_jobs):
+    '''
+    Returns function for map call.
+    If n_jobs == 1, will use standard map
+    If n_jobs > 1, will use multiprocessing pool
+    If n_jobs is a pool object, will return its map function
+    '''
     if n_jobs == 1:
-        return map
-    elif interactive:
-        return Pool(n_jobs).imap
+        def _mapper(*args, **kwargs):
+            return list(map(*args, **kwargs))
+        return _mapper
+    elif isinstance(n_jobs, int):
+        pool = Pool(n_jobs)
+        def _mapper(*args, **kwargs):
+            try:
+                result = pool.map(*args, **kwargs)
+            finally:
+                pool.terminate()
+            return result
+        return _mapper
     else:
-        return Pool(n_jobs).map
+        return n_jobs.map
 
 
 def get_mol(smiles_or_mol):
@@ -32,9 +54,11 @@ def get_mol(smiles_or_mol):
     else:
         return smiles_or_mol
 
-    
+
 def canonic_smiles(smiles_or_mol):
     mol = get_mol(smiles_or_mol)
+    if mol is None:
+        return None
     return Chem.MolToSmiles(mol)
 
 
@@ -70,9 +94,7 @@ def fragmenter(mol):
     '''
     fragment mol using BRICS and return smiles list
     '''
-    if isinstance(mol, str):
-        mol = Chem.MolFromSmiles(mol)
-    fgs = AllChem.FragmentOnBRICSBonds(mol)
+    fgs = AllChem.FragmentOnBRICSBonds(get_mol(mol))
     fgs_smi = Chem.MolToSmiles(fgs).split(".")
     return fgs_smi
 
@@ -81,9 +103,8 @@ def compute_fragments(mol_list, n_jobs=1):
     '''
     fragment list of mols using BRICS and return smiles list
     '''
-    map_ = mapper(n_jobs)
     fragments = Counter()
-    for mol_frag in map_(fragmenter, mol_list):
+    for mol_frag in mapper(n_jobs)(fragmenter, mol_list):
         fragments.update(mol_frag)
     return fragments
 
@@ -101,8 +122,7 @@ def compute_scaffolds(mol_list, n_jobs=1, min_rings=2):
 
 
 def compute_scaffold(mol, min_rings=2):
-    if isinstance(mol, str):
-        mol = get_mol(mol)
+    mol = get_mol(mol)
     scaffold = MurckoScaffold.GetScaffoldForMol(mol)
     n_rings = get_n_rings(scaffold)
     scaffold_smiles = Chem.MolToSmiles(scaffold) 
@@ -136,7 +156,7 @@ def average_max_tanimoto(stock_vecs, gen_vecs, batch_size=10000, gpu=-1):
     return np.mean(best_tanimoto)
 
 
-def fingerprint(smiles_or_mol, type='MACCS', dtype=None, morgan__r=4, morgan__n=2048, *args, **kwargs):
+def fingerprint(smiles_or_mol, type='maccs', dtype=None, morgan__r=2, morgan__n=1024, *args, **kwargs):
     '''
     Generates fingerprint for SMILES
     If smiles is invalid, returns None
@@ -158,7 +178,7 @@ def fingerprint(smiles_or_mol, type='MACCS', dtype=None, morgan__r=4, morgan__n=
     elif ftype == 'morgan':
         fingerprint = np.asarray(Morgan(molecule, morgan__r, nBits=morgan__n), dtype='uint8')
     else:
-        raise ValueError
+        raise ValueError("Unknown fingerprint type {}".format(ftype))
     if dtype is not None:
         fingerprint = fingerprint.astype(dtype)
     return fingerprint
@@ -247,9 +267,32 @@ def tanimoto(fingerprints, fingerprints_right=None, mode='pairwise'):
 
     if isinstance(fingerprints_right, torch.Tensor):
         intersection = intersection.float()
+        union = union.float()
     else:
+        intersection = intersection.astype(float)
         intersection = intersection.astype(float)
     intersection[union == 0] = 1
     union[union == 0] = 1
     scores = intersection / union
     return scores
+
+
+def mol_passes_filters(mol, n_jobs=1, allowed={'C','N','S','O','F','Cl','Br','H'}):
+    '''
+    Checks if mol passes MCF and PAINS filters, has only allowed atoms and is not charged
+    '''
+    mol = get_mol(mol)
+    h_mol = Chem.AddHs(mol)
+    for smarts in _filters:
+        if h_mol.HasSubstructMatch(smarts):
+            return False
+    if not all([atom.GetFormalCharge()==0 for atom in mol.GetAtoms()]):
+        return False
+    if not all([atom.GetSymbol() in allowed for atom in mol.GetAtoms()]):
+        return False
+    smiles = Chem.MolToSmiles(mol)
+    if smiles is None or len(smiles) == 0:
+        return False
+    if Chem.MolFromSmiles(smiles) is None:
+        return False
+    return True

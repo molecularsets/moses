@@ -1,6 +1,8 @@
 import numpy as np
 from .utils_fcd import get_predictions, calculate_frechet_distance
-from .utils import compute_fragments, average_max_tanimoto, compute_scaffolds, tanimoto, fingerprints, get_mol, canonic_smiles
+from .utils import compute_fragments, average_max_tanimoto, \
+                   compute_scaffolds, tanimoto, fingerprints, \
+                   get_mol, canonic_smiles, mapper, mol_passes_filters
 from scipy.spatial.distance import cosine
 import warnings
 
@@ -19,21 +21,36 @@ def get_all_metrics(ref, gen, k=[1000, 10000], n_jobs=1, gpu=-1):
     '''
     metrics = {}
 
-    metrics['valid'] = fraction_valid(gen)
-    gen = remove_invalid(gen)
-    gen = [canonic_smiles(smiles) for smiles in gen]
+    metrics['valid'] = fraction_valid(gen, n_jobs=n_jobs)
+    gen = remove_invalid(gen, canonize=True)
+    ref = remove_invalid(ref, canonize=True)
+    gen_mols = mapper(n_jobs)(get_mol, gen)
+    ref_mols = mapper(n_jobs)(get_mol, ref)
 
     if not isinstance(k, (list, tuple)):
         k = [k]
     for k_ in k:
-        metrics['unique@{}'.format(k_)] = fraction_unique(gen, k_)
+        metrics['unique@{}'.format(k_)] = fraction_unique(gen, k_, n_jobs=n_jobs)
 
     metrics['FCD'] = frechet_chembl_distance(ref, gen, gpu=gpu)
-    metrics['morgan'] = morgan_similarity(ref, gen, n_jobs=n_jobs, gpu=gpu)
-    metrics['fragments'] = fragment_similarity(ref, gen, n_jobs=n_jobs)
-    metrics['scaffolds'] = scaffold_similarity(ref, gen, n_jobs=n_jobs)
-    metrics['internal_diversity'] = internal_diversity(gen, n_jobs=n_jobs)
+    metrics['morgan'] = morgan_similarity(ref_mols, gen_mols, n_jobs=n_jobs, gpu=gpu)
+    metrics['fragments'] = fragment_similarity(ref_mols, gen_mols, n_jobs=n_jobs)
+    metrics['scaffolds'] = scaffold_similarity(ref_mols, gen_mols, n_jobs=n_jobs)
+    metrics['internal_diversity'] = internal_diversity(gen_mols, n_jobs=n_jobs)
+    metrics['filters'] = fraction_passes_filters(gen_mols, n_jobs=n_jobs)
     return metrics
+
+
+def fraction_passes_filters(gen, n_jobs=1):
+    '''
+    Computes the fraction of molecules that pass filters:
+    * MCF
+    * PAINS
+    * Only allowed atoms ('C','N','S','O','F','Cl','Br','H')
+    * No charges
+    '''
+    passes = mapper(n_jobs)(mol_passes_filters, gen)
+    return np.mean(passes)
 
 
 def internal_diversity(gen, type='morgan', n_jobs=1):
@@ -45,7 +62,7 @@ def internal_diversity(gen, type='morgan', n_jobs=1):
     return (1-tanimoto(gen_fps, gen_fps)).mean()
 
 
-def fraction_unique(gen, k=None, check_validity=True):
+def fraction_unique(gen, k=None, n_jobs=1, check_validity=True):
     '''
     Computes a number of unique molecules
     :param gen: list of SMILES
@@ -54,33 +71,33 @@ def fraction_unique(gen, k=None, check_validity=True):
     '''
     if k is not None:
         if len(gen) < k:
-            warnings.warn("Can't compute unique@{}. gen contains only {} molecules".format(len(gen), k))
+            warnings.warn("Can't compute unique@{}. gen contains only {} molecules".format(k, len(gen)))
         gen = gen[:k]
-    canonic = set(map(canonic_smiles, gen))
+    canonic = set(mapper(n_jobs)(canonic_smiles, gen))
     if None in canonic and check_validity:
         raise ValueError("Invalid molecule passed to unique@k")
     return len(canonic) / len(gen)
 
 
-def fraction_valid(gen):
+def fraction_valid(gen, n_jobs=1):
     '''
     Computes a number of valid molecules
     :param gen: list of SMILES
     '''
-    gen = list(map(get_mol, gen))
+    gen = mapper(n_jobs)(get_mol, gen)
     return 1 - gen.count(None) / len(gen)
 
 
-def remove_invalid(gen, canonize=True):
+def remove_invalid(gen, canonize=True, n_jobs=1):
     '''
     Removes invalid molecules from the dataset
     '''
     if canonize:
-        mols = list(map(get_mol, gen))
+        mols = mapper(n_jobs)(get_mol, gen)
+        return [gen_ for gen_, mol in zip(gen, mols) if mol is not None]
     else:
-        mols = list(map(canonic_smiles, gen))
-    return [gen_ for gen_, mol in zip(gen, mols) if mol is not None]
-
+        return [x for x in mapper(n_jobs)(canonic_smiles, gen) if x is not None]
+    
 
 def morgan_similarity(ref, gen, n_jobs=1, gpu=-1):
     return fingerprint_similarity(ref, gen, 'morgan', n_jobs=n_jobs, gpu=gpu)
@@ -90,6 +107,9 @@ def frechet_chembl_distance(ref, gen, gpu=-1):
     '''
     Computes Frechet Chembl Distance between two lists of SMILES
     '''
+    if len(ref) < 2 or len(gen) < 2:
+        warnings.warn("Can't compute FCD for less than 2 molecules")
+        return np.nan
     ref_activations = get_predictions(ref, gpu=gpu)
     gen_activations = get_predictions(gen, gpu=gpu)
     mu1 = gen_activations.mean(0)
@@ -100,7 +120,7 @@ def frechet_chembl_distance(ref, gen, gpu=-1):
     return fcd
 
 
-def fingerprint_similarity(ref, gen, type='topological', n_jobs=1, gpu=-1):
+def fingerprint_similarity(ref, gen, type='morgan', n_jobs=1, gpu=-1):
     '''
     Computes average max similarities of gen SMILES to ref SMILES
     '''
@@ -116,6 +136,8 @@ def count_distance(ref_counts, gen_counts):
      dictionaries of form {type: count}. Non-present
      elements are considered zero
     '''
+    if len(ref_counts) == 0 or len(gen_counts) == 0:
+        return np.nan
     keys = np.unique(list(ref_counts.keys())+list(gen_counts.keys()))
     ref_vec = np.array([ref_counts.get(k, 0) for k in keys])
     gen_vec = np.array([gen_counts.get(k, 0) for k in keys])
