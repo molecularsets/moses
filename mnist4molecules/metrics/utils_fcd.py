@@ -170,7 +170,7 @@ def get_predictions(gen_mol, gpu=-1):
         device = "/cpu"
     with tf.device(device):
         masked_loss_function = build_masked_loss(K.binary_crossentropy,0.5)
-        config = tf.ConfigProto(allow_soft_placement=True)
+        config = tf.ConfigProto(device_count={'GPU': int(gpu != -1)}, allow_soft_placement=True)
         config.gpu_options.allow_growth = True
         set_session(tf.Session(config=config))
         model = load_model(model_path, 
