@@ -16,7 +16,6 @@ def get_all_metrics(ref, gen, k=[1000, 10000], n_jobs=1, gpu=-1):
     5. scaffold similarity
     6. topological similarity
     7. morgan similarity
-    Note that all valid SMILES are NOT canoninized automatically
     '''
     metrics = {}
 
