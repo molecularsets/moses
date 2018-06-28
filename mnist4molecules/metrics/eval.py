@@ -3,8 +3,8 @@ import argparse
 import pandas as pd
 
 from mnist4molecules.config import get_config
-from mnist4molecules.utils import PandasDataset
 from mnist4molecules.metrics.metrics import get_all_metrics
+from mnist4molecules.utils import PandasDataset
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--ref_path',
