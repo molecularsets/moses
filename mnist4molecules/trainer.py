@@ -6,9 +6,5 @@ class Trainer(abc.ABC):
         self.config = config
 
     @abc.abstractmethod
-    def fit(self, model, dataloader, corpus):
-        pass
-
-    @abc.abstractmethod
-    def sample(self, model, n):
+    def fit(self, model, data):
         pass

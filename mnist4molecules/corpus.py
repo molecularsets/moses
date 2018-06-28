@@ -1,12 +1,12 @@
 import abc
-from collections import defaultdict
+from collections import UserDict
 
 import torch
 import tqdm
-from sklearn.base import BaseEstimator, TransformerMixin
+from attrdict import AttrDict
 from torch.utils.data import DataLoader, Dataset
 
-SS = dict(
+SS = AttrDict(
     bos='<bos>',
     eos='<eos>',
     pad='<pad>',
@@ -27,17 +27,36 @@ class PandasDataset(Dataset):
         return self.df.iloc[idx]
 
 
-class Vocab:
+class DefaultValueDict(UserDict):
+    def __init__(self, default_value=None):
+        super().__init__()
+        self.default_value = default_value
+
+    def __getitem__(self, item):
+        if item in self.data:
+            return self.data[item]
+        else:
+            return self.default_value
+
+
+class Vocab(abc.ABC):
+    @abc.abstractmethod
+    def reverse(self, x):
+        pass
+
+
+class OneHotVocab(Vocab):
     def __init__(self, tokens, ss):
         tokens = tokens | set(ss.values())
 
         stoi = {v: i for i, v in enumerate(tokens)}
-        self.stoi = defaultdict(lambda: stoi[ss.unk])
+
+        self.stoi = DefaultValueDict(stoi[ss.unk])
         for k, v in stoi.items():
             self.stoi[k] = v
 
         itos = {v: k for k, v in self.stoi.items()}
-        self.itos = defaultdict(lambda: ss.unk)
+        self.itos = DefaultValueDict(ss.unk)
         for k, v in itos.items():
             self.itos[k] = v
 
@@ -49,18 +68,23 @@ class Vocab:
     def __len__(self):
         return len(self.stoi)
 
+    def reverse(self, x):
+        t_ss = set(getattr(self, ss)
+                   for ss in ('bos', 'eos', 'pad', 'unk'))
+        return [
+            ''.join(self.itos[i] for i in i_x.cpu().numpy()
+                    if i not in t_ss)
+            for i_x in x
+        ]
 
-class Corpus(BaseEstimator, TransformerMixin, abc.ABC):
+
+class Corpus(abc.ABC):
     @abc.abstractmethod
     def fit(self, dataset):
         pass
 
     @abc.abstractmethod
     def transform(self, dataset):
-        pass
-
-    @abc.abstractmethod
-    def reverse(self, x):
         pass
 
 
@@ -76,22 +100,13 @@ class OneHotCorpus(Corpus):
         for smiles in tqdm.tqdm(dataset, desc='Fitting corpus with vocab'):
             chars.update(smiles)
 
-        self.vocab = Vocab(chars, SS)
+        self.vocab = OneHotVocab(chars, SS)
 
         return self
 
     def transform(self, dataset):
         return DataLoader(dataset, batch_size=self.n_batch,
                           shuffle=True, collate_fn=self._collate_fn)
-
-    def reverse(self, x):
-        t_ss = set(getattr(self.vocab, ss)
-                   for ss in ('bos', 'eos', 'pad', 'unk'))
-        return [
-            ''.join(self.vocab.itos[i] for i in i_x.cpu().numpy()
-                    if i not in t_ss)
-            for i_x in x
-        ]
 
     def _collate_fn(self, l_smiles):
         l_smiles.sort(key=len, reverse=True)

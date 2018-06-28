@@ -15,3 +15,11 @@ def assert_check(t, dims=None, dtype=None, device=None):
 
     if device is not None:
         assert t.device == device, "Tensor device check"
+
+
+def get_device(config):
+    return torch.device(
+        f'cuda:{config.device_code}'
+        if config.device_code >= 0 and torch.cuda.is_available()
+        else 'cpu'
+    )
