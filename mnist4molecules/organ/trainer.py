@@ -155,27 +155,24 @@ class ORGANTrainer:
             generator_loss.backward()
             generator_optimizer.step()
 
-            discriminator_loss = 0
-            for is_sampling in [False, True]:
-                if is_sampling:
-                    model.generator.eval()
-                    discriminator_inputs, _ = model.sample_tensor(self.config.batch_size, self.config.max_length)
-                    discriminator_targets = torch.zeros(self.config.batch_size, 1, device=model.device)
-                else:
-                    samples = random.sample(train_data, self.config.batch_size)
-                    samples.sort(key=lambda x: len(x), reverse=True)
-                    tensors = [model.string2tensor(s, add_bos=True, add_eos=True) for s in samples]
-                    discriminator_inputs = pad_sequence(tensors, batch_first=True, padding_value=model.vocabulary.pad)
-                    discriminator_targets = torch.ones(self.config.batch_size, 1, device=model.device)
 
-                discriminator_outputs = model.discriminator_forward(discriminator_inputs)
-                loss = discriminator_criterion(discriminator_outputs, discriminator_targets)
-                
-                discriminator_optimizer.zero_grad()
-                loss.backward()
-                discriminator_optimizer.step()
+            if i % 2 == 0:
+                model.generator.eval()
+                discriminator_inputs, _ = model.sample_tensor(self.config.batch_size, self.config.max_length)
+                discriminator_targets = torch.zeros(self.config.batch_size, 1, device=model.device)
+            else:
+                samples = random.sample(train_data, self.config.batch_size)
+                samples.sort(key=lambda x: len(x), reverse=True)
+                tensors = [model.string2tensor(s, add_bos=True, add_eos=True) for s in samples]
+                discriminator_inputs = pad_sequence(tensors, batch_first=True, padding_value=model.vocabulary.pad)
+                discriminator_targets = torch.ones(self.config.batch_size, 1, device=model.device)
 
-                discriminator_loss += loss / 2
+            discriminator_outputs = model.discriminator_forward(discriminator_inputs)
+            discriminator_loss = discriminator_criterion(discriminator_outputs, discriminator_targets)
+            
+            discriminator_optimizer.zero_grad()
+            discriminator_loss.backward()
+            discriminator_optimizer.step()
 
             postfix['generator_loss'] = postfix['generator_loss'] * 0.8 + generator_loss.item() * 0.2
             postfix['discriminator_loss'] = postfix['discriminator_loss'] * 0.8 + discriminator_loss.item() * 0.2
