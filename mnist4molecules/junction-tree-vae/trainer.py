@@ -1,0 +1,55 @@
+import os
+import torch
+import torch.optim as optim
+import tqdm
+
+from mnist4molecules.utils import Trainer
+
+
+class JTreeTrainer(Trainer):
+    def fit(self, model, data):
+        model.train()
+
+        n_epoch = self.config.num_epochs
+        get_params = lambda: (p for p in model.parameters() if p.requires_grad)
+        optimizer = optim.Adam(get_params(), lr=self.config.lr)
+
+        for epoch in range(n_epoch):
+            if epoch < self.config.kl_start:
+                kl_w = 0
+            else:
+                kl_w = self.config.kl_w
+
+            word_acc, topo_acc, assm_acc, steo_acc, all_kl = 0, 0, 0, 0, 0
+
+            train_dataloader = tqdm.tqdm(data)
+            train_dataloader.set_description('Train (epoch #{})'.format(epoch))
+
+            for it, batch in enumerate(train_dataloader):
+                for mol_tree in batch:
+                    for node in mol_tree.nodes:
+                        if node.label not in node.cands:
+                            node.cands.append(node.label)
+                            node.cand_mols.append(node.label_mol)
+
+                model.zero_grad()
+                loss, kl_div, wacc, tacc, sacc, dacc = model(batch, kl_w)
+                loss.backward()
+                optimizer.step()
+
+                word_acc += wacc
+                topo_acc += tacc
+                assm_acc += sacc
+                steo_acc += dacc
+                all_kl += kl_div
+
+                postfix = {'kl': all_kl / (it + 1),
+                           'word': word_acc / (it + 1) * 100,
+                           'topo': topo_acc / (it + 1) * 100,
+                           'assm': assm_acc / (it + 1) * 100,
+                           'steo': steo_acc / (it + 1) * 100}
+
+                train_dataloader.set_postfix(postfix)
+
+            # TODO
+            torch.save(model.state_dict(), os.path.join(self.config.model_save, "model-iter" + str(epoch) + ".pt"))

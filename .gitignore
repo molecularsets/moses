@@ -1,3 +1,4 @@
 .idea/
 .DS_store
-*__pycache__*
+__pycache__
+mnist4molecules.egg-info/
