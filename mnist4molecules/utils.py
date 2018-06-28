@@ -1,20 +1,45 @@
+import abc
+
 import torch
+from torch.utils.data import Dataset
 
 
-def assert_check(t, dims=None, dtype=None, device=None):
-    assert isinstance(t, torch.Tensor), "Tensor initial check"
+class Trainer(abc.ABC):
+    def __init__(self, config):
+        self.config = config
 
-    if dims is not None:
-        assert t.dim() == len(dims)
-        for i, dim in enumerate(dims):
-            if dim is not None and dim > 0:
-                assert t.size(i) == dim, "Tensor dim check"
+    @abc.abstractmethod
+    def fit(self, model, data):
+        pass
 
-    if dtype is not None:
-        assert t.dtype == dtype, "Tensor type check"
 
-    if device is not None:
-        assert t.device == device, "Tensor device check"
+class PandasDataset(Dataset):
+    def __init__(self, df):
+        super().__init__()
+
+        self.df = df.iloc[:, 0]
+
+    def __len__(self):
+        return len(self.df)
+
+    def __getitem__(self, idx):
+        return self.df.iloc[idx]
+
+
+class Vocab(abc.ABC):
+    @abc.abstractmethod
+    def reverse(self, x):
+        pass
+
+
+class Corpus(abc.ABC):
+    @abc.abstractmethod
+    def fit(self, dataset):
+        pass
+
+    @abc.abstractmethod
+    def transform(self, dataset):
+        pass
 
 
 def get_device(config):
