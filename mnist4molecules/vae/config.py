@@ -41,7 +41,7 @@ def get_train_parser():
     # Train
     train_arg = parser.add_argument_group('Train')
     train_arg.add_argument('--n_batch',
-                           type=int, default=32,
+                           type=int, default=64,
                            help='Batch size')
     train_arg.add_argument('--grad_clipping',
                            type=int, default=10,
@@ -53,10 +53,10 @@ def get_train_parser():
                            type=float, default=0.01,
                            help='Initial kl weight value')
     train_arg.add_argument('--kl_w_end',
-                           type=float, default=0.1,
+                           type=float, default=0.01,
                            help='Maximum kl weight value')
     train_arg.add_argument('--lr_start',
-                           type=float, default=1e-2,
+                           type=float, default=1e-3,
                            help='Initial lr value')
     train_arg.add_argument('--lr_n_period',
                            type=int, default=10,
@@ -83,7 +83,7 @@ def get_sample_parser():
     # Sample
     sample_arg = parser.add_argument_group('Sample')
     sample_arg.add_argument('--n_len',
-                            type=int, default=100,
+                            type=int, default=150,
                             help='Maximum sampling len')
 
     return parser

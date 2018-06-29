@@ -23,7 +23,7 @@ class CosineAnnealingLRWithRestart(_LRScheduler):
     def __init__(self, optimizer, config):
         self.n_period = config.lr_n_period
         self.n_mult = config.lr_n_mult
-        self.lr_start = config.lr_start
+        self.lr_start = config.lr_end
 
         self.current_epoch = 0
         self.t_end = self.n_period

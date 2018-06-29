@@ -54,7 +54,8 @@ class OneHotVocab(Vocab):
         t_ss = set(getattr(self, ss)
                    for ss in ('bos', 'eos', 'pad', 'unk'))
         return [
-            ''.join(self.itos[i.item()] for i in i_x if i not in t_ss)
+            ''.join(self.itos[i.item()] for i in i_x
+                    if i.item() not in t_ss)
             for i_x in x
         ]
 
