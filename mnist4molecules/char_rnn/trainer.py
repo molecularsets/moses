@@ -5,10 +5,11 @@ import torch.nn as nn
 import torch.optim as optim
 import tqdm
 
-from mnist4molecules.utils import Trainer
 
+class CharRNNTrainer:
+    def __init__(self, config):
+        self.config = config
 
-class CharRNNTrainer(Trainer):
     def fit(self, model, data):
 
         if isinstance(data, tuple):
@@ -23,7 +24,7 @@ class CharRNNTrainer(Trainer):
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.Adam(get_params(), lr=self.config.lr)
 
-        best_val_loss = 1_000_000
+        best_val_loss = float('inf')
 
         for epoch in range(num_epochs):
             model.train()
