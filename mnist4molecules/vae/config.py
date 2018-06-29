@@ -1,9 +1,8 @@
-from mnist4molecules.config import get_train_parser as \
-    get_common_train_parser, get_sample_parser as get_common_sample_parser
+import argparse
 
 
-def get_train_parser():
-    parser = get_common_train_parser()
+def get_parser():
+    parser = argparse.ArgumentParser()
 
     # Model
     model_arg = parser.add_argument_group('Model')
@@ -77,13 +76,6 @@ def get_train_parser():
     return parser
 
 
-def get_sample_parser():
-    parser = get_common_sample_parser()
-
-    # Sample
-    sample_arg = parser.add_argument_group('Sample')
-    sample_arg.add_argument('--n_len',
-                            type=int, default=150,
-                            help='Maximum sampling len')
-
-    return parser
+def get_config():
+    parser = get_parser()
+    return parser.parse_known_args()[0]

@@ -1,23 +1,24 @@
-import pandas as pd
+import sys
+sys.path.insert(0, '..')
+
 import torch
 
-from mnist4molecules.config import get_config
-from mnist4molecules.utils import PandasDataset, get_device, set_logger
-from mnist4molecules.vae.config import get_train_parser
+from mnist4molecules.vae.config import get_parser
 from mnist4molecules.vae.corpus import OneHotCorpus
 from mnist4molecules.vae.model import VAE
 from mnist4molecules.vae.trainer import VAETrainer
+from utils import add_train_args, read_smiles_csv, set_seed
 
-if __name__ == '__main__':
-    config = get_config(get_train_parser())
-    set_logger(config)
 
-    train = pd.read_csv(config.train_load, usecols=['SMILES'])
-    train = PandasDataset(train)
+def main(config):
+    set_seed(config.seed)
 
-    device = get_device(config)
+    train = read_smiles_csv(config.train_load)
+
     corpus = OneHotCorpus(config.n_batch, device)
-    train = corpus.fit_transform(train)
+    train = corpus.fit(train).transform(train)
+
+    device = torch.device(config.device)
 
     model = VAE(corpus.vocab, config).to(device)
 
@@ -27,3 +28,9 @@ if __name__ == '__main__':
     torch.save(model.state_dict(), config.model_save)
     torch.save(config, config.config_save)
     torch.save(corpus.vocab, config.vocab_save)
+
+
+if __name__ == '__main__':
+    parser = add_train_args(get_parser())
+    config = parser.parse_known_args()[0]
+    main(config)
