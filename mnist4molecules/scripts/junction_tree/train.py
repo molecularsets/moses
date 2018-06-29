@@ -1,36 +1,34 @@
-import pandas as pd
+import sys
+sys.path.insert(0, '..')
+
 import rdkit
 import torch
 import torch.nn as nn
 
-from mnist4molecules.config import get_config
-from mnist4molecules.junction_tree.config import get_train_parser
+from mnist4molecules.junction_tree.config import get_parser
 from mnist4molecules.junction_tree.datautils import JTreeCorpus
 from mnist4molecules.junction_tree.jtnn.jtnn_vae import JTNNVAE
 from mnist4molecules.junction_tree.trainer import JTreeTrainer
-from mnist4molecules.utils import PandasDataset, get_device, set_logger
+from utils import add_train_args, read_smiles_csv, set_seed
 
-if __name__ == '__main__':
 
-    torch.manual_seed(0)
+lg = rdkit.RDLogger.logger()
+lg.setLevel(rdkit.RDLogger.CRITICAL)
 
-    lg = rdkit.RDLogger.logger()
-    lg.setLevel(rdkit.RDLogger.CRITICAL)
 
-    config = get_config(get_train_parser())
-    set_logger(config)
+def main(config):
+    set_seed(config.seed)
 
-    device = get_device(config)
+    device = torch.device(config.device)
 
-    data = pd.read_csv(config.train_load, usecols=['SMILES'])
-    corpus = JTreeCorpus(config.batch, device)
-    train_dataset = PandasDataset(data)
+    data = read_smiles_csv(config.train_load)
+    corpus = JTreeCorpus(config.n_batch, device)
 
     if config.vocab_load is not None:
         vocab = torch.load(config.vocab_load)
-        train_dataloader = corpus.fit(vocabulary=vocab).transform(train_dataset)
+        train_dataloader = corpus.fit(vocabulary=vocab).transform(data)
     else:
-        train_dataloader = corpus.fit(dataset=train_dataset).transform(train_dataset)
+        train_dataloader = corpus.fit(dataset=data).transform(data)
 
     model = JTNNVAE(corpus.vocab, config.hidden, config.latent, config.depth)
     model = model.to(device=device)
@@ -51,3 +49,9 @@ if __name__ == '__main__':
 
     trainer = JTreeTrainer(config)
     trainer.fit(model, train_dataloader)
+
+
+if __name__ == '__main__':
+    parser = add_train_args(get_parser())
+    config = parser.parse_known_args()[0]
+    main(config)
