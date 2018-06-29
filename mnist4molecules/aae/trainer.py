@@ -122,7 +122,7 @@ class AAETrainer:
         def collate(data):
             data.sort(key=lambda x: len(x), reverse=True)
             
-            tensors = [model.string2tensor(string, add_bos=True, add_eos=True) for string in data]
+            tensors = [model.string2tensor(string) for string in data]
             lengths = torch.tensor([len(t) for t in tensors], dtype=torch.long, device=model.device)
 
             encoder_inputs = pad_sequence(tensors, batch_first=True, padding_value=model.vocabulary.pad)
@@ -136,8 +136,8 @@ class AAETrainer:
 
             return (encoder_inputs, encoder_input_lengths), (decoder_inputs, decoder_input_lengths), (decoder_targets, decoder_target_lengths)
 
-        train_loader = DataLoader(train_data, batch_size=self.config.batch_size, shuffle=True, collate_fn=collate)
-        val_loader = None if val_data is None else DataLoader(val_data, batch_size=self.config.batch_size, shuffle=False, collate_fn=collate)
+        train_loader = DataLoader(train_data, batch_size=self.config.n_batch, shuffle=True, collate_fn=collate)
+        val_loader = None if val_data is None else DataLoader(val_data, batch_size=self.config.n_batch, shuffle=False, collate_fn=collate)
 
         self._pretrain(model, train_loader, val_loader)
         self._train(model, train_loader, val_loader)

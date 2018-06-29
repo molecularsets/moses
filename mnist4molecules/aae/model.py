@@ -72,7 +72,7 @@ class Discriminator(nn.Module):
 
 
 class AAE(nn.Module):
-    def __init__(self, config, vocabulary):
+    def __init__(self, vocabulary, config):
         super(AAE, self).__init__()
 
         self.vocabulary = vocabulary
@@ -101,31 +101,17 @@ class AAE(nn.Module):
     def forward(self, *args, **kwargs):
         return self.sample(*args, **kwargs)
 
-    def string2tensor(self, string, add_bos=False, add_eos=False):
-        ids = [self.vocabulary.stoi[c] for c in string]
-
-        if add_bos:
-            ids = [self.vocabulary.bos] + ids
-        if add_eos:
-            ids = ids + [self.vocabulary.eos]
-
+    def string2tensor(self, string):
+        ids = self.vocabulary.string2ids(string, add_bos=True, add_eos=True)
         tensor = torch.tensor(ids, dtype=torch.long, device=self.device)
 
         return tensor
 
     def tensor2string(self, tensor):
         ids = tensor.tolist()
-
-        if ids[0] == self.vocabulary.bos:
-            ids = ids[1:]
-        if ids[-1] == self.vocabulary.eos:
-            ids = ids[:-1]
-
-        chars = [self.vocabulary.itos[id] for id in ids]
-        string = ''.join(chars)
+        string = self.vocabulary.ids2string(ids, rem_bos=True, rem_eos=True)
 
         return string
-
 
     def sample_latent(self, n):
         return torch.randn(n, self.latent_size, device=self.device)
@@ -152,11 +138,11 @@ class AAE(nn.Module):
             lengths[~is_end] += 1
 
             prevs = currents
-
+        
         if len(samples):
             samples = torch.cat(samples, dim=-1)
             samples = [self.tensor2string(t[:l]) for t, l in zip(samples, lengths)]
         else:
             samples = ['' for _ in range(n)]
-
+        
         return samples

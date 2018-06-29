@@ -1,0 +1,1 @@
+Adversarial autoencoder: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5355231/
