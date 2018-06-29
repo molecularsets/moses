@@ -8,6 +8,9 @@ from mnist4molecules.vae.misc import CosineAnnealingLRWithRestart, KLAnnealer, \
 
 
 class VAETrainer:
+    def __init__(self, config):
+        self.config = config
+
     def fit(self, model, data):
         model.train()
 

@@ -15,10 +15,10 @@ def main(config):
 
     train = read_smiles_csv(config.train_load)
 
+    device = torch.device(config.device)
+
     corpus = OneHotCorpus(config.n_batch, device)
     train = corpus.fit(train).transform(train)
-
-    device = torch.device(config.device)
 
     model = VAE(corpus.vocab, config).to(device)
 
