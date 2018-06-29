@@ -20,7 +20,6 @@ class PandasDataset(Dataset):
     def __init__(self, df):
         super().__init__()
 
-        print(df.columns)
         self.df = df.loc[:, ['SMILES']].iloc[:, 0]
 
     def __len__(self):

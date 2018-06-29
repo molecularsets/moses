@@ -2,8 +2,7 @@ import pandas as pd
 import torch
 
 from mnist4molecules.config import get_config
-from mnist4molecules.utils import PandasDataset, get_device
-from mnist4molecules.utils import set_logger
+from mnist4molecules.utils import PandasDataset, get_device, set_logger
 from mnist4molecules.vae.config import get_train_parser
 from mnist4molecules.vae.corpus import OneHotCorpus
 from mnist4molecules.vae.model import VAE

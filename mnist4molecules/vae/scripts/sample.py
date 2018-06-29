@@ -3,7 +3,7 @@ import torch
 import tqdm
 
 from mnist4molecules.config import get_config
-from mnist4molecules.utils import get_device
+from mnist4molecules.utils import get_device, set_logger
 from mnist4molecules.vae.config import get_sample_parser
 from mnist4molecules.vae.model import VAE
 

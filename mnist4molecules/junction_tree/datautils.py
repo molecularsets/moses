@@ -3,8 +3,9 @@ import copy
 import rdkit.Chem as Chem
 import tqdm
 from torch.utils.data import DataLoader
+
+from mnist4molecules.junction_tree.jtnn.mol_tree import MolTree
 from mnist4molecules.utils import Corpus
-from jtnn.mol_tree import MolTree
 
 
 class JTreeVocab(object):
