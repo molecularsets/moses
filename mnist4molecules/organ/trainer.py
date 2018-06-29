@@ -53,9 +53,9 @@ class ORGANTrainer:
 
             return prevs, nexts, lens
 
-        train_loader = DataLoader(train_data, batch_size=self.config.batch_size, shuffle=True, collate_fn=collate)
+        train_loader = DataLoader(train_data, batch_size=self.config.n_batch, shuffle=True, collate_fn=collate)
         if val_data is not None:
-            val_loader = DataLoader(val_data, batch_size=self.config.batch_size, shuffle=False, collate_fn=collate)
+            val_loader = DataLoader(val_data, batch_size=self.config.n_batch, shuffle=False, collate_fn=collate)
 
         criterion = nn.CrossEntropyLoss(ignore_index=model.vocabulary.pad)
         optimizer = torch.optim.Adam(model.generator.parameters(), lr=self.config.lr)
@@ -111,9 +111,9 @@ class ORGANTrainer:
 
             return inputs, targets
 
-        train_loader = DataLoader(train_data, batch_size=self.config.batch_size, shuffle=True, collate_fn=collate)
+        train_loader = DataLoader(train_data, batch_size=self.config.n_batch, shuffle=True, collate_fn=collate)
         if val_data is not None:
-            val_loader = DataLoader(val_data, batch_size=self.config.batch_size, shuffle=False, collate_fn=collate)
+            val_loader = DataLoader(val_data, batch_size=self.config.n_batch, shuffle=False, collate_fn=collate)
 
         criterion = nn.BCEWithLogitsLoss()
         optimizer = torch.optim.Adam(model.discriminator.parameters(), lr=self.config.lr)
@@ -141,7 +141,7 @@ class ORGANTrainer:
 
         for i in pg_iters:
             model.eval()
-            sequences, rewards, lengths = model.rollout(self.config.batch_size, self.config.rollouts, self.config.max_length)
+            sequences, rewards, lengths = model.rollout(self.config.n_batch, self.config.rollouts, self.config.max_length)
             model.train()
 
             lengths, indices = torch.sort(lengths, descending=True)
@@ -158,14 +158,14 @@ class ORGANTrainer:
 
             if i % 2 == 0:
                 model.generator.eval()
-                discriminator_inputs, _ = model.sample_tensor(self.config.batch_size, self.config.max_length)
-                discriminator_targets = torch.zeros(self.config.batch_size, 1, device=model.device)
+                discriminator_inputs, _ = model.sample_tensor(self.config.n_batch, self.config.max_length)
+                discriminator_targets = torch.zeros(self.config.n_batch, 1, device=model.device)
             else:
-                samples = random.sample(train_data, self.config.batch_size)
+                samples = random.sample(train_data, self.config.n_batch)
                 samples.sort(key=lambda x: len(x), reverse=True)
                 tensors = [model.string2tensor(s, add_bos=True, add_eos=True) for s in samples]
                 discriminator_inputs = pad_sequence(tensors, batch_first=True, padding_value=model.vocabulary.pad)
-                discriminator_targets = torch.ones(self.config.batch_size, 1, device=model.device)
+                discriminator_targets = torch.ones(self.config.n_batch, 1, device=model.device)
 
             discriminator_outputs = model.discriminator_forward(discriminator_inputs)
             discriminator_loss = discriminator_criterion(discriminator_outputs, discriminator_targets)

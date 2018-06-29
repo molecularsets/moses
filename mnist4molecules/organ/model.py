@@ -27,37 +27,6 @@ class Generator(nn.Module):
         return x, lengths, states
 
 
-'''class Discriminator(nn.Module):
-    def __init__(self, embedding_layer, convs):
-        super(Discriminator, self).__init__()
-
-        sum_filters = sum([f for f, _ in convs])
-        self.min_seq_length = max(map(lambda x: x[1], convs))
-
-        self.embedding_layer = embedding_layer
-        self.conv_layers = nn.ModuleList([nn.Conv2d(1, f, kernel_size=(n, embedding_layer.embedding_dim)) for f, n in convs])
-        self.highway_layer = nn.Linear(sum_filters, sum_filters)
-        self.output_layer = nn.Linear(sum_filters, 1)
-
-    def forward(self, x):
-        if x.shape[-1] < self.min_seq_length:
-            padding = torch.empty(x.shape[0], self.min_seq_length - x.shape[1], dtype=x.dtype, device=x.device)
-            padding.fill_(self.embedding_layer.padding_idx)
-            x = torch.cat([x, padding], dim=-1)
-
-        x = self.embedding_layer(x)
-        x = x.unsqueeze(1) 
-        convs = [F.elu(conv_layer(x)).squeeze(3) for conv_layer in self.conv_layers]
-        x = [F.max_pool1d(c, c.shape[2]).squeeze(2) for c in convs]
-        x = torch.cat(x, dim=1)
-        h = self.highway_layer(x)
-        t = F.sigmoid(h)
-        x = t * F.elu(h) + (1 - t) * x
-        out = self.output_layer(x)
-
-        return out'''
-
-
 class Discriminator(nn.Module):
     def __init__(self, embedding_layer, layers):
         super(Discriminator, self).__init__()
@@ -85,7 +54,7 @@ class Discriminator(nn.Module):
 
 
 class ORGAN(nn.Module):
-    def __init__(self, config, vocabulary, reward_fn=None):
+    def __init__(self, vocabulary, config, reward_fn=None):
         super(ORGAN, self).__init__()
 
         self.reward_fn = reward_fn
@@ -111,28 +80,15 @@ class ORGAN(nn.Module):
     def forward(self, *args, **kwargs):
         return self.sample(*args, **kwargs)
 
-    def string2tensor(self, string, add_bos=False, add_eos=False):
-        ids = [self.vocabulary.stoi[c] for c in string]
-
-        if add_bos:
-            ids = [self.vocabulary.bos] + ids
-        if add_eos:
-            ids = ids + [self.vocabulary.eos]
-
+    def string2tensor(self, string):
+        ids = self.vocabulary.string2ids(string, add_bos=True, add_eos=True)
         tensor = torch.tensor(ids, dtype=torch.long, device=self.device)
 
         return tensor
 
-    def tensor2string(self, tensor, rem_bos=True, rem_eos=True):
+    def tensor2string(self, tensor):
         ids = tensor.tolist()
-
-        if rem_bos and ids[0] == self.vocabulary.bos:
-            ids = ids[1:]
-        if rem_eos and ids[-1] == self.vocabulary.eos:
-            ids = ids[:-1]
-
-        chars = [self.vocabulary.itos[id] for id in ids]
-        string = ''.join(chars)
+        string = self.vocabulary.ids2string(ids, rem_bos=True, rem_eos=True)
 
         return string
 
