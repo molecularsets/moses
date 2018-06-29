@@ -1,66 +1,76 @@
-import abc
-import logging
-
-import torch
-from torch.utils.data import Dataset
-
-logger = logging.getLogger(__name__)
+class SS:
+    bos = '<bos>'
+    eos = '<eos>'
+    pad = '<pad>'
+    unk = '<unk>'
 
 
-class Trainer(abc.ABC):
-    def __init__(self, config):
-        self.config = config
+class CharVocab:
+    @classmethod
+    def from_data(cls, data, *args, **kwargs):
+        chars = set()
+        for string in data:
+            chars.update(string)
 
-    @abc.abstractmethod
-    def fit(self, model, data):
-        pass
+        return cls(chars, *args, **kwargs)
 
+    def __init__(self, chars, ss=SS):
+        if (ss.bos in chars) or (ss.eos in chars) or (ss.pad in chars) or (ss.unk in chars):
+            raise ValueError('SS in chars')
 
-class PandasDataset(Dataset):
-    def __init__(self, df):
-        super().__init__()
+        all_syms = list(chars) + [ss.bos, ss.eos, ss.pad, ss.unk]
 
-        self.df = df.loc[:, ['SMILES']].iloc[:, 0]
+        self.ss = ss
+        self.c2i = {c: i for i, c in enumerate(all_syms)}
+        self.i2c = {i: c for i, c in enumerate(all_syms)}
 
     def __len__(self):
-        return len(self.df)
+        return len(self.c2i)
 
-    def __getitem__(self, idx):
-        return self.df.iloc[idx]
+    @property
+    def bos(self):
+        return self.c2i[self.ss.bos]
 
+    @property
+    def eos(self):
+        return self.c2i[self.ss.eos]
 
-class Vocab(abc.ABC):
-    @abc.abstractmethod
-    def reverse(self, x):
-        pass
+    @property
+    def pad(self):
+        return self.c2i[self.ss.pad]
 
+    @property
+    def unk(self):
+        return self.c2i[self.ss.unk]
 
-class Corpus(abc.ABC):
-    @abc.abstractmethod
-    def fit(self, dataset):
-        pass
+    def char2id(self, char):
+        if char not in self.c2i:
+            return self.unk
 
-    @abc.abstractmethod
-    def transform(self, dataset):
-        pass
+        return self.c2i[char]
 
-    def fit_transform(self, dataset):
-        return self.fit(dataset).transform(dataset)
+    def id2char(self, id):
+        if id not in self.i2c:
+            return self.ss.unk
 
+        return self.i2c[id]
 
-def get_device(config):
-    if config.device_code >= 0:
-        if torch.cuda.is_available():
-            logger.info(f"Using GPU:{config.device_code}")
-            return torch.device(f'cuda:{config.device_code}')
-        else:
-            logger.warning("GPU is't available, CPU will be used")
-            return torch.device('cpu')
-    else:
-        logger.info("Using CPU")
-        return torch.device('cpu')
+    def string2ids(self, string, add_bos=False, add_eos=False):
+        ids = [self.char2id(c) for c in string]
 
+        if add_bos:
+            ids = [self.bos] + ids
+        if add_eos:
+            ids = ids + [self.eos]
 
-def set_logger(config):
-    logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s',
-                        level=getattr(logging, config.log_level.upper()))
+        return ids
+
+    def ids2string(self, ids, rem_bos=True, rem_eos=True):
+        if rem_bos and ids[0] == self.bos:
+            ids = ids[1:]
+        if rem_eos and ids[-1] == self.eos:
+            ids = ids[:-1]
+
+        string = ''.join([self.id2char(id) for id in ids])
+
+        return string

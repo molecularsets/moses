@@ -1,32 +1,36 @@
-import argparse
+import torch
+import re
+import pandas as pd
+import random
 
-from attrdict import AttrDict
+def add_common_arg(parser):
+    def torch_device(arg):
+        if re.match('^(cuda(:[0-9]+)?|cpu)$', arg) is None:
+            raise argparse.ArgumentTypeError('Wrong device format: {}'.format(arg))
 
-
-def get_base_parser():
-    parser = argparse.ArgumentParser()
+        if arg != 'cpu':
+            splited_device = arg.split(':')
+            if not torch.cuda.is_available() or \
+            (len(splited_device) > 1 and splited_device[1] > torch.cuda.device_count()):
+                raise argparse.ArgumentTypeError('Wrong device: {} is not available'.format(arg))
+        
+        return arg
 
     # Base
-    base_arg = parser.add_argument_group('Base')
-    base_arg.add_argument('--device_code',
+    parser.add_argument('--device',
+                          type=torch_device, default='cuda',
+                          help='Device to run: "cpu" or "cuda:<device number>"')
+    parser.add_argument('--seed',
                           type=int, default=0,
-                          help='Device code to run (-1 for cpu)')
-    base_arg.add_argument('--log_level',
-                          type=str, default='info',
-                          choices=[
-                              'notset', 'debug', 'info',
-                              'warning', 'error', 'critical'
-                          ],
-                          help='Logging level to use')
+                          help='Seed')
 
     return parser
 
 
-def get_train_parser():
-    parser = get_base_parser()
-
+def add_train_args(parser):
     # Common
     common_arg = parser.add_argument_group('Common')
+    add_common_arg(common_arg)
     common_arg.add_argument('--train_load',
                             type=str, required=True,
                             help='Input data in csv format to train')
@@ -43,11 +47,10 @@ def get_train_parser():
     return parser
 
 
-def get_sample_parser():
-    parser = get_base_parser()
-
+def add_sample_args(parser):
     # Common
     common_arg = parser.add_argument_group('Common')
+    add_common_arg(common_arg)
     common_arg.add_argument('--model_load',
                             type=str, default='model.pt',
                             help='Where to load the model')
@@ -63,9 +66,21 @@ def get_sample_parser():
     common_arg.add_argument('--gen_save',
                             type=str, default='gen.csv',
                             help='Where to save the gen molecules')
+    common_arg.add_argument("--n_batch", 
+                            type=int, default=32, 
+                            help="Size of batch")
+    common_arg.add_argument("--max_len", 
+                            type=int, default=100, 
+                            help="Max of length of SMILES")
 
     return parser
 
 
-def get_config(parser):
-    return AttrDict(parser.parse_known_args()[0].__dict__)
+def read_smiles_csv(path):
+    return pd.read_csv(path, usecols=['SMILES'], squeeze=True).tolist()
+
+
+def set_seed(seed):
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    random.seed(seed)
