@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
     device = get_device(config)
 
-    data = pd.read_csv(config.train_load, usecols=['SMILES'], nrows=200)
+    data = pd.read_csv(config.train_load, usecols=['SMILES'])
     corpus = JTreeCorpus(config.batch, device)
     train_dataset = PandasDataset(data)
 

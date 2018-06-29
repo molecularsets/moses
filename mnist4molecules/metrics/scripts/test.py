@@ -7,9 +7,11 @@ class test_metrics(unittest.TestCase):
     def setUp(self):
         self.ref = ['Oc1ccccc1-c1cccc2cnccc12',
                     'COc1cccc(NC(=O)Cc2coc3ccc(OC)cc23)c1']
-        self.gen = ['CNC', 'Oc1ccccc1-c1cccc2cnccc12', 'INVALID', 'CCCP',
-                    'Cc1noc(C)c1CN(C)C(=O)Nc1cc(F)cc(F)c1']
-        self.target = {'valid': 0.8,
+        self.gen = ['CNC', 'Oc1ccccc1-c1cccc2cnccc12',
+                    'INVALID', 'CCCP',
+                    'Cc1noc(C)c1CN(C)C(=O)Nc1cc(F)cc(F)c1',
+                    'Cc1nc(NCc2ccccc2)no1-c1ccccc1']
+        self.target = {'valid': 2/3,
                        'unique@3': 1.0,
                        'FCD': 28.246311814725665,
                        'morgan': 0.31525856535881758,
@@ -20,7 +22,6 @@ class test_metrics(unittest.TestCase):
 
     def test_get_all_metrics(self):
         metrics = get_all_metrics(self.ref, self.gen, k=3)
-        print(metrics)
         for metric in self.target:
             assert np.allclose(metrics[metric], self.target[
                 metric]), "Metric `{}` value does not match expected value".format(

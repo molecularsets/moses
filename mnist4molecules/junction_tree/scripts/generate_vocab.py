@@ -21,7 +21,7 @@ if __name__ == '__main__':
 
     config = AttrDict(parser.parse_known_args()[0].__dict__)
 
-    data = pd.read_csv(config.train_load, usecols=['SMILES'], nrows=200)
+    data = pd.read_csv(config.train_load, usecols=['SMILES'])
     dataset = PandasDataset(data)
 
     clusters = set()

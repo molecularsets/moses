@@ -56,7 +56,14 @@ def get_mol(smiles_or_mol):
     Loads SMILES/molecule into RDKit's object
     '''
     if isinstance(smiles_or_mol, str):
-        return Chem.MolFromSmiles(smiles_or_mol)
+        mol = Chem.MolFromSmiles(smiles_or_mol)
+        if mol is None:
+            return None
+        try:
+            Chem.SanitizeMol(mol)
+        except ValueError:
+            return None
+        return mol
     else:
         return smiles_or_mol
 
