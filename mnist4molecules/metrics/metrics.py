@@ -1,10 +1,12 @@
-import numpy as np
-from .utils_fcd import get_predictions, calculate_frechet_distance
-from .utils import compute_fragments, average_max_tanimoto, \
-                   compute_scaffolds, tanimoto, fingerprints, \
-                   get_mol, canonic_smiles, mapper, mol_passes_filters
-from scipy.spatial.distance import cosine
 import warnings
+
+import numpy as np
+from scipy.spatial.distance import cosine
+
+from .utils import compute_fragments, average_max_tanimoto, \
+    compute_scaffolds, tanimoto, fingerprints, \
+    get_mol, canonic_smiles, mapper, mol_passes_filters
+from .utils_fcd import get_predictions, calculate_frechet_distance
 
 
 def get_all_metrics(ref, gen, k=[1000, 10000], n_jobs=1, gpu=-1):
@@ -30,12 +32,16 @@ def get_all_metrics(ref, gen, k=[1000, 10000], n_jobs=1, gpu=-1):
     if not isinstance(k, (list, tuple)):
         k = [k]
     for k_ in k:
-        metrics['unique@{}'.format(k_)] = fraction_unique(gen, k_, n_jobs=n_jobs)
+        metrics['unique@{}'.format(k_)] = fraction_unique(gen, k_,
+                                                          n_jobs=n_jobs)
 
     metrics['FCD'] = frechet_chembl_distance(ref, gen, gpu=gpu)
-    metrics['morgan'] = morgan_similarity(ref_mols, gen_mols, n_jobs=n_jobs, gpu=gpu)
-    metrics['fragments'] = fragment_similarity(ref_mols, gen_mols, n_jobs=n_jobs)
-    metrics['scaffolds'] = scaffold_similarity(ref_mols, gen_mols, n_jobs=n_jobs)
+    metrics['morgan'] = morgan_similarity(ref_mols, gen_mols, n_jobs=n_jobs,
+                                          gpu=gpu)
+    metrics['fragments'] = fragment_similarity(ref_mols, gen_mols,
+                                               n_jobs=n_jobs)
+    metrics['scaffolds'] = scaffold_similarity(ref_mols, gen_mols,
+                                               n_jobs=n_jobs)
     metrics['internal_diversity'] = internal_diversity(gen_mols, n_jobs=n_jobs)
     metrics['filters'] = fraction_passes_filters(gen_mols, n_jobs=n_jobs)
     return metrics
@@ -59,7 +65,7 @@ def internal_diversity(gen, type='morgan', n_jobs=1):
     1/|A|^2 sum_{x, y in AxA} (1-tanimoto(x, y))
     '''
     gen_fps = fingerprints(gen, type=type, n_jobs=n_jobs)
-    return (1-tanimoto(gen_fps, gen_fps)).mean()
+    return (1 - tanimoto(gen_fps, gen_fps)).mean()
 
 
 def fraction_unique(gen, k=None, n_jobs=1, check_validity=True):
@@ -71,7 +77,9 @@ def fraction_unique(gen, k=None, n_jobs=1, check_validity=True):
     '''
     if k is not None:
         if len(gen) < k:
-            warnings.warn("Can't compute unique@{}. gen contains only {} molecules".format(k, len(gen)))
+            warnings.warn(
+                "Can't compute unique@{}. gen contains only {} molecules".format(
+                    k, len(gen)))
         gen = gen[:k]
     canonic = set(mapper(n_jobs)(canonic_smiles, gen))
     if None in canonic and check_validity:
@@ -96,8 +104,9 @@ def remove_invalid(gen, canonize=True, n_jobs=1):
         mols = mapper(n_jobs)(get_mol, gen)
         return [gen_ for gen_, mol in zip(gen, mols) if mol is not None]
     else:
-        return [x for x in mapper(n_jobs)(canonic_smiles, gen) if x is not None]
-    
+        return [x for x in mapper(n_jobs)(canonic_smiles, gen) if
+                x is not None]
+
 
 def morgan_similarity(ref, gen, n_jobs=1, gpu=-1):
     return fingerprint_similarity(ref, gen, 'morgan', n_jobs=n_jobs, gpu=gpu)
@@ -124,8 +133,10 @@ def fingerprint_similarity(ref, gen, type='morgan', n_jobs=1, gpu=-1):
     '''
     Computes average max similarities of gen SMILES to ref SMILES
     '''
-    ref_fp = fingerprints(ref, n_jobs=n_jobs, type=type, morgan__r=2, morgan__n=1024)
-    gen_fp = fingerprints(gen, n_jobs=n_jobs, type=type, morgan__r=2, morgan__n=1024)
+    ref_fp = fingerprints(ref, n_jobs=n_jobs, type=type, morgan__r=2,
+                          morgan__n=1024)
+    gen_fp = fingerprints(gen, n_jobs=n_jobs, type=type, morgan__r=2,
+                          morgan__n=1024)
     similarity = average_max_tanimoto(ref_fp, gen_fp, gpu=gpu)
     return similarity
 
@@ -138,7 +149,7 @@ def count_distance(ref_counts, gen_counts):
     '''
     if len(ref_counts) == 0 or len(gen_counts) == 0:
         return np.nan
-    keys = np.unique(list(ref_counts.keys())+list(gen_counts.keys()))
+    keys = np.unique(list(ref_counts.keys()) + list(gen_counts.keys()))
     ref_vec = np.array([ref_counts.get(k, 0) for k in keys])
     gen_vec = np.array([gen_counts.get(k, 0) for k in keys])
     return 1 - cosine(ref_vec, gen_vec)

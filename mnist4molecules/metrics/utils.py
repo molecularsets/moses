@@ -1,24 +1,27 @@
-from .SA_Score import sascorer
-import numpy as np
+import os
 from collections import Counter
 from functools import partial
 from multiprocessing import Pool
+
+import numpy as np
 import pandas as pd
 import scipy.sparse
 import torch
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import MACCSkeys
-from rdkit.Chem.Scaffolds import MurckoScaffold
-from rdkit.Chem.QED import qed
 from rdkit.Chem.AllChem import GetMorganFingerprintAsBitVect as Morgan
-import os
+from rdkit.Chem.QED import qed
+from rdkit.Chem.Scaffolds import MurckoScaffold
 
+from .SA_Score import sascorer
 
 _base_dir = os.path.split(__file__)[0]
 _mcf = pd.read_csv(os.path.join(_base_dir, 'mcf.csv'))
-_pains = pd.read_csv(os.path.join(_base_dir, 'wehi_pains.csv'), names=['smarts', 'names'])
-_filters = [Chem.MolFromSmarts(x) for x in _mcf.append(_pains)['smarts'].values]
+_pains = pd.read_csv(os.path.join(_base_dir, 'wehi_pains.csv'),
+                     names=['smarts', 'names'])
+_filters = [Chem.MolFromSmarts(x) for x in
+            _mcf.append(_pains)['smarts'].values]
 
 
 def mapper(n_jobs):
@@ -31,15 +34,18 @@ def mapper(n_jobs):
     if n_jobs == 1:
         def _mapper(*args, **kwargs):
             return list(map(*args, **kwargs))
+
         return _mapper
     elif isinstance(n_jobs, int):
         pool = Pool(n_jobs)
+
         def _mapper(*args, **kwargs):
             try:
                 result = pool.map(*args, **kwargs)
             finally:
                 pool.terminate()
             return result
+
         return _mapper
     else:
         return n_jobs.map
@@ -50,7 +56,14 @@ def get_mol(smiles_or_mol):
     Loads SMILES/molecule into RDKit's object
     '''
     if isinstance(smiles_or_mol, str):
-        return Chem.MolFromSmiles(smiles_or_mol)
+        mol = Chem.MolFromSmiles(smiles_or_mol)
+        if mol is None:
+            return None
+        try:
+            Chem.SanitizeMol(mol)
+        except ValueError:
+            return None
+        return mol
     else:
         return smiles_or_mol
 
@@ -90,6 +103,7 @@ def get_n_rings(mol):
     r = len([len(x) for x in mol.GetRingInfo().AtomRings()])
     return r
 
+
 def fragmenter(mol):
     '''
     fragment mol using BRICS and return smiles list
@@ -115,7 +129,8 @@ def compute_scaffolds(mol_list, n_jobs=1, min_rings=2):
     '''
     scaffolds = Counter()
     map_ = mapper(n_jobs)
-    scaffolds = Counter(map_(partial(compute_scaffold, min_rings=min_rings), mol_list))
+    scaffolds = Counter(
+        map_(partial(compute_scaffold, min_rings=min_rings), mol_list))
     if None in scaffolds:
         scaffolds.pop(None)
     return scaffolds
@@ -125,7 +140,7 @@ def compute_scaffold(mol, min_rings=2):
     mol = get_mol(mol)
     scaffold = MurckoScaffold.GetScaffoldForMol(mol)
     n_rings = get_n_rings(scaffold)
-    scaffold_smiles = Chem.MolToSmiles(scaffold) 
+    scaffold_smiles = Chem.MolToSmiles(scaffold)
     if scaffold_smiles == '' or n_rings < min_rings:
         return None
     else:
@@ -145,18 +160,21 @@ def average_max_tanimoto(stock_vecs, gen_vecs, batch_size=10000, gpu=-1):
         device = "cpu"
     best_tanimoto = np.zeros(len(gen_vecs))
     for j in range(0, stock_vecs.shape[0], batch_size):
-        x_stock = torch.tensor(stock_vecs[j:j+batch_size]).to(device).float()
+        x_stock = torch.tensor(stock_vecs[j:j + batch_size]).to(device).float()
         for i in range(0, gen_vecs.shape[0], batch_size):
-            y_gen =  torch.tensor(gen_vecs[i:i+batch_size]).to(device).float()
+            y_gen = torch.tensor(gen_vecs[i:i + batch_size]).to(device).float()
             y_gen = y_gen.transpose(0, 1)
             tp = torch.mm(x_stock, y_gen)
-            jac = (tp / (x_stock.sum(1, keepdim=True) + y_gen.sum(0, keepdim=True) - tp)).cpu().numpy()
+            jac = (tp / (x_stock.sum(1, keepdim=True) + y_gen.sum(0,
+                                                                  keepdim=True) - tp)).cpu().numpy()
             jac[np.isnan(jac)] = 1
-            best_tanimoto[i:i+y_gen.shape[1]] = np.maximum(best_tanimoto[i:i+y_gen.shape[1]], jac.max(0))
+            best_tanimoto[i:i + y_gen.shape[1]] = np.maximum(
+                best_tanimoto[i:i + y_gen.shape[1]], jac.max(0))
     return np.mean(best_tanimoto)
 
 
-def fingerprint(smiles_or_mol, type='maccs', dtype=None, morgan__r=2, morgan__n=1024, *args, **kwargs):
+def fingerprint(smiles_or_mol, type='maccs', dtype=None, morgan__r=2,
+                morgan__n=1024, *args, **kwargs):
     '''
     Generates fingerprint for SMILES
     If smiles is invalid, returns None
@@ -170,13 +188,14 @@ def fingerprint(smiles_or_mol, type='maccs', dtype=None, morgan__r=2, morgan__n=
     if molecule is None:
         return None
     if ftype == 'maccs':
-        keys  = MACCSkeys.GenMACCSKeys(molecule)
+        keys = MACCSkeys.GenMACCSKeys(molecule)
         keys = np.array(keys.GetOnBits())
         fingerprint = np.zeros(166, dtype='uint8')
         if len(keys) != 0:
-            fingerprint[keys-1] = 1 # We drop 0-th key that is always zero
+            fingerprint[keys - 1] = 1  # We drop 0-th key that is always zero
     elif ftype == 'morgan':
-        fingerprint = np.asarray(Morgan(molecule, morgan__r, nBits=morgan__n), dtype='uint8')
+        fingerprint = np.asarray(Morgan(molecule, morgan__r, nBits=morgan__n),
+                                 dtype='uint8')
     else:
         raise ValueError("Unknown fingerprint type {}".format(ftype))
     if dtype is not None:
@@ -184,7 +203,8 @@ def fingerprint(smiles_or_mol, type='maccs', dtype=None, morgan__r=2, morgan__n=
     return fingerprint
 
 
-def fingerprints(smiles_mols_array, n_jobs=1, already_unique=False, *args, **kwargs):
+def fingerprints(smiles_mols_array, n_jobs=1, already_unique=False, *args,
+                 **kwargs):
     '''
     Computes fingerprints of smiles np.array/list/pd.Series with n_jobs workers. e.g. fingerprints(smiles_mols_array, type='morgan', n_jobs=10)
     Inserts np.NaN to rows corresponding to incorrect smiles. IMPORTANT: if there is at least one np.NaN, the dtype would be float
@@ -192,7 +212,8 @@ def fingerprints(smiles_mols_array, n_jobs=1, already_unique=False, *args, **kwa
     :param n_jobs: number of parralel workers to execute
     :param already_unique: flag for performance reasons, if smiles array is big and already unique. Its value is set to True if smiles_mols_array contain RDKit molecules already.
     '''
-    assert n_jobs > 0 and isinstance(n_jobs, int), 'n_jobs must be positive and integer'
+    assert n_jobs > 0 and isinstance(n_jobs,
+                                     int), 'n_jobs must be positive and integer'
     if isinstance(smiles_mols_array, pd.Series):
         smiles_mols_array = smiles_mols_array.values
     else:
@@ -201,8 +222,9 @@ def fingerprints(smiles_mols_array, n_jobs=1, already_unique=False, *args, **kwa
         already_unique = True
 
     if not already_unique:
-        smiles_mols_array, inv_index = np.unique(smiles_mols_array, return_inverse=True)
-    
+        smiles_mols_array, inv_index = np.unique(smiles_mols_array,
+                                                 return_inverse=True)
+
     if n_jobs > 1:
         if smiles_mols_array.shape[0] < n_jobs:
             n_jobs = smiles_mols_array.shape[0]
@@ -210,24 +232,27 @@ def fingerprints(smiles_mols_array, n_jobs=1, already_unique=False, *args, **kwa
         from functools import partial
         p = Pool(n_jobs)
         try:
-            fps = p.map(partial(fingerprint, *args, **kwargs), smiles_mols_array)
+            fps = p.map(partial(fingerprint, *args, **kwargs),
+                        smiles_mols_array)
         finally:
             p.terminate()
     else:
-        fps = [fingerprint(smiles, *args, **kwargs) for smiles in smiles_mols_array]
-    
-    length = 1 # Need to know the length to convert None into np.array with nan values
+        fps = [fingerprint(smiles, *args, **kwargs) for smiles in
+               smiles_mols_array]
+
+    length = 1  # Need to know the length to convert None into np.array with nan values
     for fp in fps:
         if fp is not None:
             length = fp.shape[-1]
             first_fp = fp
             break
-    fps = [fp if fp is not None else np.array([np.NaN]).repeat(length)[None, :] for fp in fps]
+    fps = [fp if fp is not None else np.array([np.NaN]).repeat(length)[None, :]
+           for fp in fps]
     if scipy.sparse.issparse(first_fp):
         fps = scipy.sparse.vstack(fps).tocsr()
     else:
         fps = np.vstack(fps)
-    if not already_unique: 
+    if not already_unique:
         return fps[inv_index]
     else:
         return fps
@@ -252,10 +277,13 @@ def tanimoto(fingerprints, fingerprints_right=None, mode='pairwise'):
     if mode == 'pairwise':
         if isinstance(fingerprints_right, torch.Tensor):
             fingerprints_right = fingerprints_right.transpose(0, 1)
-            total = fingerprints.sum(1, keepdim=True) + fingerprints_right.sum(0, keepdim=True)
+            total = fingerprints.sum(1, keepdim=True) + fingerprints_right.sum(
+                0, keepdim=True)
         else:
             fingerprints_right = fingerprints_right.T
-            total = fingerprints.sum(1, keepdims=True) + fingerprints_right.sum(0, keepdims=True)
+            total = fingerprints.sum(1,
+                                     keepdims=True) + fingerprints_right.sum(0,
+                                                                             keepdims=True)
         intersection = fingerprints @ fingerprints_right
         union = total - intersection
     elif mode == 'paired':
@@ -277,7 +305,8 @@ def tanimoto(fingerprints, fingerprints_right=None, mode='pairwise'):
     return scores
 
 
-def mol_passes_filters(mol, n_jobs=1, allowed={'C','N','S','O','F','Cl','Br','H'}):
+def mol_passes_filters(mol, n_jobs=1,
+                       allowed={'C', 'N', 'S', 'O', 'F', 'Cl', 'Br', 'H'}):
     '''
     Checks if mol passes MCF and PAINS filters, has only allowed atoms and is not charged
     '''
@@ -286,7 +315,7 @@ def mol_passes_filters(mol, n_jobs=1, allowed={'C','N','S','O','F','Cl','Br','H'
     for smarts in _filters:
         if h_mol.HasSubstructMatch(smarts):
             return False
-    if not all([atom.GetFormalCharge()==0 for atom in mol.GetAtoms()]):
+    if not all([atom.GetFormalCharge() == 0 for atom in mol.GetAtoms()]):
         return False
     if not all([atom.GetSymbol() in allowed for atom in mol.GetAtoms()]):
         return False
