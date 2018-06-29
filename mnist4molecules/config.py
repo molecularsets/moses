@@ -11,6 +11,13 @@ def get_base_parser():
     base_arg.add_argument('--device_code',
                           type=int, default=0,
                           help='Device code to run (-1 for cpu)')
+    base_arg.add_argument('--log_level',
+                          type=str, default='info',
+                          choices=[
+                              'notset', 'debug', 'info',
+                              'warning', 'error', 'critical'
+                          ],
+                          help='Logging level to use')
 
     return parser
 

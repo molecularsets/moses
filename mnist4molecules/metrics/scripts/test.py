@@ -1,8 +1,6 @@
 import unittest
 
-import numpy as np
-from metrics import *
-from rdkit import Chem
+from mnist4molecules.metrics import *
 
 
 class test_metrics(unittest.TestCase):
