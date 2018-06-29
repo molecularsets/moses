@@ -9,6 +9,7 @@ from mnist4molecules.vae.model import VAE
 
 if __name__ == '__main__':
     config = get_config(get_sample_parser())
+    set_logger(config)
     config = torch.load(config.config_load) + config  # Right merge
     vocab = torch.load(config.vocab_load)
 
@@ -24,6 +25,7 @@ if __name__ == '__main__':
         mols = vocab.reverse(x)
         n -= len(mols)
         T.update(len(mols))
+        T.refresh()
         gen.extend(mols)
 
     df = pd.DataFrame(gen, columns=['SMILES'])
