@@ -26,10 +26,11 @@ if __name__ == '__main__':
     model = JTNNVAE(vocab, new_config.hidden, new_config.latent, new_config.depth)
     model.load_state_dict(torch.load(new_config.model_load))
     model = model.to(device=device)
+    model.eval()
 
     gen_smiles = []
     for i in tqdm.tqdm(range(new_config.n_samples)):
-        gen_smiles.append(model.sample_prior())
+        gen_smiles.append(model.sample_prior(prob_decode=True))
 
     df = pd.DataFrame(gen_smiles, columns=['SMILES'])
     df.to_csv(new_config.gen_save, index=False)

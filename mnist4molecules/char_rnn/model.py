@@ -11,40 +11,38 @@ class CharRNN(nn.Module):
     def _device(model):
         return next(model.parameters()).device
 
-    def __init__(self, vocabulary, hidden_size, num_layers, device):
+    def __init__(self, vocabulary, hidden_size, num_layers, dropout, device):
         super(CharRNN, self).__init__()
 
         self.vocabulary = vocabulary
         self.hidden_size = hidden_size
         self.num_layers = num_layers
+        self.dropout = dropout
         self.device = device
 
         self.vocab_size = self.input_size = self.output_size = len(vocabulary)
 
-        self.lstm_layer = nn.LSTM(self.input_size, self.hidden_size, self.num_layers, batch_first=True)
+        self.lstm_layer = nn.LSTM(self.input_size, self.hidden_size, self.num_layers, dropout=self.dropout,
+                                  batch_first=True)
         self.linear_layer = nn.Linear(self.hidden_size, self.output_size)
 
     def forward(self, inputs_list, hidden=None):
         """
-        Forward propagation in CharLSTM
+        Forward propagation in CharRNN
 
         :param inputs_list: list of Tensors (should be sorted and consists of indexes from vocabulary)
         :param hidden: hidden for LSTM layer
         :return: (x, state): output from last layer and hidden from LSTM layer
         """
-        lengths = [len(t) for t in inputs_list]
+        lengths = [t.shape[0] for t in inputs_list]
 
-        x = rnn_utils.pad_sequence(inputs_list, batch_first=True, padding_value=self.vocab_size)
-
-        current_device = x.device
-
-        x = self.one_hot_encoding(x, lengths, self.vocab_size, current_device)
+        x = rnn_utils.pad_sequence(inputs_list, batch_first=True, padding_value=self.vocabulary.pad)
+        x = self.one_hot_encoding(x, lengths, self.device)
         x = rnn_utils.pack_padded_sequence(x, lengths, batch_first=True)
 
         x, state = self.lstm_layer(x, hidden)  # shape x is (seq_len, batch, num_directions * hidden_size)
 
-        # there is a simple way to get tensor
-        x, _ = rnn_utils.pad_packed_sequence(x, batch_first=True, padding_value=self.vocab_size,
+        x, _ = rnn_utils.pad_packed_sequence(x, batch_first=True, padding_value=self.vocabulary.pad,
                                              total_length=lengths[0])
 
         x = torch.cat([t[:l, :] for l, t in zip(lengths, x)], dim=0)  # first dim - length, second dim - hidden
@@ -55,41 +53,43 @@ class CharRNN(nn.Module):
 
         return x, state
 
-    def sample_smiles(self, num, max_length):
-        return [self.sample_smile(max_length) for _ in range(num)]
-
-    def sample_smile(self, max_length):
-        start = torch.tensor(self.vocabulary.bos, dtype=torch.long, device=self.device)
-        new_smile = torch.tensor(self.vocabulary.pad, dtype=torch.long, device=self.device).repeat(max_length)
-
+    def sample_smiles(self, max_length, batch_size):
+        starts = [torch.tensor(self.vocabulary.bos, dtype=torch.long, device=self.device).unsqueeze(0)
+                  for _ in range(batch_size)
+                  ]
+        new_smiles_list = [torch.tensor(self.vocabulary.pad, dtype=torch.long, device=self.device).repeat(max_length)
+                           for _ in range(batch_size)
+                           ]
+        end_smiles_list = [False for _ in range(batch_size)]
         for i in range(max_length):
             hidden = None if i == 0 else hidden
-            output, hidden = self([start.unsqueeze_(0)], hidden)
+            output, hidden = self(starts, hidden)
 
             # probabilities
-            probs = F.softmax(output[0][0], dim=-1)
+            probs = [F.softmax(o, dim=-1) for o in output]
 
             # sample from probabilities
-            topi = torch.multinomial(probs, 1).to(device=self.device)
-            topi = topi[0].item()
+            ind_tops = [torch.multinomial(p, 1) for p in probs]
 
-            if topi == self.vocabulary.eos:
-                new_smile = new_smile[:i]
-                break
-            else:
-                new_smile[i] = topi
+            for j, top in enumerate(ind_tops):
+                if not end_smiles_list[j]:
+                    top_elem = top[0].item()
+                    if top_elem == self.vocabulary.eos:
+                        end_smiles_list[j] = True
+                    else:
+                        new_smiles_list[j][i] = top_elem
 
-            start = torch.tensor(topi, dtype=torch.long, device=self.device)
+            starts = ind_tops
 
-        return new_smile
+        return new_smiles_list
 
-    def one_hot_encoding(self, y_tensor, lengths, vocab_dim, device):
-        y_size = y_tensor.size()
-        y_one_hot = torch.zeros(y_size[0], y_size[1], vocab_dim, device=device)
-        for i, s in enumerate(y_tensor):
+    def one_hot_encoding(self, x_tensor, lengths, device):
+        x_size = x_tensor.size()
+        x_one_hot = torch.zeros(x_size[0], x_size[1], self.vocab_size, device=device)
+        for i, s in enumerate(x_tensor):
             for j, num in enumerate(s):
                 if j < lengths[i]:
-                    t = torch.zeros(vocab_dim, device=device)
+                    t = torch.zeros(self.vocab_size, device=device)
                     t[num] = 1
-                    y_one_hot[i][j] = t
-        return y_one_hot
+                    x_one_hot[i][j] = t
+        return x_one_hot

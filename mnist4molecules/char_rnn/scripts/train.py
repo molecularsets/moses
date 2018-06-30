@@ -17,15 +17,20 @@ if __name__ == '__main__':
     train = pd.read_csv(config.train_load, usecols=['SMILES'])
     train = PandasDataset(train)
 
+    val = pd.read_csv(config.val_load, usecols=['SMILES'])
+    val = PandasDataset(val)
+
     device = get_device(config)
+
     corpus = OneHotCorpus(config.batch, device)
     train_dataloader = corpus.fit(train).transform(train)
+    val_dataloader = corpus.transform(val)
 
-    model = CharRNN(corpus.vocab, config.hidden, config.num_layers, device).to(device)
+    model = CharRNN(corpus.vocab, config.hidden, config.num_layers, config.dropout, device).to(device)
 
-    trainer = CharRNNTrainer(config)
-    trainer.fit(model, train_dataloader)
-
+    # Serialization
     torch.save(config, config.config_save)
     torch.save(corpus.vocab, config.vocab_save)
 
+    trainer = CharRNNTrainer(config)
+    trainer.fit(model, (train_dataloader, val_dataloader))

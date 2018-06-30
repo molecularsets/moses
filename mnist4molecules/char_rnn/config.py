@@ -8,11 +8,13 @@ def get_train_parser():
     # Model
     model_arg = parser.add_argument_group('Model')
 
-    model_arg.add_argument("--hidden", type=int, default=32, help="Hidden size")
+    model_arg.add_argument("--val_load", type=str, help="Input data in csv format to validation")
     model_arg.add_argument("--num_layers", type=int, default=1, help="Number of LSTM layers")
-    model_arg.add_argument("--batch", type=int, default=40, help="Batch size")
-    model_arg.add_argument("--num_epochs", type=int, default=5, help="Number of epochs")
-    model_arg.add_argument('--lr', type=float, default=1e-3, help='Initial lr value')
+    model_arg.add_argument("--hidden", type=int, default=1024, help="Hidden size")
+    model_arg.add_argument("--dropout", type=float, default=0, help="dropout between LSTM layers except for last")
+    model_arg.add_argument("--batch", type=int, default=64, help="Batch size")
+    model_arg.add_argument("--num_epochs", type=int, default=50, help="Number of epochs")
+    model_arg.add_argument('--lr', type=float, default=0.001, help='Initial lr value')
 
     return parser
 
@@ -24,5 +26,6 @@ def get_sample_parser():
     model_arg = parser.add_argument_group('Model')
 
     model_arg.add_argument("--max_len", type=int, default=100, help="Max of length of SMILES")
+    model_arg.add_argument("--batch", type=int, default=50, help="Batch size")
 
     return parser

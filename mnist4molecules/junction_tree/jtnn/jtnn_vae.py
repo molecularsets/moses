@@ -189,7 +189,7 @@ class JTNNVAE(nn.Module):
         mol_vec = torch.randn(1, self.latent_size // 2, device=device)
         mol = self.decode(tree_vec, mol_vec, prob_decode)
         if mol is None:
-            return "EMPTY"  # TODO
+            return self.sample_prior()  # TODO
         else:
             return mol
 
@@ -255,7 +255,7 @@ class JTNNVAE(nn.Module):
         scores = torch.mv(cand_vecs, mol_vec) * 20
 
         if prob_decode:
-            probs = nn.Softmax()(scores.view(1, -1)).squeeze() + 1e-5  # prevent prob = 0
+            probs = nn.Softmax(dim=-1)(scores.view(1, -1)).squeeze() + 1e-5  # prevent prob = 0
             cand_idx = torch.multinomial(probs, probs.numel())
         else:
             _, cand_idx = torch.sort(scores, descending=True)
@@ -263,14 +263,14 @@ class JTNNVAE(nn.Module):
         backup_mol = Chem.RWMol(cur_mol)
         for i in range(cand_idx.numel()):
             cur_mol = Chem.RWMol(backup_mol)
-            pred_amap = cand_amap[cand_idx[i].item()]
+            pred_amap = cand_amap[cand_idx[i].data[0]]
             new_global_amap = copy.deepcopy(global_amap)
 
             for nei_id, ctr_atom, nei_atom in pred_amap:
                 if nei_id == fa_nid: continue
                 new_global_amap[nei_id][nei_atom] = new_global_amap[cur_node.nid][ctr_atom]
 
-            cur_mol = attach_mols(cur_mol, children, [], new_global_amap)  # father is already attached
+            cur_mol = attach_mols(cur_mol, children, [], new_global_amap)
             new_mol = cur_mol.GetMol()
             new_mol = Chem.MolFromSmiles(Chem.MolToSmiles(new_mol))
 

@@ -205,7 +205,7 @@ class JTNNDecoder(nn.Module):
             stop_score = nn.Sigmoid()(self.U_s(stop_hidden) * 20).squeeze()
 
             if prob_decode:
-                backtrack = (torch.bernoulli(1.0 - stop_score.data)[0] == 1)
+                backtrack = (torch.bernoulli(1.0 - stop_score.data).item() == 1)
             else:
                 backtrack = (stop_score.item() < 0.5)
 
@@ -214,13 +214,16 @@ class JTNNDecoder(nn.Module):
                 pred_hidden = torch.cat([new_h, mol_vec], dim=1)
                 pred_hidden = nn.ReLU()(self.W(pred_hidden))
                 pred_score = nn.Softmax(dim=-1)(self.W_o(pred_hidden) * 20)
+
                 if prob_decode:
-                    sort_wid = torch.multinomial(pred_score.data.squeeze(), 5)
+                    b = pred_score.data.squeeze().cpu()  # TODO
+                    sort_wid = torch.multinomial(b, 5)
                 else:
                     _, sort_wid = torch.sort(pred_score, dim=1, descending=True)
                     sort_wid = sort_wid.data.squeeze()
 
                 next_wid = None
+
                 for wid in sort_wid[:5]:
                     slots = self.vocab.get_slots(wid)
                     node_y = MolTreeNode(self.vocab.get_smiles(wid))
@@ -246,10 +249,9 @@ class JTNNDecoder(nn.Module):
                 node_fa, _ = stack[-2]
                 cur_h_nei = [h[(node_y.idx, node_x.idx)] for node_y in node_x.neighbors if node_y.idx != node_fa.idx]
                 if len(cur_h_nei) > 0:
-                    cur_h_nei = torch.stack(cur_h_nei, dim=0).view(1, -1, self.hidden_size)
+                    cur_h_nei = torch.stack(cur_h_nei, dim=0).view(1, -1, self.hidden_size).to(device=device)
                 else:
                     cur_h_nei = zero_pad
-
                 new_h = gru_cell(cur_x, cur_h_nei, self.W_z, self.W_r, self.U_r, self.W_h)
                 h[(node_x.idx, node_fa.idx)] = new_h[0]
                 node_fa.neighbors.append(node_x)

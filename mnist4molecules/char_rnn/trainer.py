@@ -73,4 +73,4 @@ class CharRNNTrainer(Trainer):
                 loss.backward()
                 optimizer.step()
 
-        return running_loss / len(dataloader)
+        return running_loss.item() / len(dataloader)
