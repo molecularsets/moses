@@ -27,7 +27,9 @@ if __name__ == '__main__':
 
     # TODO: n_samples % batch = 0
     for i in tqdm.tqdm(range(new_config.n_samples // new_config.batch)):
-        gen_smiles.extend(vocab.reverse(model.sample_smiles(new_config.max_len, new_config.batch)))
+        smiles_list = model.sample_smiles(new_config.max_len, new_config.batch)
+        for t in smiles_list:
+            gen_smiles.append(vocab.ids2string([i.item() for i in t]))
 
     df = pd.DataFrame(gen_smiles, columns=['SMILES'])
     df.to_csv(new_config.gen_save, index=False)

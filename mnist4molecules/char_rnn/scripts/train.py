@@ -14,17 +14,19 @@ if __name__ == '__main__':
     config = get_config(get_train_parser())
     set_logger(config)
 
+    device = get_device(config)
+
     train = pd.read_csv(config.train_load, usecols=['SMILES'])
     train = PandasDataset(train)
 
-    val = pd.read_csv(config.val_load, usecols=['SMILES'])
-    val = PandasDataset(val)
-
-    device = get_device(config)
-
     corpus = OneHotCorpus(config.batch, device)
+
     train_dataloader = corpus.fit(train).transform(train)
-    val_dataloader = corpus.transform(val)
+
+    if config.val_load is not None:
+        val = pd.read_csv(config.val_load, usecols=['SMILES'])
+        val = PandasDataset(val)
+        val_dataloader = corpus.transform(val)
 
     model = CharRNN(corpus.vocab, config.hidden, config.num_layers, config.dropout, device).to(device)
 
@@ -33,4 +35,8 @@ if __name__ == '__main__':
     torch.save(corpus.vocab, config.vocab_save)
 
     trainer = CharRNNTrainer(config)
-    trainer.fit(model, (train_dataloader, val_dataloader))
+
+    if config.val_load is not None:
+        trainer.fit(model, (train_dataloader, val_dataloader))
+    else:
+        trainer.fit(model, train_dataloader)
