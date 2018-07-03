@@ -1,6 +1,3 @@
-import sys
-sys.path.insert(0, '..')
-
 import rdkit
 import torch
 import torch.nn as nn
@@ -9,8 +6,7 @@ from mnist4molecules.junction_tree.config import get_parser
 from mnist4molecules.junction_tree.datautils import JTreeCorpus
 from mnist4molecules.junction_tree.jtnn.jtnn_vae import JTNNVAE
 from mnist4molecules.junction_tree.trainer import JTreeTrainer
-from utils import add_train_args, read_smiles_csv, set_seed
-
+from mnist4molecules.script_utils import add_train_args, read_smiles_csv, set_seed
 
 lg = rdkit.RDLogger.logger()
 lg.setLevel(rdkit.RDLogger.CRITICAL)

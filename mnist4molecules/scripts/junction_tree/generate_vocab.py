@@ -1,17 +1,12 @@
-import sys
-sys.path.insert(0, '..')
-
 import argparse
 
-import pandas as pd
 import rdkit
 import torch
 import tqdm
 
 from mnist4molecules.junction_tree.datautils import JTreeVocab
 from mnist4molecules.junction_tree.jtnn.mol_tree import MolTree
-from utils import read_smiles_csv
-
+from mnist4molecules.script_utils import read_smiles_csv
 
 lg = rdkit.RDLogger.logger()
 lg.setLevel(rdkit.RDLogger.CRITICAL)
@@ -22,7 +17,7 @@ def main(config):
 
     clusters = set()
 
-    for smiles in tqdm.tqdm(dataset):
+    for smiles in tqdm.tqdm(data):
         mol = MolTree(smiles)
         for c in mol.nodes:
             clusters.add(c.smiles)

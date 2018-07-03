@@ -1,13 +1,10 @@
-import sys
-sys.path.insert(0, '..')
-
 import torch
 
+from mnist4molecules.script_utils import add_train_args, read_smiles_csv, set_seed
 from mnist4molecules.vae.config import get_parser
 from mnist4molecules.vae.corpus import OneHotCorpus
 from mnist4molecules.vae.model import VAE
 from mnist4molecules.vae.trainer import VAETrainer
-from utils import add_train_args, read_smiles_csv, set_seed
 
 
 def main(config):

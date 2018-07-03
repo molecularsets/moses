@@ -1,13 +1,9 @@
-import sys
-sys.path.insert(0, '..')
-
 import argparse
-import pandas as pd
+
 import rdkit
 
 from mnist4molecules.metrics.metrics import get_all_metrics
-from utils import read_smiles_csv
-
+from mnist4molecules.script_utils import read_smiles_csv
 
 lg = rdkit.RDLogger.logger()
 lg.setLevel(rdkit.RDLogger.CRITICAL)

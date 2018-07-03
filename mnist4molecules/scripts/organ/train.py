@@ -1,11 +1,8 @@
-import sys
-sys.path.insert(0, '..')
-
 import torch
 
 from mnist4molecules.organ import get_parser, ORGAN, ORGANTrainer
+from mnist4molecules.script_utils import add_train_args, read_smiles_csv, set_seed
 from mnist4molecules.utils import CharVocab
-from utils import add_train_args, read_smiles_csv, set_seed
 
 
 def main(config):

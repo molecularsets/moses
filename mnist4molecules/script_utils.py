@@ -13,19 +13,20 @@ def add_common_arg(parser):
 
         if arg != 'cpu':
             splited_device = arg.split(':')
-            if not torch.cuda.is_available() or \
-            (len(splited_device) > 1 and splited_device[1] > torch.cuda.device_count()):
+
+            if (not torch.cuda.is_available()) or \
+                    (len(splited_device) > 1 and int(splited_device[1]) > torch.cuda.device_count()):
                 raise argparse.ArgumentTypeError('Wrong device: {} is not available'.format(arg))
-        
+
         return arg
 
     # Base
     parser.add_argument('--device',
-                          type=torch_device, default='cuda',
-                          help='Device to run: "cpu" or "cuda:<device number>"')
+                        type=torch_device, default='cuda',
+                        help='Device to run: "cpu" or "cuda:<device number>"')
     parser.add_argument('--seed',
-                          type=int, default=0,
-                          help='Seed')
+                        type=int, default=0,
+                        help='Seed')
 
     return parser
 
@@ -69,11 +70,11 @@ def add_sample_args(parser):
     common_arg.add_argument('--gen_save',
                             type=str, default='gen.csv',
                             help='Where to save the gen molecules')
-    common_arg.add_argument("--n_batch", 
-                            type=int, default=32, 
+    common_arg.add_argument("--n_batch",
+                            type=int, default=32,
                             help="Size of batch")
-    common_arg.add_argument("--max_len", 
-                            type=int, default=100, 
+    common_arg.add_argument("--max_len",
+                            type=int, default=100,
                             help="Max of length of SMILES")
 
     return parser

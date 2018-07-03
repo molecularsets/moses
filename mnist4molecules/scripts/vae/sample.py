@@ -1,13 +1,11 @@
-import sys
-sys.path.insert(0, '..')
-
 import argparse
+
 import pandas as pd
 import torch
 import tqdm
 
+from mnist4molecules.script_utils import add_sample_args, set_seed
 from mnist4molecules.vae.model import VAE
-from utils import add_sample_args, set_seed
 
 
 def main(config):
