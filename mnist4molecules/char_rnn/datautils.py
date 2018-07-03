@@ -1,7 +1,7 @@
 import torch
 import torch.nn.utils.rnn as rnn_utils
-from torch.utils.data import DataLoader
 
+from torch.utils.data import DataLoader
 from mnist4molecules.utils import CharVocab
 
 

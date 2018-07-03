@@ -1,0 +1,89 @@
+import argparse
+import random
+import re
+
+import pandas as pd
+import torch
+
+
+def add_common_arg(parser):
+    def torch_device(arg):
+        if re.match('^(cuda(:[0-9]+)?|cpu)$', arg) is None:
+            raise argparse.ArgumentTypeError('Wrong device format: {}'.format(arg))
+
+        if arg != 'cpu':
+            splited_device = arg.split(':')
+            if not torch.cuda.is_available() or \
+            (len(splited_device) > 1 and splited_device[1] > torch.cuda.device_count()):
+                raise argparse.ArgumentTypeError('Wrong device: {} is not available'.format(arg))
+        
+        return arg
+
+    # Base
+    parser.add_argument('--device',
+                          type=torch_device, default='cuda',
+                          help='Device to run: "cpu" or "cuda:<device number>"')
+    parser.add_argument('--seed',
+                          type=int, default=0,
+                          help='Seed')
+
+    return parser
+
+
+def add_train_args(parser):
+    # Common
+    common_arg = parser.add_argument_group('Common')
+    add_common_arg(common_arg)
+    common_arg.add_argument('--train_load',
+                            type=str, required=True,
+                            help='Input data in csv format to train')
+    common_arg.add_argument('--model_save',
+                            type=str, default='model.pt',
+                            help='Where to save the model')
+    common_arg.add_argument('--config_save',
+                            type=str, default='config.pt',
+                            help='Where to save the config')
+    common_arg.add_argument('--vocab_save',
+                            type=str, default='vocab.pt',
+                            help='Where to save the vocab')
+
+    return parser
+
+
+def add_sample_args(parser):
+    # Common
+    common_arg = parser.add_argument_group('Common')
+    add_common_arg(common_arg)
+    common_arg.add_argument('--model_load',
+                            type=str, default='model.pt',
+                            help='Where to load the model')
+    common_arg.add_argument('--config_load',
+                            type=str, default='config.pt',
+                            help='Where to load the config')
+    common_arg.add_argument('--vocab_load',
+                            type=str, default='vocab.pt',
+                            help='Where to load the vocab')
+    common_arg.add_argument('--n_samples',
+                            type=int, required=True,
+                            help='Number of samples to sample')
+    common_arg.add_argument('--gen_save',
+                            type=str, default='gen.csv',
+                            help='Where to save the gen molecules')
+    common_arg.add_argument("--n_batch", 
+                            type=int, default=32, 
+                            help="Size of batch")
+    common_arg.add_argument("--max_len", 
+                            type=int, default=100, 
+                            help="Max of length of SMILES")
+
+    return parser
+
+
+def read_smiles_csv(path):
+    return pd.read_csv(path, usecols=['SMILES'], squeeze=True).tolist()
+
+
+def set_seed(seed):
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    random.seed(seed)

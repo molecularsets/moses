@@ -3,12 +3,14 @@ import torch.optim as optim
 import tqdm
 from torch.nn.utils import clip_grad_norm_
 
-from mnist4molecules.utils import Trainer
 from mnist4molecules.vae.misc import CosineAnnealingLRWithRestart, KLAnnealer, \
     Logger
 
 
-class VAETrainer(Trainer):
+class VAETrainer:
+    def __init__(self, config):
+        self.config = config
+
     def fit(self, model, data):
         model.train()
 

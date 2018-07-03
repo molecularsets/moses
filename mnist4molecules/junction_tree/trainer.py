@@ -3,10 +3,11 @@ import torch
 import torch.optim as optim
 import tqdm
 
-from mnist4molecules.utils import Trainer
 
+class JTreeTrainer:
+    def __init__(self, config):
+        self.config = config
 
-class JTreeTrainer(Trainer):
     def fit(self, model, data):
         model.train()
 

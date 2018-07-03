@@ -5,10 +5,9 @@ import tqdm
 from torch.utils.data import DataLoader
 
 from mnist4molecules.junction_tree.jtnn.mol_tree import MolTree
-from mnist4molecules.utils import Corpus
 
 
-class JTreeVocab(object):
+class JTreeVocab:
 
     def __init__(self, smiles_list):
         self.vocab = smiles_list
@@ -28,7 +27,7 @@ class JTreeVocab(object):
         return len(self.vocab)
 
 
-class JTreeCorpus(Corpus):
+class JTreeCorpus:
     def __init__(self, n_batch, device):
         self.n_batch = n_batch
         self.device = device

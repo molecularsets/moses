@@ -1,6 +1,0 @@
-.idea/
-.DS_store
-__pycache__
-mnist4molecules.egg-info/
-trained_model/
-new_data/
