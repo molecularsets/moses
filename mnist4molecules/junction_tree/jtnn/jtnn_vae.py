@@ -189,7 +189,7 @@ class JTNNVAE(nn.Module):
         mol_vec = torch.randn(1, self.latent_size // 2, device=device)
         mol = self.decode(tree_vec, mol_vec, prob_decode)
         if mol is None:
-            return self.sample_prior()  # TODO
+            return self.sample_prior(prob_decode=True)  # TODO
         else:
             return mol
 
