@@ -43,7 +43,7 @@ class Decoder(nn.Module):
             c0 = self.latent2hidden_layer(states)
             c0 = c0.view(-1, self.lstm_layer.hidden_size, self.lstm_layer.num_layers).permute(2, 0, 1)
             h0 = torch.zeros_like(c0)
-            states = (h0, c0)
+            states = (h0.contiguous(), c0.contiguous())
 
         x = self.embedding_layer(x)
         x = pack_padded_sequence(x, lengths, batch_first=True)
