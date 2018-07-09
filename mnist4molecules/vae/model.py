@@ -41,7 +41,7 @@ class VAE(nn.Module):
         if config.d_cell == 'gru':
             self.decoder_rnn = nn.GRU(
                 d_emb + config.d_z,
-                config.d_z,
+                config.d_d_h,
                 num_layers=config.d_n_layers,
                 batch_first=True,
                 dropout=config.d_dropout if config.d_n_layers > 1 else 0
@@ -51,7 +51,8 @@ class VAE(nn.Module):
                 "Invalid d_cell type, should be one of the ('gru',)"
             )
 
-        self.decoder_fc = nn.Linear(config.d_z, n_vocab)
+        self.decoder_lat = nn.Linear(config.d_z, config.d_d_h)
+        self.decoder_fc = nn.Linear(config.d_d_h, n_vocab)
 
         # Grouping the model's parameters
         self.encoder = nn.ModuleList([
@@ -123,12 +124,13 @@ class VAE(nn.Module):
                                       padding_value=self.pad)
         x_emb = self.x_emb(x)
 
-        z_0 = z.unsqueeze(1).expand(-1, x_emb.size(1), -1)
+        z_0 = z.unsqueeze(1).repeat(1, x_emb.size(1), 1)
         x_input = torch.cat([x_emb, z_0], dim=-1)
         x_input = nn.utils.rnn.pack_padded_sequence(x_input, lengths,
                                                     batch_first=True)
 
-        h_0 = z.unsqueeze(0).repeat(self.decoder_rnn.num_layers, 1, 1)
+        h_0 = self.decoder_lat(z)
+        h_0 = h_0.unsqueeze(0).repeat(self.decoder_rnn.num_layers, 1, 1)
 
         output, _ = self.decoder_rnn(x_input, h_0)
 
@@ -176,9 +178,11 @@ class VAE(nn.Module):
         z_0 = z.unsqueeze(1)
 
         # Initial values
-        h = z.unsqueeze(0).repeat(self.decoder_rnn.num_layers, 1, 1)
+        h = self.decoder_lat(z)
+        h = h.unsqueeze(0).repeat(self.decoder_rnn.num_layers, 1, 1)
         w = torch.tensor(self.bos, device=device).repeat(n_batch)
         x = torch.tensor([self.pad], device=device).repeat(n_batch, n_len)
+        x[:, 0] = self.bos
         end_pads = torch.tensor([n_len], device=device).repeat(n_batch)
         eos_mask = torch.zeros(n_batch, dtype=torch.uint8, device=device)
 
@@ -193,8 +197,8 @@ class VAE(nn.Module):
 
             w = torch.multinomial(y, 1)[:, 0]
             x[~eos_mask, i] = w[~eos_mask]
-            i_eos_mask = (w == self.eos)
-            end_pads[i_eos_mask] = i
+            i_eos_mask = ~eos_mask & (w == self.eos)
+            end_pads[i_eos_mask] = i + 1
             eos_mask = eos_mask | i_eos_mask
 
         # Converting `x` to list of tensors

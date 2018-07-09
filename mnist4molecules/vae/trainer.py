@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 import torch.optim as optim
 import tqdm
 from torch.nn.utils import clip_grad_norm_
@@ -60,7 +61,7 @@ class VAETrainer:
                                 f'loss={loss_value:.5f}',
                                 f'(kl={kl_loss_value:.5f}',
                                 f'recon={recon_loss_value:.5f})',
-                                f'klw={kl_weight:.2f} lr={lr:.5f}']
+                                f'klw={kl_weight:.5f} lr={lr:.5f}']
                 T.set_postfix_str(' '.join(postfix_strs))
                 T.refresh()
 
@@ -72,8 +73,8 @@ class VAETrainer:
                 'loss': loss_value
             })
 
-            # Print result
-            print(f"epoch={epoch}")
+            # Save model at each epoch
+            torch.save(model.state_dict(), self.config.model_save)
 
             # Epoch end
             lr_annealer.step()

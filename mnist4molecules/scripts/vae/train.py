@@ -20,11 +20,10 @@ def main(config):
     model = VAE(corpus.vocab, config).to(device)
 
     trainer = VAETrainer(config)
-    trainer.fit(model, train)
 
-    torch.save(model.state_dict(), config.model_save)
     torch.save(config, config.config_save)
     torch.save(corpus.vocab, config.vocab_save)
+    trainer.fit(model, train)
 
 
 if __name__ == '__main__':
