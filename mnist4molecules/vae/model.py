@@ -62,6 +62,7 @@ class VAE(nn.Module):
         ])
         self.decoder = nn.ModuleList([
             self.decoder_rnn,
+            self.decoder_lat,
             self.decoder_fc
         ])
         self.vae = nn.ModuleList([

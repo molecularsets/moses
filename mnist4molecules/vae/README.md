@@ -1,16 +1,22 @@
 # vae
 
-## workflow
+## Links
+
+* https://arxiv.org/pdf/1610.02415.pdf
+* https://onlinelibrary.wiley.com/doi/pdf/10.1002/minf.201700123
+
+## Description
+
+1-layer bidirectional GRU as encoder with linears at the end, predicting
+latent space of size 128 distribution parameters. 3-layers GRU decoder with dropout of 0.2 and 512 hidden dimensionality. 
+Training was with batch size of 128, gradients clipping of 50, KL term weight of 1 and Adam optimizer with learning rate of 3 * 1e-4 for 50 epochs.
+
+## Workflow
 
 Training on `train.csv`, testing on `test.csv`:
 
 ```
-python mnist4molecules/scripts/vae/train.py --train_load /data/Insilico/mmnist_dataset/data/mcf_dataset_train_200k.csv --device cuda:1
-python mnist4molecules/scripts/vae/sample.py --n_samples 10000 --device cuda:1
-python mnist4molecules/scripts/metrics/eval.py --ref_path /data/Insilico/mmnist_dataset/data/mcf_dataset_test_10k.csv --gen_path gen.csv
+python mnist4molecules/scripts/vae/train.py --train_load train.csv --device cuda:0
+python mnist4molecules/scripts/vae/sample.py --n_samples 10000 --device cuda:0
+python mnist4molecules/scripts/metrics/eval.py --ref_path test.csv --gen_path gen.csv
 ```
-
-test:
-{'valid': 0.48029999999999995, 'unique@1000': 1.0, 'unique@10000': 0.9997917967936706, 'FCD': 1.3358089709867045, 'morgan': 0.3792429497229316, 'fragments': 0.9881470332820432, 'scaffolds': 0.5094579020327228, 'internal_diversity': 0.860313643738011, 'filters': 0.9485738080366438}
-scaffolds:
-{'valid': 0.48029999999999995, 'unique@1000': 1.0, 'unique@10000': 0.9997917967936706, 'FCD': 1.7168888051074518, 'morgan': 0.37057692845637613, 'fragments': 0.9878008349790495, 'scaffolds': 0.09137685494807068, 'internal_diversity': 0.860313643738011, 'filters': 0.9485738080366438}
