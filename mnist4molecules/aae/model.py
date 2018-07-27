@@ -32,7 +32,7 @@ class Decoder(nn.Module):
     def __init__(self, embedding_layer, hidden_size, num_layers, dropout, latent_size):
         super(Decoder, self).__init__()
 
-        self.latent2hidden_layer = nn.Linear(latent_size, num_layers * hidden_size)
+        self.latent2hidden_layer = nn.Linear(latent_size, hidden_size)
         self.embedding_layer = embedding_layer
         self.lstm_layer = nn.LSTM(embedding_layer.embedding_dim, hidden_size, num_layers, 
                                   batch_first=True, dropout=dropout)
@@ -41,9 +41,9 @@ class Decoder(nn.Module):
     def forward(self, x, lengths, states, is_latent_states=False):
         if is_latent_states:
             c0 = self.latent2hidden_layer(states)
-            c0 = c0.view(-1, self.lstm_layer.hidden_size, self.lstm_layer.num_layers).permute(2, 0, 1)
+            c0 = c0.unsqueeze(0).repeat(self.lstm_layer.num_layers, 1, 1)
             h0 = torch.zeros_like(c0)
-            states = (h0.contiguous(), c0.contiguous())
+            states = (h0, c0)
 
         x = self.embedding_layer(x)
         x = pack_padded_sequence(x, lengths, batch_first=True)
@@ -65,7 +65,7 @@ class Discriminator(nn.Module):
         for k, (i, o) in enumerate(zip(in_features, out_features)):
             self.layers_seq.add_module('linear_{}'.format(k), nn.Linear(i, o))
             if k != len(layers):
-                self.layers_seq.add_module('activation_{}'.format(k), nn.ReLU(inplace=True))
+                self.layers_seq.add_module('activation_{}'.format(k), nn.ELU(inplace=True))
 
     def forward(self, x):
         return self.layers_seq(x)

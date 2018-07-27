@@ -49,7 +49,7 @@ class AAETrainer:
             self._pretrain_epoch(model, tqdm_data, criterion, optimizer)
 
             if val_loader is not None:
-                tqdm_data = tqdm(val_loader, descr='Validation (epoch #{})'.format(epoch))
+                tqdm_data = tqdm(val_loader, desc='Validation (epoch #{})'.format(epoch))
                 self._pretrain_epoch(model, tqdm_data, criterion)
 
     def _train_epoch(self, model, tqdm_data, criterions, optimizers=None):
@@ -115,7 +115,7 @@ class AAETrainer:
             self._train_epoch(model, tqdm_data, criterions, optimizers)
 
             if val_loader is not None:
-                tqdm_data = tqdm(val_loader, descr='Validation (epoch #{})'.format(epoch))
+                tqdm_data = tqdm(val_loader, desc='Validation (epoch #{})'.format(epoch))
                 self._train_epoch(model, tqdm_data, criterions)
 
     def fit(self, model, train_data, val_data=None):
