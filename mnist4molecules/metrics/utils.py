@@ -100,8 +100,7 @@ def get_n_rings(mol):
     '''
     Computes the number of rings in a molecule
     '''
-    r = len([len(x) for x in mol.GetRingInfo().AtomRings()])
-    return r
+    return mol.GetRingInfo().NumRings()
 
 
 def fragmenter(mol):
