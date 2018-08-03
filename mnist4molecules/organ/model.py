@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
+from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence, pad_sequence
 
 
 __all__ = ['ORGAN']
@@ -28,27 +28,36 @@ class Generator(nn.Module):
 
 
 class Discriminator(nn.Module):
-    def __init__(self, embedding_layer, layers):
+    def __init__(self, embedding_layer, convs, dropout=0):
         super(Discriminator, self).__init__()
 
         self.embedding_layer = embedding_layer
+        self.conv_layers = nn.ModuleList([nn.Conv2d(1, f, kernel_size=(n, self.embedding_layer.embedding_dim)) for f, n in convs])
+        sum_filters = sum([f for f, _ in convs])
+        self.highway_layer = nn.Linear(sum_filters, sum_filters)
+        self.dropout_layer = nn.Dropout(p=dropout)
+        self.output_layer = nn.Linear(sum_filters, 1)
 
-        in_features = [embedding_layer.embedding_dim] + layers
-        out_features = layers + [1]
+    def l2_reg_term(self):
+        l2_reg = 0
+        for param in self.output_layer.parameters():
+            l2_reg += param.norm(2)
 
-        self.layers_seq = nn.Sequential()     
-        for k, (i, o) in enumerate(zip(in_features, out_features)):
-            self.layers_seq.add_module('linear_{}'.format(k), nn.Conv2d(i, o, kernel_size=(3, 1), padding=(1, 0)))
-            if k != len(layers):
-                self.layers_seq.add_module('activation_{}'.format(k), nn.ELU(inplace=True))
-            else:
-                self.layers_seq.add_module('average', nn.AdaptiveAvgPool2d(output_size=1))
-        
+        return l2_reg
+
     def forward(self, x):
         x = self.embedding_layer(x)
-        x = x.permute(0, 2, 1).unsqueeze(3)
-        x = self.layers_seq(x)
-        out = x.squeeze(-1).squeeze(-1)
+        x = x.unsqueeze(1) 
+
+        convs = [F.relu(conv_layer(x)).squeeze(3) for conv_layer in self.conv_layers]
+        x = [F.max_pool1d(c, c.shape[2]).squeeze(2) for c in convs]
+        x = torch.cat(x, dim=1)
+
+        h = self.highway_layer(x)
+        t = F.sigmoid(h)
+        x = t * F.relu(h) + (1 - t) * x
+        x = self.dropout_layer(x)
+        out = self.output_layer(x)
 
         return out
 
@@ -65,7 +74,7 @@ class ORGAN(nn.Module):
         self.generator_embeddings = nn.Embedding(len(vocabulary), config.embedding_size, padding_idx=vocabulary.pad)
         self.discriminator_embeddings = nn.Embedding(len(vocabulary), config.embedding_size, padding_idx=vocabulary.pad)
         self.generator = Generator(self.generator_embeddings, config.hidden_size, config.num_layers, config.dropout)
-        self.discriminator = Discriminator(self.discriminator_embeddings, config.discriminator_layers)
+        self.discriminator = Discriminator(self.discriminator_embeddings, config.discriminator_layers, config.discriminator_dropout)
 
     @property
     def device(self):
@@ -102,10 +111,9 @@ class ORGAN(nn.Module):
         is_end = prevs.eq(self.vocabulary.eos).view(-1)
 
         for _ in range(max_len):
-            logits, _, states = self.generator(prevs, one_lens, states)
-            
-            logits = logits.view(n_sequences, -1)
-            currents = torch.multinomial(F.softmax(logits, dim=-1), 1)
+            outputs, _, states = self.generator(prevs, one_lens, states)
+            probs = F.softmax(outputs, dim=-1).view(n_sequences, -1)
+            currents = torch.multinomial(probs, 1)
 
             currents[is_end, :] = self.vocabulary.pad
             sequences.append(currents)
@@ -135,8 +143,9 @@ class ORGAN(nn.Module):
         lengths += 1
 
         for current_len in range(max_len):
-            logits, _, states = self.generator(prevs, one_lens, states)
-            currents = torch.multinomial(F.softmax(logits, dim=-1).view(n_samples, -1), 1)
+            outputs, _, states = self.generator(prevs, one_lens, states)
+            probs = F.softmax(outputs, dim=-1).view(n_samples, -1)
+            currents = torch.multinomial(probs, 1)
 
             currents[is_end, :] = self.vocabulary.pad
             sequences.append(currents)
@@ -150,12 +159,14 @@ class ORGAN(nn.Module):
             rollout_lengths += lengths[~is_end].repeat(n_rollouts)
 
             rollout_rewards = F.sigmoid(self.discriminator(rollout_sequences).detach())
+  
             if self.reward_fn is not None:
-                for k, (t, l) in enumerate(zip(rollout_sequences, rollout_lengths)):
-                    string = self.vocabulary.tensor2string(t[:l])
-                    rollout_rewards[k] = rollout_rewards[k] * (1 - self.reward_weight) + self.reward_fn(string) * self.reward_weight
+                strings = [self.tensor2string(t[:l]) for t, l in zip(rollout_sequences, rollout_lengths)]
+                obj_rewards = torch.tensor(self.reward_fn(strings), device=rollout_rewards.device).view(-1, 1)
+                rollout_rewards = rollout_rewards * (1 - self.reward_weight) + obj_rewards * self.reward_weight
 
             current_rewards = torch.zeros(n_samples, device=self.device)
+
             current_rewards[~is_end] = rollout_rewards.view(n_rollouts, -1).mean(dim=0)
             rewards.append(current_rewards.view(-1, 1))
 
@@ -176,8 +187,7 @@ class ORGAN(nn.Module):
 
         samples = torch.cat([prevs, samples], dim=-1)
         lengths += 1
-
-
+        
         return samples, lengths
 
     def sample(self, n, max_len=100):
