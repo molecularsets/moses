@@ -211,8 +211,6 @@ def fingerprints(smiles_mols_array, n_jobs=1, already_unique=False, *args,
     :param n_jobs: number of parralel workers to execute
     :param already_unique: flag for performance reasons, if smiles array is big and already unique. Its value is set to True if smiles_mols_array contain RDKit molecules already.
     '''
-    assert n_jobs > 0 and isinstance(n_jobs,
-                                     int), 'n_jobs must be positive and integer'
     if isinstance(smiles_mols_array, pd.Series):
         smiles_mols_array = smiles_mols_array.values
     else:
@@ -224,20 +222,7 @@ def fingerprints(smiles_mols_array, n_jobs=1, already_unique=False, *args,
         smiles_mols_array, inv_index = np.unique(smiles_mols_array,
                                                  return_inverse=True)
 
-    if n_jobs > 1:
-        if smiles_mols_array.shape[0] < n_jobs:
-            n_jobs = smiles_mols_array.shape[0]
-        from multiprocessing import Pool
-        from functools import partial
-        p = Pool(n_jobs)
-        try:
-            fps = p.map(partial(fingerprint, *args, **kwargs),
-                        smiles_mols_array)
-        finally:
-            p.terminate()
-    else:
-        fps = [fingerprint(smiles, *args, **kwargs) for smiles in
-               smiles_mols_array]
+    fps = mapper(n_jobs)(partial(fingerprint, *args, **kwargs), smiles_mols_array)
 
     length = 1  # Need to know the length to convert None into np.array with nan values
     for fp in fps:
