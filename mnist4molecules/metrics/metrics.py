@@ -12,14 +12,13 @@ from .utils_fcd import get_predictions, calculate_frechet_distance
 def get_all_metrics(ref, gen, k=[1000, 10000], n_jobs=1, gpu=-1):
     '''
     Computes all available metrics between two lists of SMILES:
-    1. %valid
+    * %valid
     ----- Next metrics are only computed for valid molecules -----
-    2. %unique@k
-    3. FCD
-    4. fragment similarity
-    5. scaffold similarity
-    6. topological similarity
-    7. morgan similarity
+    * %unique@k
+    * FCD
+    * fragment similarity
+    * scaffold similarity
+    * morgan similarity
     '''
     metrics = {}
 

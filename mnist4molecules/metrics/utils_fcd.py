@@ -178,20 +178,19 @@ def get_predictions(gen_mol, gpu=-1):
     else:
         device = "/cpu"
     with tf.device(device):
-        masked_loss_function = build_masked_loss(K.binary_crossentropy, 0.5)
-        config = tf.ConfigProto(device_count={'GPU': int(gpu != -1)},
-                                allow_soft_placement=True)
+        masked_loss_function = build_masked_loss(K.binary_crossentropy,0.5)
+        config = tf.ConfigProto(allow_soft_placement=True)
         config.gpu_options.allow_growth = True
-        set_session(tf.Session(config=config))
-        model = load_model(model_path,
-                           custom_objects={
-                               'masked_loss_function': masked_loss_function,
-                               'masked_accuracy': masked_accuracy})
+        sess = tf.Session(config=config)
+        set_session(sess)
+        model = load_model(model_path, 
+                       custom_objects={'masked_loss_function': masked_loss_function,
+                                       'masked_accuracy': masked_accuracy})
         model.pop()
         model.pop()
-        gen_mol_act = model.predict_generator(
-            myGenerator_predict(gen_mol, batch_size=128),
-            steps=np.ceil(len(gen_mol) / 128))
+        gen_mol_act = model.predict_generator(myGenerator_predict(gen_mol, batch_size=128),
+                                          steps= np.ceil(len(gen_mol) / 128))
+        sess.close()
     if cuda_old is not None:
         os.environ["CUDA_VISIBLE_DEVICES"] = str(cuda_old)
     else:
