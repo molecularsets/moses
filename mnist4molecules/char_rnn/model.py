@@ -57,10 +57,9 @@ class CharRNN(nn.Module):
         lens = torch.tensor([1 for _ in range(batch_size)], dtype=torch.long, device=self.device)
         end_smiles_list = [False for _ in range(batch_size)]
 
+        hiddens = None
         for i in range(1, max_length + 1):
-            hiddens = None if i == 1 else hiddens
-
-            output, _, hiddens = self(starts, lens, hiddens)
+            output, _, hiddens = self.forward(starts, lens, hiddens)
 
             # probabilities
             probs = [F.softmax(o, dim=-1) for o in output]

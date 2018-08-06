@@ -23,7 +23,9 @@ class TestCase(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    import sys, getopt, re
+    import sys
+    import getopt
+    import re
 
     doLong = 0
     if len(sys.argv) > 1:

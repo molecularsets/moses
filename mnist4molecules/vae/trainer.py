@@ -13,12 +13,14 @@ class VAETrainer:
         self.config = config
 
     def fit(self, model, data):
+        def get_params():
+            return (p for p in model.vae.parameters() if p.requires_grad)
+
         model.train()
 
         n_epoch = self._n_epoch()
         kl_annealer = KLAnnealer(n_epoch, self.config)
-        get_params = lambda: (p for p in model.vae.parameters()
-                              if p.requires_grad)
+
         optimizer = optim.Adam(get_params(), lr=self.config.lr_start)
         lr_annealer = CosineAnnealingLRWithRestart(optimizer, self.config)
 

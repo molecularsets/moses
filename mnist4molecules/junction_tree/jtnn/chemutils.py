@@ -302,7 +302,8 @@ def enum_assemble(node, neighbors, prev_nodes=None, prev_amap=None):
         cand_mol = local_attach(node.mol, neighbors, prev_nodes, amap)
         cand_mol = Chem.MolFromSmiles(Chem.MolToSmiles(cand_mol))
         smiles = Chem.MolToSmiles(cand_mol)
-        if smiles in cand_smiles: continue
+        if smiles in cand_smiles:
+            continue
         cand_smiles.add(smiles)
         Chem.Kekulize(cand_mol)
         candidates.append((smiles, cand_mol, amap))

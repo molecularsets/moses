@@ -171,7 +171,7 @@ class JTNNDecoder(nn.Module):
     def decode(self, mol_vec, prob_decode):
         device = JTNNDecoder._device(self)
 
-        stack, trace = [], []
+        stack = []
         init_hidden = torch.zeros(1, self.hidden_size, device=device)
         zero_pad = torch.zeros(1, 1, self.hidden_size, device=device)
 

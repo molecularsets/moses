@@ -26,7 +26,6 @@ def get_parser():
     model_arg.add_argument('--discriminator_layers', nargs='+', type=int, default=[640, 256],
                            help='Numbers of features for linear layers in discriminator')
 
-
     train_arg = parser.add_argument_group('Training')
     train_arg.add_argument('--pretrain_epochs', type=int, default=0,
                            help='Number of epochs for autoencoder pretraining')

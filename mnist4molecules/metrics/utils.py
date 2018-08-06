@@ -205,11 +205,14 @@ def fingerprint(smiles_or_mol, type='maccs', dtype=None, morgan__r=2,
 def fingerprints(smiles_mols_array, n_jobs=1, already_unique=False, *args,
                  **kwargs):
     '''
-    Computes fingerprints of smiles np.array/list/pd.Series with n_jobs workers. e.g. fingerprints(smiles_mols_array, type='morgan', n_jobs=10)
-    Inserts np.NaN to rows corresponding to incorrect smiles. IMPORTANT: if there is at least one np.NaN, the dtype would be float
+    Computes fingerprints of smiles np.array/list/pd.Series with n_jobs workers.
+    e.g.fingerprints(smiles_mols_array, type='morgan', n_jobs=10)
+    Inserts np.NaN to rows corresponding to incorrect smiles.
+    IMPORTANT: if there is at least one np.NaN, the dtype would be float
     :param smiles_mols_array: list/array/pd.Series of smiles or already computed RDKit molecules
     :param n_jobs: number of parralel workers to execute
-    :param already_unique: flag for performance reasons, if smiles array is big and already unique. Its value is set to True if smiles_mols_array contain RDKit molecules already.
+    :param already_unique: flag for performance reasons, if smiles array is big and already unique.
+                           Its value is set to True if smiles_mols_array contain RDKit molecules already.
     '''
     if isinstance(smiles_mols_array, pd.Series):
         smiles_mols_array = smiles_mols_array.values
@@ -249,8 +252,8 @@ def tanimoto(fingerprints, fingerprints_right=None, mode='pairwise'):
     from fingerprints and fingerprints_right. If mode == 'paired', than will compute
     Tanimoto between corresponding rows. Lengths of fingerprints andfingerprints_right
     will have to be the same
-    :param fingerprints: numpy array or torch tensor 
-    :param fingerprints_right: numpy array or torch tensor 
+    :param fingerprints: numpy array or torch tensor
+    :param fingerprints_right: numpy array or torch tensor
     :param mode: [pairwise|paired]
     Output:
     :result similarity: Tanimoto score for each row

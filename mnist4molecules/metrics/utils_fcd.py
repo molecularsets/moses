@@ -1,9 +1,9 @@
-''' Defines the functions necessary for calculating the Frechet Inception 
+''' Defines the functions necessary for calculating the Frechet Inception
 Distance (FCD) to evalulate generative models for molecules.
 
 The FCD metric calculates the distance between two distributions of molecules.
 Typically, we have summary statistics (mean & covariance matrix) of one
-of these distributions, while the 2nd distribution is given by the generative 
+of these distributions, while the 2nd distribution is given by the generative
 model.
 
 The FID is calculated by assuming that X_1 and X_2 are the activations of
@@ -27,7 +27,7 @@ def calculate_frechet_distance(mu1, sigma1, mu2, sigma2, eps=1e-6):
     The Frechet distance between two multivariate Gaussians X_1 ~ N(mu_1, C_1)
     and X_2 ~ N(mu_2, C_2) is
             d^2 = ||mu_1 - mu_2||^2 + Tr(C_1 + C_2 - 2*sqrt(C_1*C_2)).
-            
+
     Stable version by Dougal J. Sutherland.
 
     Params:
@@ -72,12 +72,11 @@ def calculate_frechet_distance(mu1, sigma1, mu2, sigma2, eps=1e-6):
         if not np.allclose(np.diagonal(covmean).imag, 0, atol=1e-3):
             m = np.max(np.abs(covmean.imag))
             raise ValueError("Imaginary component {}".format(m))
-        covmean = covmean.real
+            covmean = covmean.real
 
     tr_covmean = np.trace(covmean)
 
-    return diff.dot(diff) + np.trace(sigma1) + np.trace(
-        sigma2) - 2 * tr_covmean
+    return diff.dot(diff) + np.trace(sigma1) + np.trace(sigma2) - 2 * tr_covmean
 
 
 # -------------------------------------------------------------------------------
@@ -103,7 +102,6 @@ def build_masked_loss(loss_function, mask_value):
 # -------------------------------------------------------------------------------
 
 def masked_accuracy(y_true, y_pred):
-    mask_value = 0.5
     a = K.sum(K.cast(K.equal(y_true, K.round(y_pred)), K.floatx()))
     c = K.sum(K.cast(K.not_equal(y_true, 0.5), K.floatx()))
     acc = (a) / c
@@ -113,11 +111,11 @@ def masked_accuracy(y_true, y_pred):
 # -------------------------------------------------------------------------------
 
 def get_one_hot(smiles, pad_len=-1):
-    one_hot = asym = ['C', 'N', 'O', 'H', 'F', 'Cl', 'P', 'B', 'Br', 'S', 'I',
-                      'Si',
-                      '#', '(', ')', '+', '-', '1', '2', '3', '4', '5', '6',
-                      '7', '8', '=', '[', ']', '@',
-                      'c', 'n', 'o', 's', 'X', '.']
+    one_hot = ['C', 'N', 'O', 'H', 'F', 'Cl', 'P', 'B', 'Br', 'S', 'I',
+               'Si',
+               '#', '(', ')', '+', '-', '1', '2', '3', '4', '5', '6',
+               '7', '8', '=', '[', ']', '@',
+               'c', 'n', 'o', 's', 'X', '.']
     smiles = smiles + '.'
     if pad_len < 0:
         vec = np.zeros((len(smiles), len(one_hot)))
@@ -178,18 +176,18 @@ def get_predictions(gen_mol, gpu=-1):
     else:
         device = "/cpu"
     with tf.device(device):
-        masked_loss_function = build_masked_loss(K.binary_crossentropy,0.5)
+        masked_loss_function = build_masked_loss(K.binary_crossentropy, 0.5)
         config = tf.ConfigProto(allow_soft_placement=True)
         config.gpu_options.allow_growth = True
         sess = tf.Session(config=config)
         set_session(sess)
-        model = load_model(model_path, 
-                       custom_objects={'masked_loss_function': masked_loss_function,
-                                       'masked_accuracy': masked_accuracy})
+        model = load_model(model_path,
+                           custom_objects={'masked_loss_function': masked_loss_function,
+                                           'masked_accuracy': masked_accuracy})
         model.pop()
         model.pop()
         gen_mol_act = model.predict_generator(myGenerator_predict(gen_mol, batch_size=128),
-                                          steps= np.ceil(len(gen_mol) / 128))
+                                              steps=np.ceil(len(gen_mol) / 128))
         sess.close()
     if cuda_old is not None:
         os.environ["CUDA_VISIBLE_DEVICES"] = str(cuda_old)

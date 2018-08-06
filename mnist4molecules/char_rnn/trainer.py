@@ -12,6 +12,9 @@ class CharRNNTrainer:
         self.config = config
 
     def fit(self, model, data):
+        def get_params():
+            return (p for p in model.parameters() if p.requires_grad)
+
         if isinstance(data, tuple):
             train_dataloader = data[0]
             val_dataloader = data[1]
@@ -20,7 +23,7 @@ class CharRNNTrainer:
             val_dataloader = None
 
         num_epochs = self.config.num_epochs
-        get_params = lambda: (p for p in model.parameters() if p.requires_grad)
+
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.Adam(get_params(), lr=self.config.lr)
 

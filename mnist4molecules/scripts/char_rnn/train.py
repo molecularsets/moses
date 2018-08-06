@@ -38,6 +38,7 @@ def main(config):
     else:
         trainer.fit(model, train_dataloader)
 
+
 if __name__ == '__main__':
     parser = add_train_args(get_parser())
     config = parser.parse_known_args()[0]

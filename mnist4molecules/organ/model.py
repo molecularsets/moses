@@ -2,10 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence, pad_sequence
-
-
-__all__ = ['ORGAN']
+from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
 
 
 class Generator(nn.Module):
@@ -13,7 +10,7 @@ class Generator(nn.Module):
         super(Generator, self).__init__()
 
         self.embedding_layer = embedding_layer
-        self.lstm_layer = nn.LSTM(embedding_layer.embedding_dim, hidden_size, num_layers, 
+        self.lstm_layer = nn.LSTM(embedding_layer.embedding_dim, hidden_size, num_layers,
                                   batch_first=True, dropout=dropout)
         self.linear_layer = nn.Linear(hidden_size, embedding_layer.num_embeddings)
 
@@ -32,7 +29,8 @@ class Discriminator(nn.Module):
         super(Discriminator, self).__init__()
 
         self.embedding_layer = embedding_layer
-        self.conv_layers = nn.ModuleList([nn.Conv2d(1, f, kernel_size=(n, self.embedding_layer.embedding_dim)) for f, n in convs])
+        self.conv_layers = nn.ModuleList(
+            [nn.Conv2d(1, f, kernel_size=(n, self.embedding_layer.embedding_dim)) for f, n in convs])
         sum_filters = sum([f for f, _ in convs])
         self.highway_layer = nn.Linear(sum_filters, sum_filters)
         self.dropout_layer = nn.Dropout(p=dropout)
@@ -47,7 +45,7 @@ class Discriminator(nn.Module):
 
     def forward(self, x):
         x = self.embedding_layer(x)
-        x = x.unsqueeze(1) 
+        x = x.unsqueeze(1)
 
         convs = [F.relu(conv_layer(x)).squeeze(3) for conv_layer in self.conv_layers]
         x = [F.max_pool1d(c, c.shape[2]).squeeze(2) for c in convs]
@@ -72,9 +70,11 @@ class ORGAN(nn.Module):
         self.vocabulary = vocabulary
 
         self.generator_embeddings = nn.Embedding(len(vocabulary), config.embedding_size, padding_idx=vocabulary.pad)
-        self.discriminator_embeddings = nn.Embedding(len(vocabulary), config.embedding_size, padding_idx=vocabulary.pad)
+        self.discriminator_embeddings = nn.Embedding(
+            len(vocabulary), config.embedding_size, padding_idx=vocabulary.pad)
         self.generator = Generator(self.generator_embeddings, config.hidden_size, config.num_layers, config.dropout)
-        self.discriminator = Discriminator(self.discriminator_embeddings, config.discriminator_layers, config.discriminator_dropout)
+        self.discriminator = Discriminator(self.discriminator_embeddings,
+                                           config.discriminator_layers, config.discriminator_dropout)
 
     @property
     def device(self):
@@ -152,14 +152,17 @@ class ORGAN(nn.Module):
             lengths[~is_end] += 1
 
             rollout_prevs = currents[~is_end, :].repeat(n_rollouts, 1)
-            rollout_states = (states[0][:, ~is_end, :].repeat(1, n_rollouts, 1), states[1][:, ~is_end, :].repeat(1, n_rollouts, 1))
-            rollout_sequences, rollout_lengths = self._proceed_sequences(rollout_prevs, rollout_states, max_len - current_len)
+            rollout_states = (states[0][:, ~is_end, :].repeat(1, n_rollouts, 1),
+                              states[1][:, ~is_end, :].repeat(1, n_rollouts, 1))
+            rollout_sequences, rollout_lengths = self._proceed_sequences(
+                rollout_prevs, rollout_states, max_len - current_len)
 
-            rollout_sequences = torch.cat([s[~is_end, :].repeat(n_rollouts, 1) for s in sequences] + [rollout_sequences], dim=-1)
+            rollout_sequences = torch.cat([s[~is_end, :].repeat(n_rollouts, 1)
+                                           for s in sequences] + [rollout_sequences], dim=-1)
             rollout_lengths += lengths[~is_end].repeat(n_rollouts)
 
             rollout_rewards = F.sigmoid(self.discriminator(rollout_sequences).detach())
-  
+
             if self.reward_fn is not None:
                 strings = [self.tensor2string(t[:l]) for t, l in zip(rollout_sequences, rollout_lengths)]
                 obj_rewards = torch.tensor(self.reward_fn(strings), device=rollout_rewards.device).view(-1, 1)
@@ -187,7 +190,7 @@ class ORGAN(nn.Module):
 
         samples = torch.cat([prevs, samples], dim=-1)
         lengths += 1
-        
+
         return samples, lengths
 
     def sample(self, n, max_len=100):

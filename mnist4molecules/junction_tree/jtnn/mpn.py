@@ -1,7 +1,9 @@
 import rdkit.Chem as Chem
+import torch
+import torch.nn as nn
 
 from .chemutils import get_mol
-from .nnutils import *
+from .nnutils import index_select_nd
 
 ELEM_LIST = ['C', 'N', 'O', 'S', 'F', 'Si',
              'P', 'Cl', 'Br', 'Mg', 'Na', 'Ca',

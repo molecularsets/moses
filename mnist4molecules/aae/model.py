@@ -4,15 +4,12 @@ import torch.nn as nn
 from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
 
 
-__all__ = ['AAE']
-
-
 class Encoder(nn.Module):
     def __init__(self, embedding_layer, hidden_size, num_layers, bidirectional, dropout, latent_size):
         super(Encoder, self).__init__()
 
         self.embedding_layer = embedding_layer
-        self.lstm_layer = nn.LSTM(embedding_layer.embedding_dim, hidden_size, num_layers, 
+        self.lstm_layer = nn.LSTM(embedding_layer.embedding_dim, hidden_size, num_layers,
                                   batch_first=True, dropout=dropout, bidirectional=bidirectional)
         self.linear_layer = nn.Linear((int(bidirectional) + 1) * num_layers * hidden_size, latent_size)
 
@@ -34,7 +31,7 @@ class Decoder(nn.Module):
 
         self.latent2hidden_layer = nn.Linear(latent_size, hidden_size)
         self.embedding_layer = embedding_layer
-        self.lstm_layer = nn.LSTM(embedding_layer.embedding_dim, hidden_size, num_layers, 
+        self.lstm_layer = nn.LSTM(embedding_layer.embedding_dim, hidden_size, num_layers,
                                   batch_first=True, dropout=dropout)
         self.linear_layer = nn.Linear(hidden_size, embedding_layer.num_embeddings)
 
@@ -57,11 +54,11 @@ class Decoder(nn.Module):
 class Discriminator(nn.Module):
     def __init__(self, input_size, layers):
         super(Discriminator, self).__init__()
-        
+
         in_features = [input_size] + layers
         out_features = layers + [1]
 
-        self.layers_seq = nn.Sequential()     
+        self.layers_seq = nn.Sequential()
         for k, (i, o) in enumerate(zip(in_features, out_features)):
             self.layers_seq.add_module('linear_{}'.format(k), nn.Linear(i, o))
             if k != len(layers):
@@ -79,9 +76,9 @@ class AAE(nn.Module):
         self.latent_size = config.latent_size
 
         self.embeddings = nn.Embedding(len(vocabulary), config.embedding_size, padding_idx=vocabulary.pad)
-        self.encoder = Encoder(self.embeddings, config.encoder_hidden_size, config.encoder_num_layers, 
+        self.encoder = Encoder(self.embeddings, config.encoder_hidden_size, config.encoder_num_layers,
                                config.encoder_bidirectional, config.encoder_dropout, config.latent_size)
-        self.decoder = Decoder(self.embeddings, config.decoder_hidden_size, config.decoder_num_layers, 
+        self.decoder = Decoder(self.embeddings, config.decoder_hidden_size, config.decoder_num_layers,
                                config.decoder_dropout, config.latent_size)
         self.discriminator = Discriminator(config.latent_size, config.discriminator_layers)
 
@@ -138,11 +135,11 @@ class AAE(nn.Module):
             lengths[~is_end] += 1
 
             prevs = currents
-        
+
         if len(samples):
             samples = torch.cat(samples, dim=-1)
             samples = [self.tensor2string(t[:l]) for t, l in zip(samples, lengths)]
         else:
             samples = ['' for _ in range(n)]
-        
+
         return samples
