@@ -26,7 +26,7 @@ class ORGANTrainer:
             model.generator.eval()
         else:
             model.generator.train()
-    
+
         postfix = {'loss': 0}
 
         for i, (prevs, nexts, lens) in enumerate(tqdm_data):
@@ -49,7 +49,7 @@ class ORGANTrainer:
 
             prevs = pad_sequence([t[:-1] for t in tensors], batch_first=True, padding_value=model.vocabulary.pad)
             nexts = pad_sequence([t[1:] for t in tensors], batch_first=True, padding_value=model.vocabulary.pad)
-            lens = torch.tensor([len(t) - 1 for t in tensors], dtype=torch.long, device= model.device)
+            lens = torch.tensor([len(t) - 1 for t in tensors], dtype=torch.long, device=model.device)
 
             return prevs, nexts, lens
 
@@ -88,7 +88,7 @@ class ORGANTrainer:
                 else:
                     inputs = inputs_from_data
                     targets = targets_from_data
-                
+
                 outputs = model.discriminator_forward(inputs)
                 loss = criterion(outputs, targets)
                 loss += self.config.discriminator_l2_reg * model.discriminator.l2_reg_term()
@@ -101,7 +101,7 @@ class ORGANTrainer:
                 postfix['loss'] = (postfix['loss'] * (i - 1) + loss.item()) / i
 
                 tqdm_data.set_postfix(postfix)
-                
+
     def _pretrain_discriminator(self, model, train_data, val_data=None):
         def collate(data):
             data.sort(key=lambda x: len(x), reverse=True)
@@ -142,7 +142,8 @@ class ORGANTrainer:
         for i in pg_iters:
             for k in range(self.config.generator_updates):
                 model.eval()
-                sequences, rewards, lengths = model.rollout(self.config.n_batch, self.config.rollouts, self.config.max_length)
+                sequences, rewards, lengths = model.rollout(
+                    self.config.n_batch, self.config.rollouts, self.config.max_length)
                 model.train()
 
                 lengths, indices = torch.sort(lengths, descending=True)
@@ -160,9 +161,11 @@ class ORGANTrainer:
                     postfix['generator_loss'] = generator_loss.item()
                     postfix['reward'] = torch.cat([t[:l] for t, l in zip(rewards, lengths)]).mean().item()
                 else:
-                    postfix['generator_loss'] = postfix['generator_loss'] * (1 - smooth) + generator_loss.item() * smooth
-                    postfix['reward'] = postfix['reward'] * (1 - smooth) + torch.cat([t[:l] for t, l in zip(rewards, lengths)]).mean().item() * smooth
-                
+                    postfix['generator_loss'] = postfix['generator_loss'] * \
+                        (1 - smooth) + generator_loss.item() * smooth
+                    postfix['reward'] = postfix['reward'] * \
+                        (1 - smooth) + torch.cat([t[:l] for t, l in zip(rewards, lengths)]).mean().item() * smooth
+
             for k in range(self.config.discriminator_updates):
                 if (i * self.config.discriminator_updates + k) % 2 == 0:
                     model.generator.eval()
@@ -178,18 +181,19 @@ class ORGANTrainer:
                 discriminator_outputs = model.discriminator_forward(discriminator_inputs)
                 discriminator_loss = discriminator_criterion(discriminator_outputs, discriminator_targets)
                 discriminator_loss += self.config.discriminator_l2_reg * model.discriminator.l2_reg_term()
-                
+
                 discriminator_optimizer.zero_grad()
                 discriminator_loss.backward()
                 discriminator_optimizer.step()
-            
+
                 if i == 0:
                     postfix['discriminator_loss'] = discriminator_loss.item()
                 else:
-                    postfix['discriminator_loss'] = postfix['discriminator_loss'] * (1 - smooth) + discriminator_loss.item() * smooth
+                    postfix['discriminator_loss'] = postfix['discriminator_loss'] * \
+                        (1 - smooth) + discriminator_loss.item() * smooth
 
             pg_iters.set_postfix(postfix)
-        
+
     def fit(self, model, train_data, val_data=None):
         self._pretrain_generator(model, train_data, val_data)
         self._pretrain_discriminator(model, train_data, val_data)

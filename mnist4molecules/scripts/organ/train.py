@@ -8,8 +8,8 @@ from mnist4molecules.script_utils import add_train_args, read_smiles_csv, set_se
 from mnist4molecules.utils import CharVocab
 
 from mnist4molecules.metrics import mapper, get_mol, fraction_valid, morgan_similarity, remove_invalid, \
-                    fragment_similarity, scaffold_similarity, fraction_passes_filters, \
-                    frechet_chembl_distance, fraction_unique, internal_diversity
+                                    fragment_similarity, scaffold_similarity, fraction_passes_filters, \
+                                    fraction_unique, internal_diversity
 
 from multiprocessing import Pool
 
@@ -24,7 +24,7 @@ def add_args_for_reward_func(parser):
                         help='Number of processes to run metrics')
 
     return parser
-    
+
 
 def parse_device_id(device):
     if device == 'cpu':
@@ -33,7 +33,7 @@ def parse_device_id(device):
     device = device.split(':')
     if len(device) > 1:
         return int(device[1])
-    
+
     return 0
 
 
@@ -46,7 +46,7 @@ def nan2zero(value):
 
 def buid_reward_fn(config, train):
     gpu = parse_device_id(config.device)
-    
+
     def reward(gen):
         rewards = []
         n_metrics = 6
@@ -56,10 +56,10 @@ def buid_reward_fn(config, train):
             ref = remove_invalid(ref, canonize=True, n_jobs=pool)
             ref_mols = mapper(pool)(get_mol, ref)
 
-            for i in range(0, len(gen), config.rollouts): # hack for metrics
+            for i in range(0, len(gen), config.rollouts):  # hack for metrics
                 rollout_gen = gen[i:i+config.rollouts]
                 current_reward = fraction_valid(rollout_gen, n_jobs=pool)
-                
+
                 if current_reward > 0:
                     rollout_gen = remove_invalid(rollout_gen, canonize=True, n_jobs=pool)
                     rollout_gen_mols = mapper(pool)(get_mol, rollout_gen)
@@ -77,8 +77,7 @@ def buid_reward_fn(config, train):
 
         return rewards
 
-    return reward   
-    
+    return reward
 
 
 def main(config):

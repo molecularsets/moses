@@ -28,7 +28,7 @@ def main(config):
     while n > 0:
         current_samples = model.sample(min(n, config.n_batch), config.max_len)
         samples.extend(current_samples)
-        
+
         n -= len(current_samples)
         T.update(len(current_samples))
         T.refresh()

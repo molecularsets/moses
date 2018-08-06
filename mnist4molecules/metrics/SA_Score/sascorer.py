@@ -1,7 +1,8 @@
 #
 # calculation of synthetic accessibility score as described in:
 #
-# Estimation of Synthetic Accessibility Score of Drug-like Molecules based on Molecular Complexity and Fragment Contributions
+# Estimation of Synthetic Accessibility Score of Drug-like Molecules based on
+# Molecular Complexity and Fragment Contributions
 # Peter Ertl and Ansgar Schuffenhauer
 # Journal of Cheminformatics 1:8 (2009)
 # http://www.jcheminf.com/content/1/1/8
@@ -125,7 +126,8 @@ def processMols(mols):
 
 
 if __name__ == '__main__':
-    import sys, time
+    import sys
+    import time
 
     t1 = time.time()
     readFragmentScores("fpscores")
@@ -137,25 +139,25 @@ if __name__ == '__main__':
     t4 = time.time()
 
     print('Reading took %.2f seconds. Calculating took %.2f seconds' % (
-    (t2 - t1), (t4 - t3)),
-          file=sys.stderr)
+        (t2 - t1), (t4 - t3)),
+        file=sys.stderr)
 
 #
 #  Copyright (c) 2013, Novartis Institutes for BioMedical Research Inc.
 #  All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
-# met: 
+# met:
 #
-#     * Redistributions of source code must retain the above copyright 
+#     * Redistributions of source code must retain the above copyright
 #       notice, this list of conditions and the following disclaimer.
 #     * Redistributions in binary form must reproduce the above
-#       copyright notice, this list of conditions and the following 
-#       disclaimer in the documentation and/or other materials provided 
+#       copyright notice, this list of conditions and the following
+#       disclaimer in the documentation and/or other materials provided
 #       with the distribution.
-#     * Neither the name of Novartis Institutes for BioMedical Research Inc. 
-#       nor the names of its contributors may be used to endorse or promote 
+#     * Neither the name of Novartis Institutes for BioMedical Research Inc.
+#       nor the names of its contributors may be used to endorse or promote
 #       products derived from this software without specific prior written permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS

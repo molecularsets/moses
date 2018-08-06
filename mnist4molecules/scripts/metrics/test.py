@@ -1,6 +1,9 @@
 import unittest
+import numpy as np
 
-from mnist4molecules.metrics import *
+from rdkit import Chem
+from mnist4molecules.metrics import get_all_metrics, fingerprint_similarity, \
+                                    fraction_valid, fraction_unique
 
 
 class test_metrics(unittest.TestCase):

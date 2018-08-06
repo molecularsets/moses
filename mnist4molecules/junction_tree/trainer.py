@@ -9,10 +9,13 @@ class JTreeTrainer:
         self.config = config
 
     def fit(self, model, data):
+        def get_params():
+            return (p for p in model.parameters() if p.requires_grad)
+
         model.train()
 
         n_epoch = self.config.num_epochs
-        get_params = lambda: (p for p in model.parameters() if p.requires_grad)
+
         optimizer = optim.Adam(get_params(), lr=self.config.lr)
 
         for epoch in range(n_epoch):

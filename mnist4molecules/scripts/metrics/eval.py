@@ -17,6 +17,7 @@ def main(config):
                           k=config.ks, n_jobs=config.n_jobs,
                           gpu=config.device_code))
 
+
 def get_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--ref_path',
@@ -36,10 +37,9 @@ def get_parser():
                         help='Device code to run (-1 for cpu)')
 
     return parser
-    
+
 
 if __name__ == '__main__':
     parser = get_parser()
     config = parser.parse_known_args()[0]
     main(config)
-    

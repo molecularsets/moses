@@ -28,11 +28,10 @@ def main(config):
     while n > 0:
         current_samples = model.sample(min(n, config.n_batch), config.max_len)
         samples.extend(current_samples)
-        
+
         n -= len(current_samples)
         T.update(len(current_samples))
         T.refresh()
-
 
     samples = pd.DataFrame(samples, columns=['SMILES'])
     samples.to_csv(config.gen_save, index=False)

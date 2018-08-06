@@ -24,7 +24,8 @@ class AAETrainer:
 
         for i, (encoder_inputs, decoder_inputs, decoder_targets) in enumerate(tqdm_data):
             latent_codes = model.encoder_forward(*encoder_inputs)
-            decoder_outputs, decoder_output_lengths, _ = model.decoder_forward(*decoder_inputs, latent_codes, is_latent_states=True)
+            decoder_outputs, decoder_output_lengths, _ = model.decoder_forward(
+                *decoder_inputs, latent_codes, is_latent_states=True)
 
             decoder_outputs = torch.cat([t[:l] for t, l in zip(decoder_outputs, decoder_output_lengths)], dim=0)
             decoder_targets = torch.cat([t[:l] for t, l in zip(*decoder_targets)], dim=0)
@@ -42,7 +43,8 @@ class AAETrainer:
 
     def _pretrain(self, model, train_loader, val_loader=None):
         criterion = nn.CrossEntropyLoss()
-        optimizer = torch.optim.Adam(list(model.encoder.parameters()) + list(model.decoder.parameters()), lr=self.config.lr)
+        optimizer = torch.optim.Adam(list(model.encoder.parameters()) +
+                                     list(model.decoder.parameters()), lr=self.config.lr)
 
         for epoch in range(self.config.pretrain_epochs):
             tqdm_data = tqdm(train_loader, desc='Pretraining (epoch #{})'.format(epoch))
@@ -58,13 +60,14 @@ class AAETrainer:
         else:
             model.train()
 
-        postfix = {'autoencoder_loss': 0, 
-                   'generator_loss': 0, 
+        postfix = {'autoencoder_loss': 0,
+                   'generator_loss': 0,
                    'discriminator_loss': 0}
 
         for i, (encoder_inputs, decoder_inputs, decoder_targets) in enumerate(tqdm_data):
             latent_codes = model.encoder_forward(*encoder_inputs)
-            decoder_outputs, decoder_output_lengths, _ = model.decoder_forward(*decoder_inputs, latent_codes, is_latent_states=True)
+            decoder_outputs, decoder_output_lengths, _ = model.decoder_forward(
+                *decoder_inputs, latent_codes, is_latent_states=True)
             discriminator_outputs = model.discriminator_forward(latent_codes)
 
             decoder_outputs = torch.cat([t[:l] for t, l in zip(decoder_outputs, decoder_output_lengths)], dim=0)
@@ -86,7 +89,7 @@ class AAETrainer:
                 optimizers['autoencoder'].zero_grad()
                 autoencoder_loss.backward(retain_graph=True)
                 optimizers['autoencoder'].step()
-                
+
                 optimizers['generator'].zero_grad()
                 generator_loss.backward(retain_graph=True)
                 optimizers['generator'].step()
@@ -106,7 +109,8 @@ class AAETrainer:
                       'generator': lambda t: -torch.mean(F.logsigmoid(t)),
                       'discriminator': nn.BCEWithLogitsLoss()}
 
-        optimizers = {'autoencoder': torch.optim.Adam(list(model.encoder.parameters()) + list(model.decoder.parameters()), lr=self.config.lr),
+        optimizers = {'autoencoder': torch.optim.Adam(list(model.encoder.parameters()) +
+                                                      list(model.decoder.parameters()), lr=self.config.lr),
                       'generator': torch.optim.Adam(model.encoder.parameters(), lr=self.config.lr),
                       'discriminator': torch.optim.Adam(model.discriminator.parameters(), lr=self.config.lr)}
 
@@ -121,23 +125,28 @@ class AAETrainer:
     def fit(self, model, train_data, val_data=None):
         def collate(data):
             data.sort(key=lambda x: len(x), reverse=True)
-            
+
             tensors = [model.string2tensor(string) for string in data]
             lengths = torch.tensor([len(t) for t in tensors], dtype=torch.long, device=model.device)
 
             encoder_inputs = pad_sequence(tensors, batch_first=True, padding_value=model.vocabulary.pad)
             encoder_input_lengths = lengths - 2
 
-            decoder_inputs = pad_sequence([t[:-1] for t in tensors], batch_first=True, padding_value=model.vocabulary.pad)
+            decoder_inputs = pad_sequence([t[:-1] for t in tensors], batch_first=True,
+                                          padding_value=model.vocabulary.pad)
             decoder_input_lengths = lengths - 1
 
-            decoder_targets = pad_sequence([t[1:] for t in tensors], batch_first=True, padding_value=model.vocabulary.pad)
+            decoder_targets = pad_sequence([t[1:] for t in tensors], batch_first=True,
+                                           padding_value=model.vocabulary.pad)
             decoder_target_lengths = lengths - 1
 
-            return (encoder_inputs, encoder_input_lengths), (decoder_inputs, decoder_input_lengths), (decoder_targets, decoder_target_lengths)
+            return (encoder_inputs, encoder_input_lengths), \
+                   (decoder_inputs, decoder_input_lengths), \
+                   (decoder_targets, decoder_target_lengths)
 
         train_loader = DataLoader(train_data, batch_size=self.config.n_batch, shuffle=True, collate_fn=collate)
-        val_loader = None if val_data is None else DataLoader(val_data, batch_size=self.config.n_batch, shuffle=False, collate_fn=collate)
+        val_loader = None if val_data is None else DataLoader(
+            val_data, batch_size=self.config.n_batch, shuffle=False, collate_fn=collate)
 
         self._pretrain(model, train_loader, val_loader)
         self._train(model, train_loader, val_loader)

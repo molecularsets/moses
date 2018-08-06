@@ -95,7 +95,8 @@ class JTNNVAE(nn.Module):
         batch_idx = []
         for i, mol_tree in enumerate(mol_batch):
             for node in mol_tree.nodes:
-                if node.is_leaf or len(node.cands) == 1: continue
+                if node.is_leaf or len(node.cands) == 1:
+                    continue
                 cands.extend([(cand, mol_tree.nodes, node) for cand in node.cand_mols])
                 batch_idx.extend([i] * len(node.cands))
 
@@ -267,7 +268,8 @@ class JTNNVAE(nn.Module):
             new_global_amap = copy.deepcopy(global_amap)
 
             for nei_id, ctr_atom, nei_atom in pred_amap:
-                if nei_id == fa_nid: continue
+                if nei_id == fa_nid:
+                    continue
                 new_global_amap[nei_id][nei_atom] = new_global_amap[cur_node.nid][ctr_atom]
 
             cur_mol = attach_mols(cur_mol, children, [], new_global_amap)
@@ -279,7 +281,8 @@ class JTNNVAE(nn.Module):
 
             result = True
             for nei_node in children:
-                if nei_node.is_leaf: continue
+                if nei_node.is_leaf:
+                    continue
                 cur_mol = self.dfs_assemble(tree_mess, mol_vec, all_nodes, cur_mol, new_global_amap, pred_amap,
                                             nei_node, cur_node, prob_decode)
                 if cur_mol is None:
