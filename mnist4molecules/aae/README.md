@@ -1,9 +1,16 @@
-Adversarial autoencoder: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5355231/
+# AAE (Adversarial autoencoder)
 
-{'valid': 0.7545, 'unique@1000': 1.0, 'unique@10000': 1.0, 'FCD': 2.1489321183502383, 'morgan': 0.3674254745649849, 'fragments': 0.9752234798058161, 'scaffolds': 0.3898575803788712, 'internal_diversity': 0.8554047876635783, 'filters': 0.9392312789927104}
+## Links
 
-scaffolds:
+* [Adversarial Autoencoders](https://arxiv.org/abs/1511.05644)
+* [The cornucopia of meaningful leads: Applying deep adversarial autoencoders for new molecule development in oncology (for molecular fingerprints)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5355231)
 
-{'valid': 0.7545, 'unique@1000': 1.0, 'unique@10000': 1.0, 'FCD': 2.137529707086742, 'morgan': 0.36315396501577163, 'fra
-gments': 0.9771575812274025, 'scaffolds': 0.10492303918071044, 'internal_diversity': 0.8554047876635783, 'filters': 0.93
-92312789927104}
+## Workflow
+
+Training on `train.csv`, testing on `test.csv`:
+
+```
+python mnist4molecules/scripts/aae/train.py --train_load train.csv --device cuda:0
+python mnist4molecules/scripts/aae/sample.py --n_samples 10000 --device cuda:0
+python mnist4molecules/scripts/metrics/eval.py --ref_path test.csv --gen_path gen.csv
+```
