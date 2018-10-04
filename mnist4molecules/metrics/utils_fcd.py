@@ -12,8 +12,6 @@ samples respectivly.
 '''
 
 import os
-import warnings
-
 import keras.backend as K
 import numpy as np
 import tensorflow as tf
@@ -29,21 +27,19 @@ def calculate_frechet_distance(mu1, sigma1, mu2, sigma2, eps=1e-6):
             d^2 = ||mu_1 - mu_2||^2 + Tr(C_1 + C_2 - 2*sqrt(C_1*C_2)).
 
     Stable version by Dougal J. Sutherland.
-
     Params:
     -- mu1:    The mean of the activations of preultimate layer of the
-               CHEMBLNET ( like returned by the function 'get_predictions')
+               CHEMNET ( like returned by the function 'get_predictions')
                for generated samples.
     -- mu2:    The mean of the activations of preultimate layer of the
-               CHEMBLNET ( like returned by the function 'get_predictions')
+               CHEMNET ( like returned by the function 'get_predictions')
                for real samples.
     -- sigma1: The covariance matrix of the activations of preultimate layer of the
-               CHEMBLNET ( like returned by the function 'get_predictions')
+               CHEMNET ( like returned by the function 'get_predictions')
                for generated samples.
     -- sigma2: The covariance matrix of the activations of preultimate layer of the
-               CHEMBLNET ( like returned by the function 'get_predictions')
+               CHEMNET ( like returned by the function 'get_predictions')
                for real samples.
-
     Returns:
     --   : The Frechet Distance.
     """
@@ -62,8 +58,6 @@ def calculate_frechet_distance(mu1, sigma1, mu2, sigma2, eps=1e-6):
     # product might be almost singular
     covmean, _ = linalg.sqrtm(sigma1.dot(sigma2), disp=False)
     if not np.isfinite(covmean).all():
-        msg = "fid calculation produces singular product; adding %s to diagonal of cov estimates" % eps
-        warnings.warn(msg)
         offset = np.eye(sigma1.shape[0]) * eps
         covmean = linalg.sqrtm((sigma1 + offset).dot(sigma2 + offset))
 
@@ -72,14 +66,12 @@ def calculate_frechet_distance(mu1, sigma1, mu2, sigma2, eps=1e-6):
         if not np.allclose(np.diagonal(covmean).imag, 0, atol=1e-3):
             m = np.max(np.abs(covmean.imag))
             raise ValueError("Imaginary component {}".format(m))
-            covmean = covmean.real
+        covmean = covmean.real
 
     tr_covmean = np.trace(covmean)
 
     return diff.dot(diff) + np.trace(sigma1) + np.trace(sigma2) - 2 * tr_covmean
 
-
-# -------------------------------------------------------------------------------
 
 def build_masked_loss(loss_function, mask_value):
     """Builds a loss function that masks based on targets
@@ -99,16 +91,13 @@ def build_masked_loss(loss_function, mask_value):
     return masked_loss_function
 
 
-# -------------------------------------------------------------------------------
-
 def masked_accuracy(y_true, y_pred):
+    mask_value = 0.5
     a = K.sum(K.cast(K.equal(y_true, K.round(y_pred)), K.floatx()))
-    c = K.sum(K.cast(K.not_equal(y_true, 0.5), K.floatx()))
+    c = K.sum(K.cast(K.not_equal(y_true, mask_value), K.floatx()))
     acc = (a) / c
     return acc
 
-
-# -------------------------------------------------------------------------------
 
 def get_one_hot(smiles, pad_len=-1):
     one_hot = ['C', 'N', 'O', 'H', 'F', 'Cl', 'P', 'B', 'Br', 'S', 'I',
@@ -142,8 +131,6 @@ def get_one_hot(smiles, pad_len=-1):
     return (vec)
 
 
-# -------------------------------------------------------------------------------
-
 def myGenerator_predict(smilesList, batch_size=128, pad_len=350):
     while 1:
         N = len(smilesList)
@@ -163,12 +150,22 @@ def myGenerator_predict(smilesList, batch_size=128, pad_len=350):
             yield x
 
 
-# -------------------------------------------------------------------------------
+def load_ref_model(model_file):
+    masked_loss_function = build_masked_loss(K.binary_crossentropy, 0.5)
+    model = load_model(model_file,
+                       custom_objects={
+                           'masked_loss_function': masked_loss_function,
+                           'masked_accuracy': masked_accuracy
+                       })
+    model.pop()
+    model.pop()
+    return model
+
 
 def get_predictions(gen_mol, gpu=-1):
     assert isinstance(gpu, int), "GPU should be an integer"
     model_dir = os.path.split(__file__)[0]
-    model_path = os.path.join(model_dir, 'model_FCD.h5')
+    model_path = os.path.join(model_dir, 'ChemNet_v0.13_pretrained.h5')
     cuda_old = os.environ.get("CUDA_VISIBLE_DEVICES", None)
     os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu)
     if gpu != -1:
@@ -176,22 +173,18 @@ def get_predictions(gen_mol, gpu=-1):
     else:
         device = "/cpu"
     with tf.device(device):
-        masked_loss_function = build_masked_loss(K.binary_crossentropy, 0.5)
         config = tf.ConfigProto(allow_soft_placement=True)
         config.gpu_options.allow_growth = True
         sess = tf.Session(config=config)
         set_session(sess)
-        model = load_model(model_path,
-                           custom_objects={'masked_loss_function': masked_loss_function,
-                                           'masked_accuracy': masked_accuracy})
-        model.pop()
-        model.pop()
-        gen_mol_act = model.predict_generator(myGenerator_predict(gen_mol, batch_size=128),
-                                              steps=np.ceil(len(gen_mol) / 128))
+        model = load_ref_model(model_path)
+        gen_mol_act = model.predict_generator(
+                                myGenerator_predict(gen_mol,
+                                                    batch_size=128),
+                                steps=np.ceil(len(gen_mol)/128))
         sess.close()
     if cuda_old is not None:
         os.environ["CUDA_VISIBLE_DEVICES"] = str(cuda_old)
     else:
         os.environ.pop("CUDA_VISIBLE_DEVICES")
     return gen_mol_act
-# -------------------------------------------------------------------------------

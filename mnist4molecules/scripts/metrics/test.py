@@ -16,12 +16,17 @@ class test_metrics(unittest.TestCase):
                     'Cc1nc(NCc2ccccc2)no1-c1ccccc1']
         self.target = {'valid': 2/3,
                        'unique@3': 1.0,
-                       'FCD': 28.246311814725665,
-                       'morgan': 0.31525856535881758,
+                       'FCD': 52.58371754126664,
+                       'morgan': 0.3152585653588176,
                        'fragments': 0.3,
                        'scaffolds': 0.5,
                        'internal_diversity': 0.7189187309761661,
-                       'filters': 0.75}
+                       'filters': 0.75,
+                       'logP': 4.9581881764518005,
+                       'SA': 0.5086898026154574,
+                       'QED': 0.045033731661603064,
+                       'NP': 0.2902816615644048,
+                       'weight': 14761.927533455337}
 
     def test_get_all_metrics(self):
         metrics = get_all_metrics(self.ref, self.gen, k=3)

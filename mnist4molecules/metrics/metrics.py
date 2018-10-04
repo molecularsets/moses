@@ -5,7 +5,8 @@ from scipy.spatial.distance import cosine
 
 from .utils import compute_fragments, average_max_tanimoto, \
     compute_scaffolds, tanimoto, fingerprints, \
-    get_mol, canonic_smiles, mapper, mol_passes_filters
+    get_mol, canonic_smiles, mapper, mol_passes_filters, \
+    logP, QED, SA, NP, weight
 from .utils_fcd import get_predictions, calculate_frechet_distance
 
 
@@ -43,6 +44,11 @@ def get_all_metrics(ref, gen, k=[1000, 10000], n_jobs=1, gpu=-1):
                                                n_jobs=n_jobs)
     metrics['internal_diversity'] = internal_diversity(gen_mols, n_jobs=n_jobs)
     metrics['filters'] = fraction_passes_filters(gen_mols, n_jobs=n_jobs)
+    metrics['logP'] = frechet_distance(ref_mols, gen_mols, logP, n_jobs=n_jobs)
+    metrics['SA'] = frechet_distance(ref_mols, gen_mols, SA, n_jobs=n_jobs)
+    metrics['QED'] = frechet_distance(ref_mols, gen_mols, QED, n_jobs=n_jobs)
+    metrics['NP'] = frechet_distance(ref_mols, gen_mols, NP, n_jobs=n_jobs)
+    metrics['weight'] = frechet_distance(ref_mols, gen_mols, weight, n_jobs=n_jobs)
     return metrics
 
 
@@ -164,3 +170,14 @@ def scaffold_similarity(ref, gen, n_jobs=1):
     ref_scaffolds = compute_scaffolds(ref, n_jobs=n_jobs)
     gen_scaffolds = compute_scaffolds(gen, n_jobs=n_jobs)
     return count_distance(ref_scaffolds, gen_scaffolds)
+
+
+def frechet_distance(ref, gen, func, n_jobs=1):
+    ref_values = mapper(n_jobs)(func, ref)
+    gen_values = mapper(n_jobs)(func, gen)
+    ref_mean = np.mean(ref_values)
+    ref_var = np.var(ref_values)
+    gen_mean = np.mean(gen_values)
+    gen_var = np.var(gen_values)
+    return calculate_frechet_distance(ref_mean, ref_var,
+                                      gen_mean, gen_var)

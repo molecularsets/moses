@@ -2,7 +2,6 @@ import os
 from collections import Counter
 from functools import partial
 from multiprocessing import Pool
-
 import numpy as np
 import pandas as pd
 import scipy.sparse
@@ -13,15 +12,16 @@ from rdkit.Chem import MACCSkeys
 from rdkit.Chem.AllChem import GetMorganFingerprintAsBitVect as Morgan
 from rdkit.Chem.QED import qed
 from rdkit.Chem.Scaffolds import MurckoScaffold
-
-from .SA_Score import sascorer
+from rdkit.Chem import Descriptors
+from mnist4molecules.metrics.SA_Score import sascorer
+from mnist4molecules.metrics.NP_Score import npscorer
 
 _base_dir = os.path.split(__file__)[0]
 _mcf = pd.read_csv(os.path.join(_base_dir, 'mcf.csv'))
 _pains = pd.read_csv(os.path.join(_base_dir, 'wehi_pains.csv'),
                      names=['smarts', 'names'])
 _filters = [Chem.MolFromSmarts(x) for x in
-            _mcf.append(_pains)['smarts'].values]
+            _mcf.append(_pains, sort=True)['smarts'].values]
 
 
 def mapper(n_jobs):
@@ -84,9 +84,16 @@ def logP(mol):
 
 def SA(mol):
     '''
-    Computes RDKit's SA score
+    Computes RDKit's Synthetic Accessibility score
     '''
     return sascorer.calculateScore(mol)
+
+
+def NP(mol):
+    '''
+    Computes RDKit's Natural Product-likeness score
+    '''
+    return npscorer.scoreMol(mol)
 
 
 def QED(mol):
@@ -94,6 +101,14 @@ def QED(mol):
     Computes RDKit's QED score
     '''
     return qed(mol)
+
+
+def weight(mol):
+    '''
+    Computes molecular weight for given molecule.
+    Returns float,
+    '''
+    return Descriptors.MolWt(mol)
 
 
 def get_n_rings(mol):
