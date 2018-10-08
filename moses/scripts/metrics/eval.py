@@ -12,10 +12,12 @@ lg.setLevel(rdkit.RDLogger.CRITICAL)
 def main(config):
     ref = read_smiles_csv(config.ref_path)
     gen = read_smiles_csv(config.gen_path)
+    metrics = get_all_metrics(ref, gen, k=config.ks, n_jobs=config.n_jobs,
+                              gpu=config.device_code)
 
-    print(get_all_metrics(ref, gen,
-                          k=config.ks, n_jobs=config.n_jobs,
-                          gpu=config.device_code))
+    print('Metrics:')
+    for name, value in metrics.items():
+        print('\t' + name + ' = {}'.format(value))
 
 
 def get_parser():
