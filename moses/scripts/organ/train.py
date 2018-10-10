@@ -49,36 +49,34 @@ def nan2zero(value):
     return value
 
 
-def buid_reward_fn(config, train):
-    gpu = parse_device_id(config.device)
-
+def buid_reward_fn(config, train, pool, gpu):
     def reward(gen):
         rewards = []
-        n_metrics = 6
+        n_metrics = 7
 
-        with Pool(config.n_jobs) as pool:
-            ref = random.sample(train, config.n_ref)
-            ref = remove_invalid(ref, canonize=True, n_jobs=pool)
-            ref_mols = mapper(pool)(get_mol, ref)
+        ref = random.sample(train, config.n_ref)
+        ref = remove_invalid(ref, canonize=True, n_jobs=pool)
+        ref_mols = mapper(pool)(get_mol, ref)
 
-            for i in range(0, len(gen), config.rollouts):  # hack for metrics
-                rollout_gen = gen[i:i+config.rollouts]
-                current_reward = fraction_valid(rollout_gen, n_jobs=pool)
+        nb = len(gen) // config.rollouts
+        for i in range(0, nb):  # hack for metrics
+            rollout_gen = gen[i::nb]
+            current_reward = fraction_valid(rollout_gen, n_jobs=pool)
 
-                if current_reward > 0:
-                    rollout_gen = remove_invalid(rollout_gen, canonize=True, n_jobs=pool)
-                    rollout_gen_mols = mapper(pool)(get_mol, rollout_gen)
+            if current_reward > 0:
+                rollout_gen = remove_invalid(rollout_gen, canonize=True, n_jobs=pool)
+                rollout_gen_mols = mapper(pool)(get_mol, rollout_gen)
 
-                    if len(rollout_gen) > 1:
-                        current_reward += fraction_unique(rollout_gen, n_jobs=pool)
-                        current_reward += scaffold_similarity(ref_mols, rollout_gen_mols, n_jobs=pool)
-                        current_reward += fragment_similarity(ref_mols, rollout_gen_mols, n_jobs=pool)
-                        current_reward += nan2zero(internal_diversity(rollout_gen_mols, n_jobs=pool))
-                        current_reward += nan2zero(morgan_similarity(ref_mols, rollout_gen_mols, n_jobs=pool, gpu=gpu))
+                if len(rollout_gen) > 1:
+                    current_reward += fraction_unique(rollout_gen, n_jobs=pool)
+                    current_reward += scaffold_similarity(ref_mols, rollout_gen_mols, n_jobs=pool)
+                    current_reward += fragment_similarity(ref_mols, rollout_gen_mols, n_jobs=pool)
+                    current_reward += nan2zero(internal_diversity(rollout_gen_mols, n_jobs=pool))
+                    current_reward += nan2zero(morgan_similarity(ref_mols, rollout_gen_mols, n_jobs=pool, gpu=gpu))
 
-                    current_reward += fraction_passes_filters(rollout_gen_mols, n_jobs=pool)
+                current_reward += fraction_passes_filters(rollout_gen_mols, n_jobs=pool)
 
-                rewards.extend([current_reward / n_metrics] * config.rollouts)
+            rewards.extend([current_reward / n_metrics] * config.rollouts)
 
         return rewards
 
@@ -91,13 +89,25 @@ def main(config):
     train = read_smiles_csv(config.train_load)
     vocab = CharVocab.from_data(train)
     device = torch.device(config.device)
-    reward_func = buid_reward_fn(config, train)
 
-    model = ORGAN(vocab, config, reward_func)
-    model = model.to(device)
+    config = torch.load('pconfig.pt')
+    vocab = torch.load('pvocab.pt')
+    model_state = torch.load('pmodel.pt')
 
-    trainer = ORGANTrainer(config)
-    trainer.fit(model, train)
+    config.generator_pretrain_epochs = 0
+    config.discriminator_pretrain_epochs = 0
+    config.pg_iters = 1000
+    config.discriminator_updates = 500
+
+    with Pool(config.n_jobs) as pool:
+        reward_func = buid_reward_fn(config, train, pool, parse_device_id(config.device))
+
+        model = ORGAN(vocab, config, reward_func)
+        model.load_state_dict(model_state)
+        model = model.to(device)
+
+        trainer = ORGANTrainer(config)
+        trainer.fit(model, train)
 
     torch.save(model.state_dict(), config.model_save)
     torch.save(config, config.config_save)

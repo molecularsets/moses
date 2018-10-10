@@ -36,13 +36,6 @@ class Discriminator(nn.Module):
         self.dropout_layer = nn.Dropout(p=dropout)
         self.output_layer = nn.Linear(sum_filters, 1)
 
-    def l2_reg_term(self):
-        l2_reg = 0
-        for param in self.output_layer.parameters():
-            l2_reg += param.norm(2)
-
-        return l2_reg
-
     def forward(self, x):
         x = self.embedding_layer(x)
         x = x.unsqueeze(1)
@@ -52,7 +45,7 @@ class Discriminator(nn.Module):
         x = torch.cat(x, dim=1)
 
         h = self.highway_layer(x)
-        t = F.sigmoid(h)
+        t = torch.sigmoid(h)
         x = t * F.relu(h) + (1 - t) * x
         x = self.dropout_layer(x)
         out = self.output_layer(x)
@@ -102,85 +95,87 @@ class ORGAN(nn.Module):
         return string
 
     def _proceed_sequences(self, prevs, states, max_len):
-        n_sequences = prevs.shape[0]
+        with torch.no_grad():
+            n_sequences = prevs.shape[0]
 
-        sequences = []
-        lengths = torch.zeros(n_sequences, dtype=torch.long, device=prevs.device)
+            sequences = []
+            lengths = torch.zeros(n_sequences, dtype=torch.long, device=prevs.device)
 
-        one_lens = torch.ones(n_sequences, dtype=torch.long, device=prevs.device)
-        is_end = prevs.eq(self.vocabulary.eos).view(-1)
+            one_lens = torch.ones(n_sequences, dtype=torch.long, device=prevs.device)
+            is_end = prevs.eq(self.vocabulary.eos).view(-1)
 
-        for _ in range(max_len):
-            outputs, _, states = self.generator(prevs, one_lens, states)
-            probs = F.softmax(outputs, dim=-1).view(n_sequences, -1)
-            currents = torch.multinomial(probs, 1)
+            for _ in range(max_len):
+                outputs, _, states = self.generator(prevs, one_lens, states)
+                probs = F.softmax(outputs, dim=-1).view(n_sequences, -1)
+                currents = torch.multinomial(probs, 1)
 
-            currents[is_end, :] = self.vocabulary.pad
-            sequences.append(currents)
-            lengths[~is_end] += 1
+                currents[is_end, :] = self.vocabulary.pad
+                sequences.append(currents)
+                lengths[~is_end] += 1
 
-            is_end[currents.view(-1) == self.vocabulary.eos] = 1
-            if is_end.sum() == n_sequences:
-                break
+                is_end[currents.view(-1) == self.vocabulary.eos] = 1
+                if is_end.sum() == n_sequences:
+                    break
 
-            prevs = currents
+                prevs = currents
 
-        sequences = torch.cat(sequences, dim=-1)
+            sequences = torch.cat(sequences, dim=-1)
 
         return sequences, lengths
 
     def rollout(self, n_samples, n_rollouts, max_len=100):
-        sequences = []
-        rewards = []
-        lengths = torch.zeros(n_samples, dtype=torch.long, device=self.device)
+        with torch.no_grad():
+            sequences = []
+            rewards = []
+            lengths = torch.zeros(n_samples, dtype=torch.long, device=self.device)
 
-        one_lens = torch.ones(n_samples, dtype=torch.long, device=self.device)
-        prevs = torch.empty(n_samples, 1, dtype=torch.long, device=self.device).fill_(self.vocabulary.bos)
-        is_end = torch.zeros(n_samples, dtype=torch.uint8, device=self.device)
-        states = None
+            one_lens = torch.ones(n_samples, dtype=torch.long, device=self.device)
+            prevs = torch.empty(n_samples, 1, dtype=torch.long, device=self.device).fill_(self.vocabulary.bos)
+            is_end = torch.zeros(n_samples, dtype=torch.uint8, device=self.device)
+            states = None
 
-        sequences.append(prevs)
-        lengths += 1
+            sequences.append(prevs)
+            lengths += 1
 
-        for current_len in range(max_len):
-            outputs, _, states = self.generator(prevs, one_lens, states)
-            probs = F.softmax(outputs, dim=-1).view(n_samples, -1)
-            currents = torch.multinomial(probs, 1)
+            for current_len in range(max_len):
+                outputs, _, states = self.generator(prevs, one_lens, states)
+                probs = F.softmax(outputs, dim=-1).view(n_samples, -1)
+                currents = torch.multinomial(probs, 1)
 
-            currents[is_end, :] = self.vocabulary.pad
-            sequences.append(currents)
-            lengths[~is_end] += 1
+                currents[is_end, :] = self.vocabulary.pad
+                sequences.append(currents)
+                lengths[~is_end] += 1
 
-            rollout_prevs = currents[~is_end, :].repeat(n_rollouts, 1)
-            rollout_states = (states[0][:, ~is_end, :].repeat(1, n_rollouts, 1),
-                              states[1][:, ~is_end, :].repeat(1, n_rollouts, 1))
-            rollout_sequences, rollout_lengths = self._proceed_sequences(
-                rollout_prevs, rollout_states, max_len - current_len)
+                rollout_prevs = currents[~is_end, :].repeat(n_rollouts, 1)
+                rollout_states = (states[0][:, ~is_end, :].repeat(1, n_rollouts, 1),
+                                states[1][:, ~is_end, :].repeat(1, n_rollouts, 1))
+                rollout_sequences, rollout_lengths = self._proceed_sequences(
+                    rollout_prevs, rollout_states, max_len - current_len)
 
-            rollout_sequences = torch.cat([s[~is_end, :].repeat(n_rollouts, 1)
-                                           for s in sequences] + [rollout_sequences], dim=-1)
-            rollout_lengths += lengths[~is_end].repeat(n_rollouts)
+                rollout_sequences = torch.cat([s[~is_end, :].repeat(n_rollouts, 1)
+                                            for s in sequences] + [rollout_sequences], dim=-1)
+                rollout_lengths += lengths[~is_end].repeat(n_rollouts)
 
-            rollout_rewards = F.sigmoid(self.discriminator(rollout_sequences).detach())
+                rollout_rewards = torch.sigmoid(self.discriminator(rollout_sequences).detach())
 
-            if self.reward_fn is not None:
-                strings = [self.tensor2string(t[:l]) for t, l in zip(rollout_sequences, rollout_lengths)]
-                obj_rewards = torch.tensor(self.reward_fn(strings), device=rollout_rewards.device).view(-1, 1)
-                rollout_rewards = rollout_rewards * (1 - self.reward_weight) + obj_rewards * self.reward_weight
+                if self.reward_fn is not None:
+                    strings = [self.tensor2string(t[:l]) for t, l in zip(rollout_sequences, rollout_lengths)]
+                    obj_rewards = torch.tensor(self.reward_fn(strings), device=rollout_rewards.device).view(-1, 1)
+                    rollout_rewards = rollout_rewards * (1 - self.reward_weight) + obj_rewards * self.reward_weight
 
-            current_rewards = torch.zeros(n_samples, device=self.device)
+                current_rewards = torch.zeros(n_samples, device=self.device)
 
-            current_rewards[~is_end] = rollout_rewards.view(n_rollouts, -1).mean(dim=0)
-            rewards.append(current_rewards.view(-1, 1))
+                current_rewards[~is_end] = rollout_rewards.view(n_rollouts, -1).mean(dim=0)
+                rewards.append(current_rewards.view(-1, 1))
 
-            is_end[currents.view(-1) == self.vocabulary.eos] = 1
-            if is_end.sum() == n_samples:
-                break
+                is_end[currents.view(-1) == self.vocabulary.eos] = 1
+                if is_end.sum() == n_samples:
+                    break
 
-            prevs = currents
+                prevs = currents
 
-        sequences = torch.cat(sequences, dim=1)
-        rewards = torch.cat(rewards, dim=1)
+            sequences = torch.cat(sequences, dim=1)
+            rewards = torch.cat(rewards, dim=1)
 
         return sequences, rewards, lengths
 

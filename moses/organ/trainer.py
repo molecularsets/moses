@@ -91,7 +91,6 @@ class ORGANTrainer:
 
                 outputs = model.discriminator_forward(inputs)
                 loss = criterion(outputs, targets)
-                loss += self.config.discriminator_l2_reg * model.discriminator.l2_reg_term()
 
                 if optimizer is not None:
                     optimizer.zero_grad()
@@ -180,7 +179,6 @@ class ORGANTrainer:
 
                 discriminator_outputs = model.discriminator_forward(discriminator_inputs)
                 discriminator_loss = discriminator_criterion(discriminator_outputs, discriminator_targets)
-                discriminator_loss += self.config.discriminator_l2_reg * model.discriminator.l2_reg_term()
 
                 discriminator_optimizer.zero_grad()
                 discriminator_loss.backward()

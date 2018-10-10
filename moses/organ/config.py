@@ -24,30 +24,28 @@ def get_parser():
                            help='Embedding size in generator and discriminator')
     model_arg.add_argument('--hidden_size', type=int, default=512,
                            help='Size of hidden state for lstm layers in generator')
-    model_arg.add_argument('--num_layers', type=int, default=1,
+    model_arg.add_argument('--num_layers', type=int, default=2,
                            help='Number of lstm layers in generator')
-    model_arg.add_argument('--dropout', type=float, default=0,
+    model_arg.add_argument('--dropout', type=float, default=0.1,
                            help='Dropout probability for lstm layers in generator')
     model_arg.add_argument('--discriminator_layers', nargs='+', type=conv_pair,
-                           default=[(128, 1), (128, 3), (128, 5), (128, 7), (128, 9), (128, 15), (128, 21)],
+                           default=[(64, 3), (64, 5), (64, 7), (64, 9), (54, 15), (54, 21)],
                            help='Numbers of features for convalution layers in discriminator')
-    model_arg.add_argument('--discriminator_dropout', type=float, default=0.75,
+    model_arg.add_argument('--discriminator_dropout', type=float, default=0,
                            help='Dropout probability for discriminator')
-    model_arg.add_argument('--discriminator_l2_reg', type=float, default=0.2,
-                           help='L2 regularization coefficient for discriminator')
     model_arg.add_argument('--reward_weight', type=restricted_float, default=0.5,
                            help='Reward weight for policy gradient training')
 
     train_arg = parser.add_argument_group('Training')
-    train_arg.add_argument('--generator_pretrain_epochs', type=int, default=35,
+    train_arg.add_argument('--generator_pretrain_epochs', type=int, default=250,
                            help='Number of epochs for generator pretraining')
-    train_arg.add_argument('--discriminator_pretrain_epochs', type=int, default=10,
+    train_arg.add_argument('--discriminator_pretrain_epochs', type=int, default=200,
                            help='Number of epochs for discriminator pretraining')
     train_arg.add_argument('--pg_iters', type=int, default=1000,
                            help='Number of inerations for policy gradient training')
     train_arg.add_argument('--n_batch', type=int, default=64,
                            help='Size of batch')
-    train_arg.add_argument('--lr', type=float, default=1e-3,
+    train_arg.add_argument('--lr', type=float, default=1e-4,
                            help='Learning rate')
     train_arg.add_argument('--max_length', type=int, default=100,
                            help='Maximum length for sequence')
