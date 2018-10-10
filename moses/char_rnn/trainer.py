@@ -27,8 +27,6 @@ class CharRNNTrainer:
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.Adam(get_params(), lr=self.config.lr)
 
-        best_val_loss = float('inf')
-
         for epoch in range(num_epochs):
             model.train()
             train_dataloader = tqdm.tqdm(train_dataloader)
@@ -41,14 +39,6 @@ class CharRNNTrainer:
                 val_dataloader.set_description('Validation (epoch #{})'.format(epoch))
 
                 val_loss = self._pass_data(model, val_dataloader, criterion)
-
-                if best_val_loss > val_loss:
-                    best_val_loss = val_loss
-                    torch.save(model.state_dict(),
-                               os.path.join(self.config.model_save, "model-iter" + str(epoch) + ".pt"))  # TODO
-            else:
-                torch.save(model.state_dict(),
-                           os.path.join(self.config.model_save, "model-iter" + str(epoch) + ".pt"))  # TODO
 
     def _pass_data(self, model, dataloader, criterion, optimizer=None):
         if optimizer is None:
