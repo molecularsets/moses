@@ -2,7 +2,7 @@ import rdkit
 import torch
 import torch.nn as nn
 
-from moses.junction_tree.config import get_parser
+from moses.junction_tree.config import get_parser as junction_tree_parser
 from moses.junction_tree.datautils import JTreeCorpus
 from moses.junction_tree.jtnn.jtnn_vae import JTNNVAE
 from moses.junction_tree.trainer import JTreeTrainer
@@ -12,6 +12,10 @@ lg = rdkit.RDLogger.logger()
 lg.setLevel(rdkit.RDLogger.CRITICAL)
 
 
+def get_parser():
+    return add_train_args(junction_tree_parser())
+
+
 def main(config):
     set_seed(config.seed)
 
@@ -19,19 +23,11 @@ def main(config):
 
     data = read_smiles_csv(config.train_load)
     corpus = JTreeCorpus(config.n_batch, device)
-
-    if config.vocab_load is not None:
-        vocab = torch.load(config.vocab_load)
-        train_dataloader = corpus.fit(vocabulary=vocab).transform(data)
-    else:
-        train_dataloader = corpus.fit(dataset=data).transform(data)
+    train_dataloader = corpus.fit(dataset=data).transform(data)
 
     model = JTNNVAE(corpus.vocab, config.hidden, config.latent, config.depth)
     model = model.to(device=device)
 
-    # if jt_config.model_load is not None:
-    #     model.load_state_dict(torch.load(jt_config.model_load)) # TODO
-    # else:
 
     for param in model.parameters():
         if param.dim() == 1:
@@ -39,15 +35,15 @@ def main(config):
         else:
             nn.init.xavier_normal_(param)
 
-    # Serialization
-    torch.save(corpus.vocab, config.vocab_save)
-    torch.save(config, config.config_save)
-
     trainer = JTreeTrainer(config)
     trainer.fit(model, train_dataloader)
 
+    torch.save(model.state_dict(), config.model_save)
+    torch.save(corpus.vocab, config.vocab_save)
+    torch.save(config, config.config_save)
+
 
 if __name__ == '__main__':
-    parser = add_train_args(get_parser())
+    parser = get_parser()
     config = parser.parse_known_args()[0]
     main(config)

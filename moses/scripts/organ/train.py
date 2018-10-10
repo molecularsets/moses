@@ -3,7 +3,7 @@ import rdkit
 import random
 import numpy as np
 
-from moses.organ import get_parser, ORGAN, ORGANTrainer
+from moses.organ import ORGAN, ORGANTrainer, get_parser as organ_parser
 from moses.script_utils import add_train_args, read_smiles_csv, set_seed
 from moses.utils import CharVocab
 
@@ -15,6 +15,11 @@ from multiprocessing import Pool
 
 lg = rdkit.RDLogger.logger()
 lg.setLevel(rdkit.RDLogger.CRITICAL)
+
+
+def get_parser():
+    parser = add_train_args(organ_parser())
+    return add_args_for_reward_func(parser)
 
 
 def add_args_for_reward_func(parser):
@@ -100,7 +105,6 @@ def main(config):
 
 
 if __name__ == '__main__':
-    parser = add_train_args(get_parser())
-    parser = add_args_for_reward_func(parser)
+    parser = get_parser()
     config = parser.parse_known_args()[0]
     main(config)

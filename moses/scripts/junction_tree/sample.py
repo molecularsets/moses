@@ -12,6 +12,10 @@ lg = rdkit.RDLogger.logger()
 lg.setLevel(rdkit.RDLogger.CRITICAL)
 
 
+def get_parser():
+    return add_sample_args(argparse.ArgumentParser())
+
+
 def main(config):
     set_seed(config.seed)
 
@@ -35,6 +39,6 @@ def main(config):
 
 
 if __name__ == '__main__':
-    parser = add_sample_args(argparse.ArgumentParser())
+    parser = get_parser()
     config = parser.parse_known_args()[0]
     main(config)

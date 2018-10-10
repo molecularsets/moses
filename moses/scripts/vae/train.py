@@ -1,10 +1,14 @@
 import torch
 
 from moses.script_utils import add_train_args, read_smiles_csv, set_seed
-from moses.vae.config import get_parser
+from moses.vae.config import get_parser as vae_parser
 from moses.vae.corpus import OneHotCorpus
 from moses.vae.model import VAE
 from moses.vae.trainer import VAETrainer
+
+
+def get_parser():
+    return add_train_args(vae_parser())
 
 
 def main(config):
@@ -27,6 +31,6 @@ def main(config):
 
 
 if __name__ == '__main__':
-    parser = add_train_args(get_parser())
+    parser = get_parser()
     config = parser.parse_known_args()[0]
     main(config)

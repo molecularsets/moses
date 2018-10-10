@@ -1,10 +1,14 @@
 import torch
 
-from moses.char_rnn.config import get_parser
+from moses.char_rnn.config import get_parser as char_rnn_parser
 from moses.char_rnn.datautils import OneHotCorpus
 from moses.char_rnn.model import CharRNN
 from moses.char_rnn.trainer import CharRNNTrainer
 from moses.script_utils import add_train_args, read_smiles_csv, set_seed
+
+
+def get_parser():
+    return add_train_args(char_rnn_parser())
 
 
 def main(config):
@@ -12,34 +16,22 @@ def main(config):
 
     train = read_smiles_csv(config.train_load)
 
-    print(config.device)
-
     device = torch.device(config.device)
 
     corpus = OneHotCorpus(config.batch, device)
 
-    val_dataloader = None
     train_dataloader = corpus.fit(train).transform(train)
 
-    if config.val_load is not None:
-        val = read_smiles_csv(config.val_load)
-        val_dataloader = corpus.transform(val)
-
     model = CharRNN(corpus.vocab, config.hidden, config.num_layers, config.dropout, device).to(device)
+    trainer = CharRNNTrainer(config)
+    trainer.fit(model, train_dataloader)
 
-    # Serialization
+    torch.save(model.state_dict(), config.model_save)
     torch.save(config, config.config_save)
     torch.save(corpus.vocab, config.vocab_save)
 
-    trainer = CharRNNTrainer(config)
-
-    if config.val_load is not None:
-        trainer.fit(model, (train_dataloader, val_dataloader))
-    else:
-        trainer.fit(model, train_dataloader)
-
 
 if __name__ == '__main__':
-    parser = add_train_args(get_parser())
+    parser = get_parser()
     config = parser.parse_known_args()[0]
     main(config)
