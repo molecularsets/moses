@@ -55,5 +55,3 @@ class JTreeTrainer:
 
                 train_dataloader.set_postfix(postfix)
 
-            # TODO
-            torch.save(model.state_dict(), os.path.join(self.config.model_save, "model-iter" + str(epoch) + ".pt"))
