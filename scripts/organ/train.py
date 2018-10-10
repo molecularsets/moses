@@ -90,20 +90,10 @@ def main(config):
     vocab = CharVocab.from_data(train)
     device = torch.device(config.device)
 
-    config = torch.load('pconfig.pt')
-    vocab = torch.load('pvocab.pt')
-    model_state = torch.load('pmodel.pt')
-
-    config.generator_pretrain_epochs = 0
-    config.discriminator_pretrain_epochs = 0
-    config.pg_iters = 1000
-    config.discriminator_updates = 500
-
     with Pool(config.n_jobs) as pool:
         reward_func = buid_reward_fn(config, train, pool, parse_device_id(config.device))
 
         model = ORGAN(vocab, config, reward_func)
-        model.load_state_dict(model_state)
         model = model.to(device)
 
         trainer = ORGANTrainer(config)
