@@ -18,7 +18,7 @@ setup(name='moses',
           'pytorch==0.4.1',
           # rdkit
       ],
-      description='MOSES: MOlecular SEtS. Dataset, models and metrics.',
+      description='MOSES: A benchmarking platform for molecular generation models',
       author='Neuromation & Insilico Teams',
       author_email='engineering@neuromation.io',  # TODO: add email of insilico team
       # TODO: add license
