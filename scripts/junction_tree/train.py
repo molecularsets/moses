@@ -28,7 +28,6 @@ def main(config):
     model = JTNNVAE(corpus.vocab, config.hidden, config.latent, config.depth)
     model = model.to(device=device)
 
-
     for param in model.parameters():
         if param.dim() == 1:
             nn.init.constant_(param, 0)

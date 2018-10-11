@@ -8,17 +8,17 @@ def get_parser():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--output_dir', type=str, default='./data',
-                           help='Directory for downloaded dataset')
+                        help='Directory for downloaded dataset')
     parser.add_argument('--dataset_url', type=str, default='',
-                           help='URL of dataset')
+                        help='URL of dataset')
     parser.add_argument('--no_subset', action='store_true',
-                           help='Do not create subsets for training and testing')
+                        help='Do not create subsets for training and testing')
     parser.add_argument('--train_size', type=int, default=None,
-                           help='Size of training dataset')
+                        help='Size of training dataset')
     parser.add_argument('--test_size', type=int, default=None,
-                           help='Size of testing dataset')
+                        help='Size of testing dataset')
     parser.add_argument('--seed', type=int, default=0,
-                           help='Random state')
+                        help='Random state')
 
     return parser
 

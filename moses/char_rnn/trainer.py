@@ -1,6 +1,3 @@
-import os
-
-import torch
 import torch.nn as nn
 import torch.optim as optim
 import tqdm
@@ -38,7 +35,7 @@ class CharRNNTrainer:
                 val_dataloader = tqdm.tqdm(val_dataloader)
                 val_dataloader.set_description('Validation (epoch #{})'.format(epoch))
 
-                val_loss = self._pass_data(model, val_dataloader, criterion)
+                self._pass_data(model, val_dataloader, criterion)
 
     def _pass_data(self, model, dataloader, criterion, optimizer=None):
         if optimizer is None:

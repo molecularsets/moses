@@ -148,12 +148,12 @@ class ORGAN(nn.Module):
 
                 rollout_prevs = currents[~is_end, :].repeat(n_rollouts, 1)
                 rollout_states = (states[0][:, ~is_end, :].repeat(1, n_rollouts, 1),
-                                states[1][:, ~is_end, :].repeat(1, n_rollouts, 1))
+                                  states[1][:, ~is_end, :].repeat(1, n_rollouts, 1))
                 rollout_sequences, rollout_lengths = self._proceed_sequences(
                     rollout_prevs, rollout_states, max_len - current_len)
 
                 rollout_sequences = torch.cat([s[~is_end, :].repeat(n_rollouts, 1)
-                                            for s in sequences] + [rollout_sequences], dim=-1)
+                                               for s in sequences] + [rollout_sequences], dim=-1)
                 rollout_lengths += lengths[~is_end].repeat(n_rollouts)
 
                 rollout_rewards = torch.sigmoid(self.discriminator(rollout_sequences).detach())

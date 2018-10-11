@@ -1,5 +1,3 @@
-import os
-import torch
 import torch.optim as optim
 import tqdm
 
@@ -54,4 +52,3 @@ class JTreeTrainer:
                            'steo': steo_acc / (it + 1) * 100}
 
                 train_dataloader.set_postfix(postfix)
-
