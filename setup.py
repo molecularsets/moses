@@ -15,7 +15,7 @@ setup(name='moses',
           'pandas==0.23.4',
           'scipy==1.1.0',
           'tensorflow==1.11.0',
-          'pytorch==0.4.1',
+          'torch==0.4.1',
           # rdkit
       ],
       description='MOSES: A benchmarking platform for molecular generation models',
