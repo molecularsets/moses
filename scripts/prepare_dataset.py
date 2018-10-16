@@ -41,9 +41,11 @@ def main(config):
 
     print('[3/5] Filtering SMILES')
     pool = Pool(16)
-    dataset = [x for x in tqdm.tqdm(pool.imap(process_molecule, lines),
-                                    total=len(lines)) if x is not None]
+    dataset = [x for x in tqdm.tqdm(pool.imap_unordered(process_molecule, lines),
+                                    total=len(lines),
+                                    miniters=1000) if x is not None]
     dataset = pd.DataFrame(dataset, columns=['ID', 'SMILES'])
+    dataset = dataset.sort_values(by='ID')
     dataset = dataset.drop_duplicates('SMILES')
     dataset['scaffold'] = pool.map(compute_scaffold, dataset['SMILES'].values)
     pool.close()
