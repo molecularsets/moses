@@ -6,6 +6,10 @@ import tqdm
 from moses.metrics import mol_passes_filters, compute_scaffold
 import argparse
 import gzip
+import logging
+
+
+logger = logging.getLogger("prepare dataset")
 
 
 def get_parser():
@@ -32,14 +36,16 @@ def process_molecule(mol_row):
     return _id, smiles
 
 
-def main(config):
-    print('[1/5] Downloading from {}'.format(config.url))
-    req = requests.get(config.url)
-    print('[2/5] Extracting')
+def download_dataset(url):
+    logger.info('Downloading from {}'.format(url))
+    req = requests.get(url)
     with gzip.open(BytesIO(req.content)) as smi:
         lines = smi.readlines()
+    return lines
 
-    print('[3/5] Filtering SMILES')
+
+def filter_lines(lines):
+    logger.info('Filtering SMILES')
     pool = Pool(16)
     dataset = [x for x in tqdm.tqdm(pool.imap_unordered(process_molecule, lines),
                                     total=len(lines),
@@ -49,8 +55,11 @@ def main(config):
     dataset = dataset.drop_duplicates('SMILES')
     dataset['scaffold'] = pool.map(compute_scaffold, dataset['SMILES'].values)
     pool.close()
+    return dataset
 
-    print('[4/5] Splitting the dataset')
+
+def split_dataset(dataset, seed):
+    logger.info('Splitting the dataset')
     scaffolds = pd.value_counts(dataset['scaffold'])
     scaffolds = sorted(scaffolds.items(), key=lambda x: (-x[1], x[0]))
     test_scaffolds = set([x[0] for x in scaffolds[9::10]])
@@ -58,11 +67,16 @@ def main(config):
     test_scaf_idx = [x in test_scaffolds for x in dataset['scaffold']]
     dataset.loc[test_scaf_idx, 'split'] = 'test_scaffolds'
     test_idx = dataset.loc[dataset['split'] == 'train'].sample(frac=0.1,
-                                                               random_state=config.seed).index
+                                                               random_state=seed).index
     dataset.loc[test_idx, 'split'] = 'test'
     dataset.drop('scaffold', axis=1, inplace=True)
+
+
+def main(config):
+    lines = download_dataset(config.url)
+    dataset = filter_lines(lines)
+    dataset = split_dataset(dataset, config.seed)
     dataset.to_csv(config.output_file, index=None)
-    print('[5/5] Done')
 
 
 if __name__ == '__main__':
