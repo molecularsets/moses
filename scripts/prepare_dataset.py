@@ -9,6 +9,7 @@ import gzip
 import logging
 
 
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("prepare dataset")
 
 
@@ -70,6 +71,7 @@ def split_dataset(dataset, seed):
                                                                random_state=seed).index
     dataset.loc[test_idx, 'split'] = 'test'
     dataset.drop('scaffold', axis=1, inplace=True)
+    return dataset
 
 
 def main(config):
