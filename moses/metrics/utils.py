@@ -307,7 +307,7 @@ def tanimoto(fingerprints, fingerprints_right=None, mode='pairwise'):
     return scores
 
 
-def mol_passes_filters(mol, n_jobs=1,
+def mol_passes_filters(mol,
                        allowed={'C', 'N', 'S', 'O', 'F', 'Cl', 'Br', 'H'}):
     '''
     Checks if mol passes MCF and PAINS filters, has only allowed atoms and is not charged
