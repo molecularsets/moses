@@ -64,12 +64,12 @@ def split_dataset(dataset, seed):
     scaffolds = pd.value_counts(dataset['scaffold'])
     scaffolds = sorted(scaffolds.items(), key=lambda x: (-x[1], x[0]))
     test_scaffolds = set([x[0] for x in scaffolds[9::10]])
-    dataset['split'] = 'train'
+    dataset['SPLIT'] = 'train'
     test_scaf_idx = [x in test_scaffolds for x in dataset['scaffold']]
-    dataset.loc[test_scaf_idx, 'split'] = 'test_scaffolds'
-    test_idx = dataset.loc[dataset['split'] == 'train'].sample(frac=0.1,
+    dataset.loc[test_scaf_idx, 'SPLIT'] = 'test_scaffolds'
+    test_idx = dataset.loc[dataset['SPLIT'] == 'train'].sample(frac=0.1,
                                                                random_state=seed).index
-    dataset.loc[test_idx, 'split'] = 'test'
+    dataset.loc[test_idx, 'SPLIT'] = 'test'
     dataset.drop('scaffold', axis=1, inplace=True)
     return dataset
 
