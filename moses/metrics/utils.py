@@ -308,11 +308,14 @@ def tanimoto(fingerprints, fingerprints_right=None, mode='pairwise'):
 
 
 def mol_passes_filters(mol,
-                       allowed={'C', 'N', 'S', 'O', 'F', 'Cl', 'Br', 'H'}):
+                       allowed={'C', 'N', 'S', 'O', 'F', 'Cl', 'Br', 'H'},
+                       isomericSmiles=False):
     '''
     Checks if mol passes MCF and PAINS filters, has only allowed atoms and is not charged
     '''
     mol = get_mol(mol)
+    if mol is None:
+        return False
     h_mol = Chem.AddHs(mol)
     for smarts in _filters:
         if h_mol.HasSubstructMatch(smarts):
@@ -321,7 +324,7 @@ def mol_passes_filters(mol,
         return False
     if not all([atom.GetSymbol() in allowed for atom in mol.GetAtoms()]):
         return False
-    smiles = Chem.MolToSmiles(mol)
+    smiles = Chem.MolToSmiles(mol, isomericSmiles=isomericSmiles)
     if smiles is None or len(smiles) == 0:
         return False
     if Chem.MolFromSmiles(smiles) is None:

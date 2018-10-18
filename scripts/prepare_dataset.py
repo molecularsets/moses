@@ -7,6 +7,7 @@ from moses.metrics import mol_passes_filters, compute_scaffold
 import argparse
 import gzip
 import logging
+from rdkit import Chem
 
 
 logging.basicConfig(level=logging.INFO)
@@ -26,6 +27,9 @@ def get_parser():
     parser.add_argument('--n_jobs', type=int,
                         default=1,
                         help='number of processes to use')
+    parser.add_argument('--keep_ids', action='store_true',
+                        help='Keep ZINC ids in the final csv file')
+
     return parser
 
 
@@ -34,6 +38,8 @@ def process_molecule(mol_row):
     smiles, _id = mol_row.split()
     if not mol_passes_filters(smiles):
         return None
+    smiles = Chem.MolToSmiles(Chem.MolFromSmiles(smiles),
+                              isomericSmiles=False)
     return _id, smiles
 
 
@@ -45,17 +51,18 @@ def download_dataset(url):
     return lines
 
 
-def filter_lines(lines):
+def filter_lines(lines, n_jobs):
     logger.info('Filtering SMILES')
-    pool = Pool(16)
-    dataset = [x for x in tqdm.tqdm(pool.imap_unordered(process_molecule, lines),
-                                    total=len(lines),
-                                    miniters=1000) if x is not None]
-    dataset = pd.DataFrame(dataset, columns=['ID', 'SMILES'])
-    dataset = dataset.sort_values(by='ID')
-    dataset = dataset.drop_duplicates('SMILES')
-    dataset['scaffold'] = pool.map(compute_scaffold, dataset['SMILES'].values)
-    pool.close()
+    with Pool(n_jobs) as pool:
+        dataset = [x for x in tqdm.tqdm(pool.imap_unordered(process_molecule, lines),
+                                        total=len(lines),
+                                        miniters=1000) if x is not None]
+        dataset = pd.DataFrame(dataset, columns=['ID', 'SMILES'])
+        dataset = dataset.sort_values(by=['ID', 'SMILES'])
+        dataset = dataset.drop_duplicates('ID')
+        dataset = dataset.sort_values(by='ID')
+        dataset = dataset.drop_duplicates('SMILES')
+        dataset['scaffold'] = pool.map(compute_scaffold, dataset['SMILES'].values)
     return dataset
 
 
@@ -76,12 +83,16 @@ def split_dataset(dataset, seed):
 
 def main(config):
     lines = download_dataset(config.url)
-    dataset = filter_lines(lines)
+    dataset = filter_lines(lines, config.n_jobs)
     dataset = split_dataset(dataset, config.seed)
+    if not config.keep_ids:
+        dataset.drop('ID', 1, inplace=True)
     dataset.to_csv(config.output_file, index=None)
 
 
 if __name__ == '__main__':
     parser = get_parser()
-    config = parser.parse_known_args()[0]
+    config, unknown = parser.parse_known_args()
+    if len(unknown) != 0:
+        raise ValueError("Unknown argument "+unknown[0])
     main(config)

@@ -53,5 +53,7 @@ def main(config):
 
 if __name__ == '__main__':
     parser = get_parser()
-    config = parser.parse_known_args()[0]
+    config, unknown = parser.parse_known_args()
+    if len(unknown) != 0:
+        raise ValueError("Unknown argument "+unknown[0])
     main(config)
