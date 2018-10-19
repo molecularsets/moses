@@ -2,8 +2,14 @@ import argparse
 import random
 import re
 
+import numpy as np
 import pandas as pd
 import torch
+
+from moses.metrics import mapper, get_mol, fraction_valid, morgan_similarity, remove_invalid, \
+                          fragment_similarity, scaffold_similarity, fraction_passes_filters, \
+                          fraction_unique, internal_diversity, frechet_distance, \
+                          frechet_chembl_distance, logP, QED, SA, NP, weight
 
 
 def add_common_arg(parser):
@@ -88,3 +94,81 @@ def set_seed(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     random.seed(seed)
+
+
+class MetricsReward:
+    supported_metrics = ['fcd', 'morgan', 'fragments', 'scaffolds', 'internal_diversity',
+                         'filters', 'logp', 'sa', 'qed', 'np', 'weight']
+
+    @staticmethod
+    def _nan2zero(value):
+        if value == np.nan:
+            return 0
+
+        return value
+
+    def __init__(self, ref, n_ref_subsample, n_rollouts, n_jobs, metrics=[]):
+        assert all([m in MetricsReward.supported_metrics for m in metrics])
+
+        self.ref = remove_invalid(ref, canonize=True, n_jobs=n_jobs)
+        self.ref_mols = mapper(n_jobs)(get_mol, self.ref)
+
+        self.n_ref_subsample = n_ref_subsample
+        self.n_rollouts = n_rollouts
+        self.n_jobs = n_jobs
+        self.metrics = metrics
+
+    def _get_metrics(self, ref, ref_mols, rollout):
+        result = [fraction_valid(rollout, n_jobs=self.n_jobs)]
+        if result[0] == 0:
+            return result
+
+        rollout = remove_invalid(rollout, canonize=True, n_jobs=self.n_jobs)
+        if len(rollout) < 2:
+            return result
+
+        result.append(fraction_unique(rollout, n_jobs=self.n_jobs))
+
+        if len(self.metrics):
+            rollout_mols = mapper(self.n_jobs)(get_mol, rollout)
+            for metric_name in self.metrics:
+                if metric_name == 'fcd':
+                    result.append(frechet_chembl_distance(ref, rollout, n_jobs=self.n_jobs))
+                elif metric_name == 'morgan':
+                    result.append(morgan_similarity(ref_mols, rollout_mols, n_jobs=self.n_jobs))
+                elif metric_name == 'fragments':
+                    result.append(fragment_similarity(ref_mols, rollout_mols, n_jobs=self.n_jobs))
+                elif metric_name == 'scaffolds':
+                    result.append(scaffold_similarity(ref_mols, rollout_mols, n_jobs=self.n_jobs))
+                elif metric_name == 'internal_diversity':
+                    result.append(internal_diversity(rollout_mols, n_jobs=self.n_jobs))
+                elif metric_name == 'filters':
+                    result.append(fraction_passes_filters(rollout_mols, n_jobs=self.n_jobs))
+                elif metric_name == 'logp':
+                    result.append(frechet_distance(ref_mols, rollout_mols, logP, n_jobs=self.n_jobs))
+                elif metric_name == 'sa':
+                    result.append(frechet_distance(ref_mols, rollout_mols, SA, n_jobs=self.n_jobs))
+                elif metric_name == 'qed':
+                    result.append(frechet_distance(ref_mols, rollout_mols, QED, n_jobs=self.n_jobs))
+                elif metric_name == 'np':
+                    result.append(frechet_distance(ref_mols, rollout_mols, NP, n_jobs=self.n_jobs))
+                elif metric_name == 'weight':
+                    result.append(frechet_distance(ref_mols, rollout_mols, weight, n_jobs=self.n_jobs))
+
+                result[-1] = MetricsReward._nan2zero(result[-1])
+
+        return result
+
+    def __call__(self, gen):
+        idxs = random.sample(range(len(self.ref)), self.n_ref_subsample)
+        ref_subsample = [self.ref[idx] for idx in idxs]
+        ref_mols_subsample = [self.ref_mols[idx] for idx in idxs]
+
+        n = len(gen) // self.n_rollouts
+        rollouts = [gen[i::n] for i in range(0, n)]
+
+        metrics_values = [self._get_metrics(ref_subsample, ref_mols_subsample, rollout) for rollout in rollouts]
+        metrics_values = map(lambda m: [sum(m, 0) / len(m)] * self.n_rollouts, metrics_values)
+        reward_values = sum(metrics_values, [])
+
+        return reward_values

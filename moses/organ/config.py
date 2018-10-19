@@ -26,20 +26,21 @@ def get_parser():
                            help='Size of hidden state for lstm layers in generator')
     model_arg.add_argument('--num_layers', type=int, default=2,
                            help='Number of lstm layers in generator')
-    model_arg.add_argument('--dropout', type=float, default=0.1,
+    model_arg.add_argument('--dropout', type=float, default=0,
                            help='Dropout probability for lstm layers in generator')
     model_arg.add_argument('--discriminator_layers', nargs='+', type=conv_pair,
-                           default=[(64, 3), (64, 5), (64, 7), (64, 9), (54, 15), (54, 21)],
+                           default=[(100, 1), (200, 2), (200, 3), (200, 4), (200, 5), (100, 6),
+                                    (100, 7), (100, 8), (100, 9), (100, 10), (160, 15), (160, 20)],
                            help='Numbers of features for convalution layers in discriminator')
     model_arg.add_argument('--discriminator_dropout', type=float, default=0,
                            help='Dropout probability for discriminator')
-    model_arg.add_argument('--reward_weight', type=restricted_float, default=0.5,
+    model_arg.add_argument('--reward_weight', type=restricted_float, default=0.7,
                            help='Reward weight for policy gradient training')
 
     train_arg = parser.add_argument_group('Training')
-    train_arg.add_argument('--generator_pretrain_epochs', type=int, default=250,
+    train_arg.add_argument('--generator_pretrain_epochs', type=int, default=300,
                            help='Number of epochs for generator pretraining')
-    train_arg.add_argument('--discriminator_pretrain_epochs', type=int, default=200,
+    train_arg.add_argument('--discriminator_pretrain_epochs', type=int, default=300,
                            help='Number of epochs for discriminator pretraining')
     train_arg.add_argument('--pg_iters', type=int, default=1000,
                            help='Number of inerations for policy gradient training')
@@ -49,11 +50,13 @@ def get_parser():
                            help='Learning rate')
     train_arg.add_argument('--max_length', type=int, default=100,
                            help='Maximum length for sequence')
-    train_arg.add_argument('--rollouts', type=int, default=8,
+    train_arg.add_argument('--rollouts', type=int, default=16,
                            help='Number of rollouts')
     train_arg.add_argument('--generator_updates', type=int, default=1,
                            help='Number of updates of generator per iteration')
-    train_arg.add_argument('--discriminator_updates', type=int, default=30,
+    train_arg.add_argument('--discriminator_updates', type=int, default=1,
+                           help='Number of updates of discriminator per iteration')
+    train_arg.add_argument('--discriminator_epochs', type=int, default=10,
                            help='Number of updates of discriminator per iteration')
 
     return parser

@@ -40,13 +40,13 @@ class Discriminator(nn.Module):
         x = self.embedding_layer(x)
         x = x.unsqueeze(1)
 
-        convs = [F.relu(conv_layer(x)).squeeze(3) for conv_layer in self.conv_layers]
+        convs = [F.elu(conv_layer(x)).squeeze(3) for conv_layer in self.conv_layers]
         x = [F.max_pool1d(c, c.shape[2]).squeeze(2) for c in convs]
         x = torch.cat(x, dim=1)
 
         h = self.highway_layer(x)
         t = torch.sigmoid(h)
-        x = t * F.relu(h) + (1 - t) * x
+        x = t * F.elu(h) + (1 - t) * x
         x = self.dropout_layer(x)
         out = self.output_layer(x)
 
@@ -158,7 +158,7 @@ class ORGAN(nn.Module):
 
                 rollout_rewards = torch.sigmoid(self.discriminator(rollout_sequences).detach())
 
-                if self.reward_fn is not None:
+                if self.reward_fn is not None and self.reward_weight > 0:
                     strings = [self.tensor2string(t[:l]) for t, l in zip(rollout_sequences, rollout_lengths)]
                     obj_rewards = torch.tensor(self.reward_fn(strings), device=rollout_rewards.device).view(-1, 1)
                     rollout_rewards = rollout_rewards * (1 - self.reward_weight) + obj_rewards * self.reward_weight

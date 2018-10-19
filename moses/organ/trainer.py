@@ -77,39 +77,32 @@ class ORGANTrainer:
 
         postfix = {'loss': 0}
 
-        i = 0
-        for inputs_from_data, targets_from_data in tqdm_data:
-            for is_sampling in [False, True]:
-                i += 1
+        for i, inputs_from_data in enumerate(tqdm_data):
+            inputs_from_model, _ = model.sample_tensor(self.config.n_batch, self.config.max_length)
+            targets = torch.zeros(self.config.n_batch, 1, device=model.device)
+            outputs = model.discriminator_forward(inputs_from_model)
+            loss = criterion(outputs, targets) / 2
 
-                if is_sampling:
-                    inputs, _ = model.sample_tensor(self.config.n_batch, self.config.max_length)
-                    targets = torch.zeros(self.config.n_batch, 1, device=model.device)
-                else:
-                    inputs = inputs_from_data
-                    targets = targets_from_data
+            targets = torch.ones(self.config.n_batch, 1, device=model.device)
+            outputs = model.discriminator_forward(inputs_from_data)
+            loss += criterion(outputs, targets) / 2
 
-                outputs = model.discriminator_forward(inputs)
-                loss = criterion(outputs, targets)
+            if optimizer is not None:
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
 
-                if optimizer is not None:
-                    optimizer.zero_grad()
-                    loss.backward()
-                    optimizer.step()
+            postfix['loss'] = (postfix['loss'] * i + loss.item()) / (i + 1)
 
-                postfix['loss'] = (postfix['loss'] * (i - 1) + loss.item()) / i
-
-                tqdm_data.set_postfix(postfix)
+            tqdm_data.set_postfix(postfix)
 
     def _pretrain_discriminator(self, model, train_data, val_data=None):
         def collate(data):
             data.sort(key=lambda x: len(x), reverse=True)
             tensors = [model.string2tensor(s) for s in data]
-
             inputs = pad_sequence(tensors, batch_first=True, padding_value=model.vocabulary.pad)
-            targets = torch.ones(inputs.shape[0], 1, device=model.device)
 
-            return inputs, targets
+            return inputs
 
         train_loader = DataLoader(train_data, batch_size=self.config.n_batch, shuffle=True, collate_fn=collate)
         if val_data is not None:
@@ -127,11 +120,20 @@ class ORGANTrainer:
                 self._pretrain_discriminator_epoch(model, tqdm_data, criterion)
 
     def _train_policy_gradient(self, model, train_data):
+        def collate(data):
+            data.sort(key=lambda x: len(x), reverse=True)
+            tensors = [model.string2tensor(s) for s in data]
+            inputs = pad_sequence(tensors, batch_first=True, padding_value=model.vocabulary.pad)
+
+            return inputs
+
         generator_criterion = PolicyGradientLoss()
         discriminator_criterion = nn.BCEWithLogitsLoss()
 
         generator_optimizer = torch.optim.Adam(model.generator.parameters(), lr=self.config.lr)
         discriminator_optimizer = torch.optim.Adam(model.discriminator.parameters(), lr=self.config.lr)
+
+        train_loader = DataLoader(train_data, batch_size=self.config.n_batch, shuffle=True, collate_fn=collate)
 
         pg_iters = tqdm(range(self.config.pg_iters), desc='Policy gradient training')
 
@@ -139,7 +141,7 @@ class ORGANTrainer:
         smooth = 0.1
 
         for i in pg_iters:
-            for k in range(self.config.generator_updates):
+            for _ in range(self.config.generator_updates):
                 model.eval()
                 sequences, rewards, lengths = model.rollout(
                     self.config.n_batch, self.config.rollouts, self.config.max_length)
@@ -154,6 +156,7 @@ class ORGANTrainer:
 
                 generator_optimizer.zero_grad()
                 generator_loss.backward()
+                nn.utils.clip_grad_value_(model.generator.parameters(), 5)
                 generator_optimizer.step()
 
                 if i == 0:
@@ -165,30 +168,33 @@ class ORGANTrainer:
                     postfix['reward'] = postfix['reward'] * \
                         (1 - smooth) + torch.cat([t[:l] for t, l in zip(rewards, lengths)]).mean().item() * smooth
 
-            for k in range(self.config.discriminator_updates):
-                if (i * self.config.discriminator_updates + k) % 2 == 0:
-                    model.generator.eval()
-                    discriminator_inputs, _ = model.sample_tensor(self.config.n_batch, self.config.max_length)
-                    discriminator_targets = torch.zeros(self.config.n_batch, 1, device=model.device)
-                else:
-                    samples = random.sample(train_data, self.config.n_batch)
-                    samples.sort(key=lambda x: len(x), reverse=True)
-                    tensors = [model.string2tensor(s) for s in samples]
-                    discriminator_inputs = pad_sequence(tensors, batch_first=True, padding_value=model.vocabulary.pad)
-                    discriminator_targets = torch.ones(self.config.n_batch, 1, device=model.device)
+            for _ in range(self.config.discriminator_updates):
+                model.generator.eval()
+                n_batches = (len(train_loader) + self.config.n_batch - 1) // self.config.n_batch
+                sampled_batches = [model.sample_tensor(self.config.n_batch, self.config.max_length)[0]
+                                   for _ in range(n_batches)]
 
-                discriminator_outputs = model.discriminator_forward(discriminator_inputs)
-                discriminator_loss = discriminator_criterion(discriminator_outputs, discriminator_targets)
+                for _ in range(self.config.discriminator_epochs):
+                    random.shuffle(sampled_batches)
 
-                discriminator_optimizer.zero_grad()
-                discriminator_loss.backward()
-                discriminator_optimizer.step()
+                    for inputs_from_model, inputs_from_data in zip(sampled_batches, train_loader):
+                        discriminator_targets = torch.zeros(self.config.n_batch, 1, device=model.device)
+                        discriminator_outputs = model.discriminator_forward(inputs_from_model)
+                        discriminator_loss = discriminator_criterion(discriminator_outputs, discriminator_targets) / 2
 
-                if i == 0:
-                    postfix['discriminator_loss'] = discriminator_loss.item()
-                else:
-                    postfix['discriminator_loss'] = postfix['discriminator_loss'] * \
-                        (1 - smooth) + discriminator_loss.item() * smooth
+                        discriminator_targets = torch.ones(self.config.n_batch, 1, device=model.device)
+                        discriminator_outputs = model.discriminator_forward(inputs_from_data)
+                        discriminator_loss += discriminator_criterion(discriminator_outputs, discriminator_targets) / 2
+
+                        discriminator_optimizer.zero_grad()
+                        discriminator_loss.backward()
+                        discriminator_optimizer.step()
+
+                        if i == 0:
+                            postfix['discriminator_loss'] = discriminator_loss.item()
+                        else:
+                            postfix['discriminator_loss'] = postfix['discriminator_loss'] * \
+                                (1 - smooth) + discriminator_loss.item() * smooth
 
             pg_iters.set_postfix(postfix)
 
