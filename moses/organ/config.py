@@ -57,7 +57,7 @@ def get_parser():
     train_arg.add_argument('--discriminator_updates', type=int, default=1,
                            help='Number of updates of discriminator per iteration')
     train_arg.add_argument('--discriminator_epochs', type=int, default=10,
-                           help='Number of updates of discriminator per iteration')
+                           help='Number of epochs of discriminator per iteration')
 
     return parser
 

@@ -19,7 +19,7 @@ def get_parser():
                         help='Number of processes to run metrics')
     parser.add_argument('--addition_rewards', nargs='+', type=str,
                         choices=MetricsReward.supported_metrics, default=[],
-                        help='Number of processes to run metrics')
+                        help='Adding of addition rewards')
 
     return parser
 
