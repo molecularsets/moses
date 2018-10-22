@@ -18,6 +18,10 @@ def main(config):
 
     device = torch.device(config.device)
 
+    # For CUDNN to work properly:
+    if device.type.startswith('cuda'):
+        torch.cuda.set_device(device.index or 0)
+
     corpus = OneHotCorpus(config.n_batch, device)
     train = corpus.fit(train).transform(train)
 

@@ -24,16 +24,16 @@ class VAETrainer:
         optimizer = optim.Adam(get_params(), lr=self.config.lr_start)
         lr_annealer = CosineAnnealingLRWithRestart(optimizer, self.config)
 
-        T = tqdm.tqdm(range(n_epoch))
-        n_iter, n_last = len(data), self.config.n_last
+        n_last = self.config.n_last
         elog, ilog = Logger(), Logger()
 
-        for epoch in T:
+        for epoch in range(n_epoch):
             # Epoch start
             kl_weight = kl_annealer(epoch)
 
             # Iters
-            for i, x in enumerate(data):
+            T = tqdm.tqdm(data, leave=False)
+            for i, x in enumerate(T):
                 # Forward
                 kl_loss, recon_loss = model(x)
                 loss = kl_weight * kl_loss + recon_loss
@@ -59,12 +59,12 @@ class VAETrainer:
                 kl_loss_value = np.mean(ilog['kl_loss'][-n_last:])
                 recon_loss_value = np.mean(ilog['recon_loss'][-n_last:])
                 loss_value = np.mean(ilog['loss'][-n_last:])
-                postfix_strs = [f'i={i}/{n_iter}',
-                                f'loss={loss_value:.5f}',
-                                f'(kl={kl_loss_value:.5f}',
-                                f'recon={recon_loss_value:.5f})',
-                                f'klw={kl_weight:.5f} lr={lr:.5f}']
-                T.set_postfix_str(' '.join(postfix_strs))
+                postfix = [f'loss={loss_value:.5f}',
+                           f'(kl={kl_loss_value:.5f}',
+                           f'recon={recon_loss_value:.5f})',
+                           f'klw={kl_weight:.5f} lr={lr:.5f}']
+                T.set_postfix_str(' '.join(postfix))
+                T.set_description(f'Train (epoch #{epoch})')
                 T.refresh()
 
             # Log

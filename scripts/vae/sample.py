@@ -21,6 +21,10 @@ def main(config):
 
     device = torch.device(config.device)
 
+    # For CUDNN to work properly:
+    if device.type.startswith('cuda'):
+        torch.cuda.set_device(device.index or 0)
+
     model = VAE(model_vocab, model_config)
     model.load_state_dict(model_state)
     model = model.to(device)
