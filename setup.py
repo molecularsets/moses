@@ -9,12 +9,12 @@ setup(name='moses',
                                   'moses/metrics/NP_Score'],
       install_requires=[
           'tqdm>=4.26.0',
-          'keras>=2.2.4',
+          'keras>=2.2',
           'matplotlib>=3.0.0',
-          'numpy>=1.15.2',
-          'pandas>=0.23.4',
+          'numpy>=1.15',
+          'pandas>=0.23',
           'scipy>=1.1.0',
-          'tensorflow>=1.11.0',
+          'tensorflow>=1.0',
           'torch>=0.4.1',
           # rdkit
       ],
@@ -23,6 +23,6 @@ setup(name='moses',
       author_email='engineering@neuromation.io',  # TODO: add email of insilico team
       # TODO: add license
       package_data={
-          '': ['*.csv'],
+          '': ['*.csv', '*.h5', '*.gz'],
       }
       )

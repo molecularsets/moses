@@ -18,7 +18,7 @@ class CharVocab:
         if (ss.bos in chars) or (ss.eos in chars) or (ss.pad in chars) or (ss.unk in chars):
             raise ValueError('SS in chars')
 
-        all_syms = list(chars) + [ss.bos, ss.eos, ss.pad, ss.unk]
+        all_syms = sorted(list(chars)) + [ss.bos, ss.eos, ss.pad, ss.unk]
 
         self.ss = ss
         self.c2i = {c: i for i, c in enumerate(all_syms)}
@@ -66,6 +66,8 @@ class CharVocab:
         return ids
 
     def ids2string(self, ids, rem_bos=True, rem_eos=True):
+        if len(ids) == 0:
+            return ''
         if rem_bos and ids[0] == self.bos:
             ids = ids[1:]
         if rem_eos and ids[-1] == self.eos:

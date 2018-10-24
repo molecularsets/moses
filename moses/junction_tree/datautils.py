@@ -45,7 +45,7 @@ class JTreeCorpus:
                 for c in mol.nodes:
                     clusters.add(c.smiles)
 
-            self.vocab = JTreeVocab(list(clusters))
+            self.vocab = JTreeVocab(sorted(list(clusters)))
         else:
             self.vocab = vocabulary
 

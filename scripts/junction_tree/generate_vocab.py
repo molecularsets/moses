@@ -22,7 +22,7 @@ def main(config):
         for c in mol.nodes:
             clusters.add(c.smiles)
 
-    vocab = JTreeVocab(list(clusters))
+    vocab = JTreeVocab(sorted(list(clusters)))
     torch.save(vocab, config.vocab_save)
 
 

@@ -162,7 +162,7 @@ def load_ref_model(model_file):
     return model
 
 
-def get_predictions(gen_mol, gpu=-1):
+def get_predictions(gen_mol, gpu=-1, batch_size=128):
     assert isinstance(gpu, int), "GPU should be an integer"
     model_dir = os.path.split(__file__)[0]
     model_path = os.path.join(model_dir, 'ChemNet_v0.13_pretrained.h5')
@@ -172,16 +172,17 @@ def get_predictions(gen_mol, gpu=-1):
         device = "/gpu:{}".format(gpu)
     else:
         device = "/cpu"
+    config = tf.ConfigProto(allow_soft_placement=True)
+    config.gpu_options.allow_growth = True
     with tf.device(device):
-        config = tf.ConfigProto(allow_soft_placement=True)
-        config.gpu_options.allow_growth = True
         sess = tf.Session(config=config)
         set_session(sess)
         model = load_ref_model(model_path)
         gen_mol_act = model.predict_generator(
-                                myGenerator_predict(gen_mol,
-                                                    batch_size=128),
-                                steps=np.ceil(len(gen_mol)/128))
+             myGenerator_predict(gen_mol, batch_size=batch_size),
+             steps=np.ceil(len(gen_mol)/batch_size)
+        )
+        K.clear_session()
         sess.close()
     if cuda_old is not None:
         os.environ["CUDA_VISIBLE_DEVICES"] = str(cuda_old)

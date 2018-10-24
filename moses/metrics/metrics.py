@@ -16,7 +16,7 @@ def get_all_metrics(ref, gen, k=[1000, 10000], n_jobs=1, gpu=-1):
     * %valid
     ----- Next metrics are only computed for valid molecules -----
     * %unique@k
-    * FCD
+    * Frechet ChemNet Distance (FCD)
     * fragment similarity
     * scaffold similarity
     * morgan similarity
@@ -35,9 +35,9 @@ def get_all_metrics(ref, gen, k=[1000, 10000], n_jobs=1, gpu=-1):
         metrics['unique@{}'.format(k_)] = fraction_unique(gen, k_,
                                                           n_jobs=n_jobs)
 
-    metrics['FCD'] = frechet_chembl_distance(ref, gen, gpu=gpu)
-    metrics['morgan'] = morgan_similarity(ref_mols, gen_mols, n_jobs=n_jobs,
-                                          gpu=gpu)
+    metrics['FCD'] = frechet_chemnet_distance(ref, gen, gpu=gpu)
+    metrics['morgan'] = morgan_similarity(ref_mols, gen_mols,
+                                          n_jobs=n_jobs, gpu=gpu)
     metrics['fragments'] = fragment_similarity(ref_mols, gen_mols,
                                                n_jobs=n_jobs)
     metrics['scaffolds'] = scaffold_similarity(ref_mols, gen_mols,
@@ -117,9 +117,9 @@ def morgan_similarity(ref, gen, n_jobs=1, gpu=-1):
     return fingerprint_similarity(ref, gen, 'morgan', n_jobs=n_jobs, gpu=gpu)
 
 
-def frechet_chembl_distance(ref, gen, gpu=-1):
+def frechet_chemnet_distance(ref, gen, gpu=-1):
     '''
-    Computes Frechet Chembl Distance between two lists of SMILES
+    Computes Frechet ChemNet Distance between two lists of SMILES
     '''
     if len(ref) < 2 or len(gen) < 2:
         warnings.warn("Can't compute FCD for less than 2 molecules")

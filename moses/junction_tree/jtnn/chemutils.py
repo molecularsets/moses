@@ -48,7 +48,7 @@ def sanitize(mol):
     try:
         smiles = get_smiles(mol)
         mol = get_mol(smiles)
-    except Exception as _:
+    except Exception:
         return None
     return mol
 

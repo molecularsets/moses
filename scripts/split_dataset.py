@@ -1,16 +1,13 @@
 import argparse
 import os
 import pandas as pd
-from urllib import request
 
 
 def get_parser():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--output_dir', type=str, default='./data',
-                        help='Directory for downloaded dataset')
-    parser.add_argument('--dataset_url', type=str, default='',
-                        help='URL of dataset')
+                        help='Directory for splitted dataset')
     parser.add_argument('--no_subset', action='store_true',
                         help='Do not create subsets for training and testing')
     parser.add_argument('--train_size', type=int, default=None,
@@ -24,11 +21,9 @@ def get_parser():
 
 
 def main(config):
-    if not os.path.exists(config.output_dir):
-        os.mkdir(config.output_dir)
-
     dataset_path = os.path.join(config.output_dir, 'dataset.csv')
-    request.urlretrieve(config.dataset_url, dataset_path)
+    if not os.path.exists(dataset_path):
+        raise ValueError("Missing dataset.csv")
 
     if config.no_subset:
         return

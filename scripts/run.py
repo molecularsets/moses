@@ -20,8 +20,8 @@ for model in get_models():
     globals()[model + '_train'] = load_module('train', os.path.join('.', model, 'train.py'))
     globals()[model + '_sample'] = load_module('sample', os.path.join('.', model, 'sample.py'))
 
-download_dataset = load_module('download_dataset', './download_dataset.py')
-eval = load_module('eval', './metrics/eval.py')
+split_dataset = load_module('split_dataset', './split_dataset.py')
+eval_script = load_module('eval', './metrics/eval.py')
 
 
 def get_parser():
@@ -39,6 +39,14 @@ def get_parser():
                         help='Number of threads')
     parser.add_argument('--device', type=str, default='cuda',
                         help='Device to run: "cpu" or "cuda:<device number>"')
+    parser.add_argument('--metrics', type=str, default='metrics.csv',
+                        help='Path to output file with metrics')
+    parser.add_argument('--train_size', type=int, default=None,
+                        help='Size of training dataset')
+    parser.add_argument('--test_size', type=int, default=None,
+                        help='Size of testing dataset')
+    parser.add_argument('--experiment_suff', type=str, default='',
+                        help='Experiment suffix to break ambiguity')
 
     return parser
 
@@ -93,17 +101,21 @@ def sample_from_model(config, model):
                                                                               model + '_config.pt'),
                                                 '--vocab_load', os.path.join(config.checkpoint_dir,
                                                                              model + '_vocab.pt'),
-                                                '--gen_save', os.path.join(config.data_dir, model + '_generated.csv'),
+                                                '--gen_save', os.path.join(config.data_dir, model +
+                                                                           config.experiment_suff +
+                                                                           '_generated.csv'),
                                                 '--n_samples', str(config.n_samples)])
     sampler.main(sampler_config)
 
 
 def eval_metrics(config, model, ref_path):
-    eval_parser = eval.get_parser()
+    eval_parser = eval_script.get_parser()
     eval_config = eval_parser.parse_args(['--ref_path', ref_path,
-                                          '--gen_path', os.path.join(config.data_dir, model + '_generated.csv'),
+                                          '--gen_path', os.path.join(config.data_dir, model +
+                                                                     config.experiment_suff +
+                                                                     '_generated.csv'),
                                           '--n_jobs', str(config.n_jobs)])
-    metrics = eval.main(eval_config, print_metrics=False)
+    metrics = eval_script.main(eval_config, print_metrics=False)
 
     return metrics
 
@@ -122,9 +134,14 @@ def main(config):
     if not os.path.exists(train_path) or \
             not os.path.exists(test_path) or \
             os.path.exists(test_scaffolds_path):
-        downloading_config = download_dataset.get_parser()
-        downloading_config = downloading_config.parse_args(['--output_dir', config.data_dir])
-        download_dataset.main(downloading_config)
+        splitting_config = split_dataset.get_parser()
+        conf = ['--output_dir', config.data_dir]
+        if config.train_size is not None:
+            conf.extend(['--train_size', str(config.train_size)])
+        if config.test_size is not None:
+            conf.extend(['--test_size', str(config.test_size)])
+        splitting_config = splitting_config.parse_args(conf)
+        split_dataset.main(splitting_config)
 
     models = get_models() if config.model == 'all' else [config.model]
     for model in models:
@@ -142,7 +159,7 @@ def main(config):
         metrics.append(model_metrics)
 
     table = pd.DataFrame(metrics)
-    table.to_csv('metrics.csv', index=False)
+    table.to_csv(config.metrics, index=False)
 
 
 if __name__ == '__main__':
