@@ -28,6 +28,7 @@ def main(config):
     model = VAE(model_vocab, model_config)
     model.load_state_dict(model_state)
     model = model.to(device)
+    model.eval()
 
     gen, n = [], config.n_samples
     T = tqdm.tqdm(range(config.n_samples), desc='Generating mols')

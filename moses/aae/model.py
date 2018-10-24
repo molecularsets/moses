@@ -114,32 +114,33 @@ class AAE(nn.Module):
         return torch.randn(n, self.latent_size, device=self.device)
 
     def sample(self, n, max_len=100):
-        samples = []
-        lengths = torch.zeros(n, dtype=torch.long, device=self.device)
+        with torch.no_grad():
+            samples = []
+            lengths = torch.zeros(n, dtype=torch.long, device=self.device)
 
-        states = self.sample_latent(n)
-        prevs = torch.empty(n, 1, dtype=torch.long, device=self.device).fill_(self.vocabulary.bos)
-        one_lens = torch.ones(n, dtype=torch.long, device=self.device)
-        is_end = torch.zeros(n, dtype=torch.uint8, device=self.device)
+            states = self.sample_latent(n)
+            prevs = torch.empty(n, 1, dtype=torch.long, device=self.device).fill_(self.vocabulary.bos)
+            one_lens = torch.ones(n, dtype=torch.long, device=self.device)
+            is_end = torch.zeros(n, dtype=torch.uint8, device=self.device)
 
-        for i in range(max_len):
-            logits, _, states = self.decoder(prevs, one_lens, states, i == 0)
-            currents = torch.argmax(logits, dim=-1)
+            for i in range(max_len):
+                logits, _, states = self.decoder(prevs, one_lens, states, i == 0)
+                currents = torch.argmax(logits, dim=-1)
 
-            is_end[currents.view(-1) == self.vocabulary.eos] = 1
-            if is_end.sum() == n:
-                break
+                is_end[currents.view(-1) == self.vocabulary.eos] = 1
+                if is_end.sum() == n:
+                    break
 
-            currents[is_end, :] = self.vocabulary.pad
-            samples.append(currents.cpu())
-            lengths[~is_end] += 1
+                currents[is_end, :] = self.vocabulary.pad
+                samples.append(currents.cpu())
+                lengths[~is_end] += 1
 
-            prevs = currents
+                prevs = currents
 
-        if len(samples):
-            samples = torch.cat(samples, dim=-1)
-            samples = [self.tensor2string(t[:l]) for t, l in zip(samples, lengths)]
-        else:
-            samples = ['' for _ in range(n)]
+            if len(samples):
+                samples = torch.cat(samples, dim=-1)
+                samples = [self.tensor2string(t[:l]) for t, l in zip(samples, lengths)]
+            else:
+                samples = ['' for _ in range(n)]
 
-        return samples
+            return samples

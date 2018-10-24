@@ -24,6 +24,7 @@ def main(config):
     model = ORGAN(model_vocab, model_config)
     model.load_state_dict(model_state)
     model = model.to(device)
+    model.eval()
 
     samples = []
     n = config.n_samples

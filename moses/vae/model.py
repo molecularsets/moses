@@ -168,46 +168,42 @@ class VAE(nn.Module):
             1. (n_batch, d_z) of floats, latent vector z
             2. list of tensors of longs, samples sequence x
         """
+        with torch.go_grad():
+            # `z`
+            device = self.x_emb.weight.device
+            if z is None:
+                z = self.sample_z_prior(n_batch)
+            z = z.to(device)
+            z_0 = z.unsqueeze(1)
 
-        self.eval()
+            # Initial values
+            h = self.decoder_lat(z)
+            h = h.unsqueeze(0).repeat(self.decoder_rnn.num_layers, 1, 1)
+            w = torch.tensor(self.bos, device=device).repeat(n_batch)
+            x = torch.tensor([self.pad], device=device).repeat(n_batch, n_len)
+            x[:, 0] = self.bos
+            end_pads = torch.tensor([n_len], device=device).repeat(n_batch)
+            eos_mask = torch.zeros(n_batch, dtype=torch.uint8, device=device)
 
-        # `z`
-        device = self.x_emb.weight.device
-        if z is None:
-            z = self.sample_z_prior(n_batch)
-        z = z.to(device)
-        z_0 = z.unsqueeze(1)
+            # Generating cycle
+            for i in range(1, n_len):
+                x_emb = self.x_emb(w).unsqueeze(1)
+                x_input = torch.cat([x_emb, z_0], dim=-1)
 
-        # Initial values
-        h = self.decoder_lat(z)
-        h = h.unsqueeze(0).repeat(self.decoder_rnn.num_layers, 1, 1)
-        w = torch.tensor(self.bos, device=device).repeat(n_batch)
-        x = torch.tensor([self.pad], device=device).repeat(n_batch, n_len)
-        x[:, 0] = self.bos
-        end_pads = torch.tensor([n_len], device=device).repeat(n_batch)
-        eos_mask = torch.zeros(n_batch, dtype=torch.uint8, device=device)
+                o, h = self.decoder_rnn(x_input, h)
+                y = self.decoder_fc(o.squeeze(1))
+                y = F.softmax(y / temp, dim=-1)
 
-        # Generating cycle
-        for i in range(1, n_len):
-            x_emb = self.x_emb(w).unsqueeze(1)
-            x_input = torch.cat([x_emb, z_0], dim=-1)
+                w = torch.multinomial(y, 1)[:, 0]
+                x[~eos_mask, i] = w[~eos_mask]
+                i_eos_mask = ~eos_mask & (w == self.eos)
+                end_pads[i_eos_mask] = i + 1
+                eos_mask = eos_mask | i_eos_mask
 
-            o, h = self.decoder_rnn(x_input, h)
-            y = self.decoder_fc(o.squeeze(1))
-            y = F.softmax(y / temp, dim=-1)
+            # Converting `x` to list of tensors
+            new_x = []
+            for i in range(x.size(0)):
+                new_x.append(x[i, :end_pads[i]])
+            x = new_x
 
-            w = torch.multinomial(y, 1)[:, 0]
-            x[~eos_mask, i] = w[~eos_mask]
-            i_eos_mask = ~eos_mask & (w == self.eos)
-            end_pads[i_eos_mask] = i + 1
-            eos_mask = eos_mask | i_eos_mask
-
-        # Converting `x` to list of tensors
-        new_x = []
-        for i in range(x.size(0)):
-            new_x.append(x[i, :end_pads[i]])
-        x = new_x
-
-        self.train()
-
-        return z, x
+            return z, x

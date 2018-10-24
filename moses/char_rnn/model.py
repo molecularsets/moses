@@ -39,45 +39,46 @@ class CharRNN(nn.Module):
         return x, lengths, hiddens
 
     def sample_smiles(self, max_length, batch_size):
-        starts = [torch.tensor([self.vocabulary.bos], dtype=torch.long, device=self.device)
-                  for _ in range(batch_size)
-                  ]
+        with torch.no_grad():
+            starts = [torch.tensor([self.vocabulary.bos], dtype=torch.long, device=self.device)
+                      for _ in range(batch_size)
+                      ]
 
-        starts = torch.tensor(starts, dtype=torch.long, device=self.device).unsqueeze(1)
+            starts = torch.tensor(starts, dtype=torch.long, device=self.device).unsqueeze(1)
 
-        new_smiles_list = [
-            torch.tensor(self.vocabulary.pad, dtype=torch.long, device=self.device).repeat(max_length + 2)
-            for _ in range(batch_size)
-        ]
+            new_smiles_list = [
+                torch.tensor(self.vocabulary.pad, dtype=torch.long, device=self.device).repeat(max_length + 2)
+                for _ in range(batch_size)
+            ]
 
-        for i in range(batch_size):
-            new_smiles_list[i][0] = self.vocabulary.bos
+            for i in range(batch_size):
+                new_smiles_list[i][0] = self.vocabulary.bos
 
-        len_smiles_list = [1 for _ in range(batch_size)]
-        lens = torch.tensor([1 for _ in range(batch_size)], dtype=torch.long, device=self.device)
-        end_smiles_list = [False for _ in range(batch_size)]
+            len_smiles_list = [1 for _ in range(batch_size)]
+            lens = torch.tensor([1 for _ in range(batch_size)], dtype=torch.long, device=self.device)
+            end_smiles_list = [False for _ in range(batch_size)]
 
-        hiddens = None
-        for i in range(1, max_length + 1):
-            output, _, hiddens = self.forward(starts, lens, hiddens)
+            hiddens = None
+            for i in range(1, max_length + 1):
+                output, _, hiddens = self.forward(starts, lens, hiddens)
 
-            # probabilities
-            probs = [F.softmax(o, dim=-1) for o in output]
+                # probabilities
+                probs = [F.softmax(o, dim=-1) for o in output]
 
-            # sample from probabilities
-            ind_tops = [torch.multinomial(p, 1) for p in probs]
+                # sample from probabilities
+                ind_tops = [torch.multinomial(p, 1) for p in probs]
 
-            for j, top in enumerate(ind_tops):
-                if not end_smiles_list[j]:
-                    top_elem = top[0].item()
-                    if top_elem == self.vocabulary.eos:
-                        end_smiles_list[j] = True
+                for j, top in enumerate(ind_tops):
+                    if not end_smiles_list[j]:
+                        top_elem = top[0].item()
+                        if top_elem == self.vocabulary.eos:
+                            end_smiles_list[j] = True
 
-                    new_smiles_list[j][i] = top_elem
-                    len_smiles_list[j] = len_smiles_list[j] + 1
+                        new_smiles_list[j][i] = top_elem
+                        len_smiles_list[j] = len_smiles_list[j] + 1
 
-            starts = torch.tensor(ind_tops, dtype=torch.long, device=self.device).unsqueeze(1)
+                starts = torch.tensor(ind_tops, dtype=torch.long, device=self.device).unsqueeze(1)
 
-        new_smiles_list = [new_smiles_list[i][:l] for i, l in enumerate(len_smiles_list)]
+            new_smiles_list = [new_smiles_list[i][:l] for i, l in enumerate(len_smiles_list)]
 
-        return new_smiles_list
+            return new_smiles_list
