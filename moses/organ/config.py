@@ -48,6 +48,7 @@ def get_parser():
                            help='Size of batch')
     train_arg.add_argument('--lr', type=float, default=1e-4,
                            help='Learning rate')
+    train_arg.add_argument('--n_jobs', type=int, default=8, help='Number of threads')
     train_arg.add_argument('--max_length', type=int, default=100,
                            help='Maximum length for sequence')
     train_arg.add_argument('--rollouts', type=int, default=16,

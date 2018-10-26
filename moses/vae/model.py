@@ -168,7 +168,7 @@ class VAE(nn.Module):
             1. (n_batch, d_z) of floats, latent vector z
             2. list of tensors of longs, samples sequence x
         """
-        with torch.go_grad():
+        with torch.no_grad():
             # `z`
             device = self.x_emb.weight.device
             if z is None:

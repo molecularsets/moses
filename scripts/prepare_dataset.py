@@ -17,7 +17,7 @@ logger = logging.getLogger("prepare dataset")
 def get_parser():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--output_file', type=str, default='mcf_dataset.csv',
+    parser.add_argument('--output_file', type=str, default='dataset.csv',
                         help='Path for constructed dataset')
     parser.add_argument('--seed', type=int, default=0,
                         help='Random state')

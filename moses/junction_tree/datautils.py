@@ -5,6 +5,8 @@ import tqdm
 from torch.utils.data import DataLoader
 
 from moses.junction_tree.jtnn.mol_tree import MolTree
+from multiprocessing import Pool
+from moses.utils import SmilesDataset
 
 
 class JTreeVocab:
@@ -33,38 +35,47 @@ class JTreeCorpus:
         self.device = device
         self.vocab = None
 
-    def fit(self, dataset=None, vocabulary=None):
+    def fit(self, dataset=None, vocabulary=None, n_jobs=4):
         if vocabulary is None:
             if dataset is None:
                 raise ValueError("You should specify either dataset or vocabulary")
-
             clusters = set()
-
-            for smiles in tqdm.tqdm(dataset):
-                mol = MolTree(smiles)
+            pool = Pool(n_jobs)
+            for mol in tqdm.tqdm(pool.imap(MolTree, dataset),
+                                 total=len(dataset),
+                                 postfix=['Creating vocab']):
                 for c in mol.nodes:
                     clusters.add(c.smiles)
-
+            pool.close()
             self.vocab = JTreeVocab(sorted(list(clusters)))
         else:
             self.vocab = vocabulary
 
         return self
 
-    def transform(self, dataset):
-        return DataLoader(dataset, batch_size=self.n_batch, shuffle=True, collate_fn=self._collate_fn, num_workers=4,
+    def transform(self, dataset, num_workers=4):
+        return DataLoader(SmilesDataset(dataset, transform=self.parse_molecule),
+                          batch_size=self.n_batch, shuffle=True,
+                          num_workers=num_workers,
+                          collate_fn=self.dummy_collate,
                           drop_last=True)
 
-    def _collate_fn(self, l_smiles):
-        mol_trees = []
+    @staticmethod
+    def dummy_collate(smiles_list):
+        return list(smiles_list)
 
-        for i in l_smiles:
-            mol_tree = MolTree(i)
-            mol_tree.recover()
-            mol_tree.assemble()
-            mol_trees.append(mol_tree)
+    @staticmethod
+    def parse_molecule(smiles):
+        mol_tree = MolTree(smiles)
+        mol_tree.recover()
+        mol_tree.assemble()
 
-        return mol_trees
+        for node in mol_tree.nodes:
+            if node.label not in node.cands:
+                node.cands.append(node.label)
+                node.cand_mols.append(node.label_mol)
+
+        return mol_tree
 
 
 def get_slots(smiles):

@@ -31,7 +31,7 @@ def main(config):
     model.eval()
 
     gen_smiles = []
-    for _ in tqdm.tqdm(range(config.n_samples)):
+    for _ in tqdm.trange(config.n_samples):
         gen_smiles.append(model.sample_prior(prob_decode=True))
 
     df = pd.DataFrame(gen_smiles, columns=['SMILES'])

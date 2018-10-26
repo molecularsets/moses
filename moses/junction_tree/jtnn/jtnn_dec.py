@@ -38,8 +38,8 @@ class JTNNDecoder(nn.Module):
         self.W_o = nn.Linear(hidden_size, self.vocab_size)
         self.U_s = nn.Linear(hidden_size, 1)
 
-        self.pred_loss = nn.CrossEntropyLoss(size_average=False)
-        self.stop_loss = nn.BCEWithLogitsLoss(size_average=False)
+        self.pred_loss = nn.CrossEntropyLoss(reduction='sum')
+        self.stop_loss = nn.BCEWithLogitsLoss(reduction='sum')
 
     def forward(self, mol_batch, mol_vec):
         device = JTNNDecoder._device(self)

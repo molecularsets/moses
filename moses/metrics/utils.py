@@ -1,7 +1,6 @@
 import os
 from collections import Counter
 from functools import partial
-from multiprocessing import Pool
 import numpy as np
 import pandas as pd
 import scipy.sparse
@@ -15,6 +14,7 @@ from rdkit.Chem.Scaffolds import MurckoScaffold
 from rdkit.Chem import Descriptors
 from moses.metrics.SA_Score import sascorer
 from moses.metrics.NP_Score import npscorer
+from moses.utils import mapper
 
 _base_dir = os.path.split(__file__)[0]
 _mcf = pd.read_csv(os.path.join(_base_dir, 'mcf.csv'))
@@ -22,33 +22,6 @@ _pains = pd.read_csv(os.path.join(_base_dir, 'wehi_pains.csv'),
                      names=['smarts', 'names'])
 _filters = [Chem.MolFromSmarts(x) for x in
             _mcf.append(_pains, sort=True)['smarts'].values]
-
-
-def mapper(n_jobs):
-    '''
-    Returns function for map call.
-    If n_jobs == 1, will use standard map
-    If n_jobs > 1, will use multiprocessing pool
-    If n_jobs is a pool object, will return its map function
-    '''
-    if n_jobs == 1:
-        def _mapper(*args, **kwargs):
-            return list(map(*args, **kwargs))
-
-        return _mapper
-    elif isinstance(n_jobs, int):
-        pool = Pool(n_jobs)
-
-        def _mapper(*args, **kwargs):
-            try:
-                result = pool.map(*args, **kwargs)
-            finally:
-                pool.terminate()
-            return result
-
-        return _mapper
-    else:
-        return n_jobs.map
 
 
 def get_mol(smiles_or_mol):
@@ -163,33 +136,44 @@ def compute_scaffold(mol, min_rings=2):
         return scaffold_smiles
 
 
-def average_max_tanimoto(stock_vecs, gen_vecs, batch_size=10000, gpu=-1):
+def average_agg_tanimoto(stock_vecs, gen_vecs,
+                         batch_size=5000, agg='max',
+                         gpu=-1):
     '''
     For each molecule in gen_vecs finds closest molecule in stock_vecs.
     Returns average tanimoto score for between these molecules
     :param stock_vecs: numpy array <n_vectors x dim>
     :param gen_vecs: numpy array <n_vectors' x dim>
+    :param agg: max or mean
     '''
+    assert agg in ['max', 'mean'], "Can aggregate only max or mean"
     if gpu != -1:
         device = "cuda:{}".format(gpu)
     else:
         device = "cpu"
-    best_tanimoto = np.zeros(len(gen_vecs))
+    agg_tanimoto = np.zeros(len(gen_vecs))
+    total = np.zeros(len(gen_vecs))
     for j in range(0, stock_vecs.shape[0], batch_size):
         x_stock = torch.tensor(stock_vecs[j:j + batch_size]).to(device).float()
         for i in range(0, gen_vecs.shape[0], batch_size):
             y_gen = torch.tensor(gen_vecs[i:i + batch_size]).to(device).float()
             y_gen = y_gen.transpose(0, 1)
             tp = torch.mm(x_stock, y_gen)
-            jac = (tp / (x_stock.sum(1, keepdim=True) + y_gen.sum(0,
-                                                                  keepdim=True) - tp)).cpu().numpy()
+            jac = (tp / (x_stock.sum(1, keepdim=True) +
+                         y_gen.sum(0, keepdim=True) - tp)).cpu().numpy()
             jac[np.isnan(jac)] = 1
-            best_tanimoto[i:i + y_gen.shape[1]] = np.maximum(
-                best_tanimoto[i:i + y_gen.shape[1]], jac.max(0))
-    return np.mean(best_tanimoto)
+            if agg == 'max':
+                agg_tanimoto[i:i + y_gen.shape[1]] = np.maximum(
+                    agg_tanimoto[i:i + y_gen.shape[1]], jac.max(0))
+            elif agg == 'mean':
+                agg_tanimoto[i:i + y_gen.shape[1]] += jac.sum(0)
+                total[i:i + y_gen.shape[1]] += jac.shape[0]
+    if agg == 'mean':
+        agg_tanimoto /= total
+    return np.mean(agg_tanimoto)
 
 
-def fingerprint(smiles_or_mol, type='maccs', dtype=None, morgan__r=2,
+def fingerprint(smiles_or_mol, fp_type='maccs', dtype=None, morgan__r=2,
                 morgan__n=1024, *args, **kwargs):
     '''
     Generates fingerprint for SMILES
@@ -199,21 +183,21 @@ def fingerprint(smiles_or_mol, type='maccs', dtype=None, morgan__r=2,
     :param type: type of fingerprint: [MACCS|morgan]
     :param dtype: if not None, specifies the dtype of returned array
     '''
-    ftype = type.lower()
+    fp_type = fp_type.lower()
     molecule = get_mol(smiles_or_mol, *args, **kwargs)
     if molecule is None:
         return None
-    if ftype == 'maccs':
+    if fp_type == 'maccs':
         keys = MACCSkeys.GenMACCSKeys(molecule)
         keys = np.array(keys.GetOnBits())
         fingerprint = np.zeros(166, dtype='uint8')
         if len(keys) != 0:
             fingerprint[keys - 1] = 1  # We drop 0-th key that is always zero
-    elif ftype == 'morgan':
+    elif fp_type == 'morgan':
         fingerprint = np.asarray(Morgan(molecule, morgan__r, nBits=morgan__n),
                                  dtype='uint8')
     else:
-        raise ValueError("Unknown fingerprint type {}".format(ftype))
+        raise ValueError("Unknown fingerprint type {}".format(fp_type))
     if dtype is not None:
         fingerprint = fingerprint.astype(dtype)
     return fingerprint
@@ -262,69 +246,26 @@ def fingerprints(smiles_mols_array, n_jobs=1, already_unique=False, *args,
         return fps
 
 
-def tanimoto(fingerprints, fingerprints_right=None, mode='pairwise'):
-    '''
-    Computes pairwize Tanimoto similarity between all pairs of fingerprints.
-    If fingerprints_right is given, will compute distances between all molecules
-    from fingerprints and fingerprints_right. If mode == 'paired', than will compute
-    Tanimoto between corresponding rows. Lengths of fingerprints andfingerprints_right
-    will have to be the same
-    :param fingerprints: numpy array or torch tensor
-    :param fingerprints_right: numpy array or torch tensor
-    :param mode: [pairwise|paired]
-    Output:
-    :result similarity: Tanimoto score for each row
-    '''
-    if fingerprints_right is None:
-        fingerprints_right = fingerprints
-
-    if mode == 'pairwise':
-        if isinstance(fingerprints_right, torch.Tensor):
-            fingerprints_right = fingerprints_right.transpose(0, 1)
-            total = fingerprints.sum(1, keepdim=True) + fingerprints_right.sum(
-                0, keepdim=True)
-        else:
-            fingerprints_right = fingerprints_right.T
-            total = fingerprints.sum(1,
-                                     keepdims=True) + fingerprints_right.sum(0,
-                                                                             keepdims=True)
-        intersection = fingerprints @ fingerprints_right
-        union = total - intersection
-    elif mode == 'paired':
-        assert fingerprints.shape == fingerprints_right.shape, "For paired mode should have the same number of rows"
-        intersection = (fingerprints * fingerprints_right).sum(1)
-        union = fingerprints.sum(1) + fingerprints_right.sum(1) - intersection
-    else:
-        raise ValueError
-
-    if isinstance(fingerprints_right, torch.Tensor):
-        intersection = intersection.float()
-        union = union.float()
-    else:
-        intersection = intersection.astype(float)
-        intersection = intersection.astype(float)
-    intersection[union == 0] = 1
-    union[union == 0] = 1
-    scores = intersection / union
-    return scores
-
-
 def mol_passes_filters(mol,
-                       allowed={'C', 'N', 'S', 'O', 'F', 'Cl', 'Br', 'H'},
+                       allowed=None,
                        isomericSmiles=False):
     '''
     Checks if mol passes MCF and PAINS filters, has only allowed atoms and is not charged
     '''
+    allowed = allowed or {'C', 'N', 'S', 'O', 'F', 'Cl', 'Br', 'H'}
     mol = get_mol(mol)
     if mol is None:
+        return False
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() != 0 and any(len(x) >= 8 for x in ring_info.AtomRings()):
         return False
     h_mol = Chem.AddHs(mol)
     for smarts in _filters:
         if h_mol.HasSubstructMatch(smarts):
             return False
-    if not all([atom.GetFormalCharge() == 0 for atom in mol.GetAtoms()]):
+    if not all(atom.GetFormalCharge() == 0 for atom in mol.GetAtoms()):
         return False
-    if not all([atom.GetSymbol() in allowed for atom in mol.GetAtoms()]):
+    if not all(atom.GetSymbol() in allowed for atom in mol.GetAtoms()):
         return False
     smiles = Chem.MolToSmiles(mol, isomericSmiles=isomericSmiles)
     if smiles is None or len(smiles) == 0:

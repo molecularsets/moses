@@ -6,10 +6,11 @@ import numpy as np
 import pandas as pd
 import torch
 
-from moses.metrics import mapper, get_mol, fraction_valid, morgan_similarity, remove_invalid, \
+from moses.metrics import get_mol, fraction_valid, morgan_similarity, remove_invalid, \
                           fragment_similarity, scaffold_similarity, fraction_passes_filters, \
                           fraction_unique, internal_diversity, frechet_distance, \
                           frechet_chemnet_distance, logP, QED, SA, NP, weight
+from moses.utils import mapper
 
 
 def add_common_arg(parser):
@@ -94,10 +95,10 @@ def read_smiles_csv(path):
 
 def set_seed(seed):
     torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.backends.cudnn.deterministic = True
     random.seed(seed)
     np.random.seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
 
 class MetricsReward:

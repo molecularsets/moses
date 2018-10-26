@@ -15,8 +15,6 @@ def get_parser():
 
     parser.add_argument('--n_ref_subsample', type=int, default=500,
                         help='Number of reference molecules (sampling from training data)')
-    parser.add_argument('--n_jobs', type=int, default=8,
-                        help='Number of processes to run metrics')
     parser.add_argument('--addition_rewards', nargs='+', type=str,
                         choices=MetricsReward.supported_metrics, default=[],
                         help='Adding of addition rewards')

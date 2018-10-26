@@ -1,3 +1,7 @@
+from torch.utils.data import Dataset
+from multiprocessing import Pool
+
+
 class SS:
     bos = '<bos>'
     eos = '<eos>'
@@ -76,3 +80,42 @@ class CharVocab:
         string = ''.join([self.id2char(id) for id in ids])
 
         return string
+
+
+class SmilesDataset(Dataset):
+    def __init__(self, data, transform):
+        self.data = data
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, i):
+        return self.transform(self.data[i])
+
+
+def mapper(n_jobs):
+    '''
+    Returns function for map call.
+    If n_jobs == 1, will use standard map
+    If n_jobs > 1, will use multiprocessing pool
+    If n_jobs is a pool object, will return its map function
+    '''
+    if n_jobs == 1:
+        def _mapper(*args, **kwargs):
+            return list(map(*args, **kwargs))
+
+        return _mapper
+    elif isinstance(n_jobs, int):
+        pool = Pool(n_jobs)
+
+        def _mapper(*args, **kwargs):
+            try:
+                result = pool.map(*args, **kwargs)
+            finally:
+                pool.terminate()
+            return result
+
+        return _mapper
+    else:
+        return n_jobs.map

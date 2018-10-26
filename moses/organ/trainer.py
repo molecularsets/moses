@@ -6,6 +6,7 @@ import random
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 from torch.nn.utils.rnn import pad_sequence
+from moses.utils import SmilesDataset
 
 
 class PolicyGradientLoss(nn.Module):
@@ -29,7 +30,8 @@ class ORGANTrainer:
 
         postfix = {'loss': 0}
 
-        for i, (prevs, nexts, lens) in enumerate(tqdm_data):
+        for i, batch in enumerate(tqdm_data):
+            (prevs, nexts, lens) = [x.to(model.device) for x in batch]
             outputs, _, _ = model.generator_forward(prevs, lens)
             loss = criterion(outputs.view(-1, outputs.shape[-1]), nexts.view(-1))
 
@@ -43,19 +45,29 @@ class ORGANTrainer:
             tqdm_data.set_postfix(postfix)
 
     def _pretrain_generator(self, model, train_data, val_data=None):
-        def collate(data):
-            data.sort(key=lambda x: len(x), reverse=True)
-            tensors = [model.string2tensor(s) for s in data]
-
+        def collate(tensors):
+            tensors.sort(key=lambda x: len(x), reverse=True)
             prevs = pad_sequence([t[:-1] for t in tensors], batch_first=True, padding_value=model.vocabulary.pad)
             nexts = pad_sequence([t[1:] for t in tensors], batch_first=True, padding_value=model.vocabulary.pad)
-            lens = torch.tensor([len(t) - 1 for t in tensors], dtype=torch.long, device=model.device)
-
+            lens = torch.tensor([len(t) - 1 for t in tensors], dtype=torch.long)
             return prevs, nexts, lens
 
-        train_loader = DataLoader(train_data, batch_size=self.config.n_batch, shuffle=True, collate_fn=collate)
+        num_workers = self.config.n_jobs
+        if num_workers == 1:
+            num_workers = 0
+
+        train_loader = DataLoader(SmilesDataset(train_data, transform=model.string2tensor),
+                                  batch_size=self.config.n_batch,
+                                  num_workers=num_workers,
+                                  shuffle=True,
+                                  collate_fn=collate)
         if val_data is not None:
-            val_loader = DataLoader(val_data, batch_size=self.config.n_batch, shuffle=False, collate_fn=collate)
+            val_loader = DataLoader(SmilesDataset(val_data, transform=model.string2tensor),
+                                    batch_size=self.config.n_batch,
+                                    transform=model.string2tensor,
+                                    num_workers=num_workers,
+                                    shuffle=False,
+                                    collate_fn=collate)
 
         criterion = nn.CrossEntropyLoss(ignore_index=model.vocabulary.pad)
         optimizer = torch.optim.Adam(model.generator.parameters(), lr=self.config.lr)
@@ -78,12 +90,12 @@ class ORGANTrainer:
         postfix = {'loss': 0}
 
         for i, inputs_from_data in enumerate(tqdm_data):
+            inputs_from_data = inputs_from_data.to(model.device)
             inputs_from_model, _ = model.sample_tensor(self.config.n_batch, self.config.max_length)
             targets = torch.zeros(self.config.n_batch, 1, device=model.device)
             outputs = model.discriminator_forward(inputs_from_model)
             loss = criterion(outputs, targets) / 2
-
-            targets = torch.ones(self.config.n_batch, 1, device=model.device)
+            targets = torch.ones(inputs_from_data.shape[0], 1, device=model.device)
             outputs = model.discriminator_forward(inputs_from_data)
             loss += criterion(outputs, targets) / 2
 
@@ -99,14 +111,16 @@ class ORGANTrainer:
     def _pretrain_discriminator(self, model, train_data, val_data=None):
         def collate(data):
             data.sort(key=lambda x: len(x), reverse=True)
-            tensors = [model.string2tensor(s) for s in data]
+            tensors = data
             inputs = pad_sequence(tensors, batch_first=True, padding_value=model.vocabulary.pad)
 
             return inputs
 
-        train_loader = DataLoader(train_data, batch_size=self.config.n_batch, shuffle=True, collate_fn=collate)
+        train_loader = DataLoader(SmilesDataset(train_data, transform=model.string2tensor),
+                                  batch_size=self.config.n_batch, shuffle=True, collate_fn=collate)
         if val_data is not None:
-            val_loader = DataLoader(val_data, batch_size=self.config.n_batch, shuffle=False, collate_fn=collate)
+            val_loader = DataLoader(SmilesDataset(val_data, transform=model.string2tensor),
+                                    batch_size=self.config.n_batch, shuffle=False, collate_fn=collate)
 
         criterion = nn.BCEWithLogitsLoss()
         optimizer = torch.optim.Adam(model.discriminator.parameters(), lr=self.config.lr)
@@ -122,7 +136,7 @@ class ORGANTrainer:
     def _train_policy_gradient(self, model, train_data):
         def collate(data):
             data.sort(key=lambda x: len(x), reverse=True)
-            tensors = [model.string2tensor(s) for s in data]
+            tensors = data
             inputs = pad_sequence(tensors, batch_first=True, padding_value=model.vocabulary.pad)
 
             return inputs
@@ -133,7 +147,8 @@ class ORGANTrainer:
         generator_optimizer = torch.optim.Adam(model.generator.parameters(), lr=self.config.lr)
         discriminator_optimizer = torch.optim.Adam(model.discriminator.parameters(), lr=self.config.lr)
 
-        train_loader = DataLoader(train_data, batch_size=self.config.n_batch, shuffle=True, collate_fn=collate)
+        train_loader = DataLoader(SmilesDataset(train_data, transform=model.string2tensor),
+                                  batch_size=self.config.n_batch, shuffle=True, collate_fn=collate)
 
         pg_iters = tqdm(range(self.config.pg_iters), desc='Policy gradient training')
 
@@ -178,6 +193,7 @@ class ORGANTrainer:
                     random.shuffle(sampled_batches)
 
                     for inputs_from_model, inputs_from_data in zip(sampled_batches, train_loader):
+                        inputs_from_data = inputs_from_data.to(model.device)
                         discriminator_targets = torch.zeros(self.config.n_batch, 1, device=model.device)
                         discriminator_outputs = model.discriminator_forward(inputs_from_model)
                         discriminator_loss = discriminator_criterion(discriminator_outputs, discriminator_targets) / 2

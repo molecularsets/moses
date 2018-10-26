@@ -31,16 +31,20 @@ class test_metrics(unittest.TestCase):
     def test_get_all_metrics(self):
         metrics = get_all_metrics(self.ref, self.gen, k=3)
         for metric in self.target:
-            assert np.allclose(metrics[metric], self.target[
-                metric]), "Metric `{}` value does not match expected value".format(
-                metric)
+            assert np.allclose(metrics[metric], self.target[metric]), \
+                ("Metric `{}` value does not match expected "
+                 "value. Got {}, expected {}".format(metric,
+                                                     metrics[metric],
+                                                     self.target[metric]))
 
     def test_get_all_metrics_multiprocess(self):
         metrics = get_all_metrics(self.ref, self.gen, k=3, n_jobs=2)
         for metric in self.target:
-            assert np.allclose(metrics[metric], self.target[
-                metric]), "Metric `{}` value does not match expected value".format(
-                metric)
+            assert np.allclose(metrics[metric], self.target[metric]), \
+                ("Metric `{}` value does not match expected "
+                 "value. Got {}, expected {}".format(metric,
+                                                     metrics[metric],
+                                                     self.target[metric]))
 
     def test_similarity_prototype(self):
         fingerprint_similarity(['Oc1ccccc1-c1cccc2cnccc12'] * 100,

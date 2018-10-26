@@ -10,9 +10,9 @@ def get_parser():
                         help='Directory for splitted dataset')
     parser.add_argument('--no_subset', action='store_true',
                         help='Do not create subsets for training and testing')
-    parser.add_argument('--train_size', type=int, default=None,
+    parser.add_argument('--train_size', type=int, default=250000,
                         help='Size of training dataset')
-    parser.add_argument('--test_size', type=int, default=None,
+    parser.add_argument('--test_size', type=int, default=10000,
                         help='Size of testing dataset')
     parser.add_argument('--seed', type=int, default=0,
                         help='Random state')

@@ -75,7 +75,8 @@ def get_parser():
     train_arg.add_argument('--n_last',
                            type=int, default=1000,
                            help='Number of iters to smooth loss calc')
-
+    train_arg.add_argument('--n_jobs', type=int, default=1,
+                           help='Number of threads')
     return parser
 
 

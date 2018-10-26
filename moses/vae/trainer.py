@@ -32,7 +32,7 @@ class VAETrainer:
             kl_weight = kl_annealer(epoch)
 
             # Iters
-            T = tqdm.tqdm(data, leave=False)
+            T = tqdm.tqdm(data)
             for i, x in enumerate(T):
                 # Forward
                 kl_loss, recon_loss = model(x)

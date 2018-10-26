@@ -7,6 +7,7 @@ from moses.junction_tree.datautils import JTreeCorpus
 from moses.junction_tree.jtnn.jtnn_vae import JTNNVAE
 from moses.junction_tree.trainer import JTreeTrainer
 from moses.script_utils import add_train_args, read_smiles_csv, set_seed
+import os
 
 lg = rdkit.RDLogger.logger()
 lg.setLevel(rdkit.RDLogger.CRITICAL)
@@ -22,8 +23,15 @@ def main(config):
     device = torch.device(config.device)
 
     data = read_smiles_csv(config.train_load)
-    corpus = JTreeCorpus(config.n_batch, device)
-    train_dataloader = corpus.fit(dataset=data).transform(data)
+
+    vocab = None
+    if config.vocab_save is not None and os.path.exists(config.vocab_save):
+        vocab = torch.load(config.vocab_save)
+    corpus = JTreeCorpus(config.n_batch, device).fit(dataset=data,
+                                                     vocabulary=vocab,
+                                                     n_jobs=config.n_jobs)
+    torch.save(corpus.vocab, config.vocab_save)
+    train_dataloader = corpus.transform(data, num_workers=config.n_jobs)
 
     model = JTNNVAE(corpus.vocab, config.hidden, config.latent, config.depth)
     model = model.to(device=device)
@@ -38,7 +46,6 @@ def main(config):
     trainer.fit(model, train_dataloader)
 
     torch.save(model.state_dict(), config.model_save)
-    torch.save(corpus.vocab, config.vocab_save)
     torch.save(config, config.config_save)
 
 

@@ -84,8 +84,7 @@ class ORGAN(nn.Module):
 
     def string2tensor(self, string):
         ids = self.vocabulary.string2ids(string, add_bos=True, add_eos=True)
-        tensor = torch.tensor(ids, dtype=torch.long, device=self.device)
-
+        tensor = torch.tensor(ids, dtype=torch.long)
         return tensor
 
     def tensor2string(self, tensor):

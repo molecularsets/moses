@@ -45,8 +45,8 @@ class JTNNVAE(nn.Module):
         self.G_mean = nn.Linear(hidden_size, latent_size // 2)
         self.G_var = nn.Linear(hidden_size, latent_size // 2)
 
-        self.assm_loss = nn.CrossEntropyLoss(size_average=False)
-        self.stereo_loss = nn.CrossEntropyLoss(size_average=False)
+        self.assm_loss = nn.CrossEntropyLoss(reduction='sum')
+        self.stereo_loss = nn.CrossEntropyLoss(reduction='sum')
 
     def encode(self, mol_batch):
         device = JTNNVAE._device(self)
@@ -264,7 +264,7 @@ class JTNNVAE(nn.Module):
         backup_mol = Chem.RWMol(cur_mol)
         for i in range(cand_idx.numel()):
             cur_mol = Chem.RWMol(backup_mol)
-            pred_amap = cand_amap[cand_idx[i].data[0]]
+            pred_amap = cand_amap[cand_idx[i].item()]
             new_global_amap = copy.deepcopy(global_amap)
 
             for nei_id, ctr_atom, nei_atom in pred_amap:

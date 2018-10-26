@@ -3,14 +3,16 @@ import warnings
 import numpy as np
 from scipy.spatial.distance import cosine
 
-from .utils import compute_fragments, average_max_tanimoto, \
-    compute_scaffolds, tanimoto, fingerprints, \
-    get_mol, canonic_smiles, mapper, mol_passes_filters, \
+from .utils import compute_fragments, average_agg_tanimoto, \
+    compute_scaffolds, fingerprints, \
+    get_mol, canonic_smiles, mol_passes_filters, \
     logP, QED, SA, NP, weight
+from moses.utils import mapper
 from .utils_fcd import get_predictions, calculate_frechet_distance
+from multiprocessing import Pool
 
 
-def get_all_metrics(ref, gen, k=[1000, 10000], n_jobs=1, gpu=-1):
+def get_all_metrics(ref, gen, k=[1000, 10000], n_jobs=1, gpu=-1, batch_size=512):
     '''
     Computes all available metrics between two lists of SMILES:
     * %valid
@@ -22,33 +24,34 @@ def get_all_metrics(ref, gen, k=[1000, 10000], n_jobs=1, gpu=-1):
     * morgan similarity
     '''
     metrics = {}
-
+    if n_jobs != 1:
+        pool = Pool(n_jobs)
+    else:
+        pool = 1
     metrics['valid'] = fraction_valid(gen, n_jobs=n_jobs)
     gen = remove_invalid(gen, canonize=True)
     ref = remove_invalid(ref, canonize=True)
-    gen_mols = mapper(n_jobs)(get_mol, gen)
-    ref_mols = mapper(n_jobs)(get_mol, ref)
+    gen_mols = mapper(pool)(get_mol, gen)
+    ref_mols = mapper(pool)(get_mol, ref)
 
     if not isinstance(k, (list, tuple)):
         k = [k]
     for k_ in k:
-        metrics['unique@{}'.format(k_)] = fraction_unique(gen, k_,
-                                                          n_jobs=n_jobs)
+        metrics['unique@{}'.format(k_)] = fraction_unique(gen, k_, pool)
 
-    metrics['FCD'] = frechet_chemnet_distance(ref, gen, gpu=gpu)
-    metrics['morgan'] = morgan_similarity(ref_mols, gen_mols,
-                                          n_jobs=n_jobs, gpu=gpu)
-    metrics['fragments'] = fragment_similarity(ref_mols, gen_mols,
-                                               n_jobs=n_jobs)
-    metrics['scaffolds'] = scaffold_similarity(ref_mols, gen_mols,
-                                               n_jobs=n_jobs)
-    metrics['internal_diversity'] = internal_diversity(gen_mols, n_jobs=n_jobs)
-    metrics['filters'] = fraction_passes_filters(gen_mols, n_jobs=n_jobs)
-    metrics['logP'] = frechet_distance(ref_mols, gen_mols, logP, n_jobs=n_jobs)
-    metrics['SA'] = frechet_distance(ref_mols, gen_mols, SA, n_jobs=n_jobs)
-    metrics['QED'] = frechet_distance(ref_mols, gen_mols, QED, n_jobs=n_jobs)
-    metrics['NP'] = frechet_distance(ref_mols, gen_mols, NP, n_jobs=n_jobs)
-    metrics['weight'] = frechet_distance(ref_mols, gen_mols, weight, n_jobs=n_jobs)
+    metrics['FCD'] = frechet_chemnet_distance(ref, gen, gpu=gpu, batch_size=batch_size)
+    metrics['morgan'] = morgan_similarity(ref_mols, gen_mols, pool, gpu=gpu)
+    metrics['fragments'] = fragment_similarity(ref_mols, gen_mols, pool)
+    metrics['scaffolds'] = scaffold_similarity(ref_mols, gen_mols, pool)
+    metrics['internal_diversity'] = internal_diversity(gen_mols, pool)
+    metrics['filters'] = fraction_passes_filters(gen_mols, pool)
+    metrics['logP'] = frechet_distance(ref_mols, gen_mols, logP, pool)
+    metrics['SA'] = frechet_distance(ref_mols, gen_mols, SA, pool)
+    metrics['QED'] = frechet_distance(ref_mols, gen_mols, QED, pool)
+    metrics['NP'] = frechet_distance(ref_mols, gen_mols, NP, pool)
+    metrics['weight'] = frechet_distance(ref_mols, gen_mols, weight, pool)
+    if n_jobs != 1:
+        pool.close()
     return metrics
 
 
@@ -64,13 +67,14 @@ def fraction_passes_filters(gen, n_jobs=1):
     return np.mean(passes)
 
 
-def internal_diversity(gen, type='morgan', n_jobs=1):
+def internal_diversity(gen, n_jobs=1, gpu=-1, fp_type='morgan'):
     '''
     Computes internal diversity as:
     1/|A|^2 sum_{x, y in AxA} (1-tanimoto(x, y))
     '''
-    gen_fps = fingerprints(gen, type=type, n_jobs=n_jobs)
-    return (1 - tanimoto(gen_fps, gen_fps)).mean()
+    gen_fps = fingerprints(gen, fp_type=fp_type, n_jobs=n_jobs)
+    return 1 - (average_agg_tanimoto(gen_fps, gen_fps,
+                                     agg='mean', gpu=gpu)).mean()
 
 
 def fraction_unique(gen, k=None, n_jobs=1, check_validity=True):
@@ -117,15 +121,15 @@ def morgan_similarity(ref, gen, n_jobs=1, gpu=-1):
     return fingerprint_similarity(ref, gen, 'morgan', n_jobs=n_jobs, gpu=gpu)
 
 
-def frechet_chemnet_distance(ref, gen, gpu=-1):
+def frechet_chemnet_distance(ref, gen, gpu=-1, batch_size=512):
     '''
     Computes Frechet ChemNet Distance between two lists of SMILES
     '''
     if len(ref) < 2 or len(gen) < 2:
         warnings.warn("Can't compute FCD for less than 2 molecules")
         return np.nan
-    ref_activations = get_predictions(ref, gpu=gpu)
-    gen_activations = get_predictions(gen, gpu=gpu)
+    gen_activations, ref_activations = get_predictions(gen, ref, gpu=gpu,
+                                                       batch_size=batch_size)
     mu1 = gen_activations.mean(0)
     mu2 = ref_activations.mean(0)
     sigma1 = np.cov(gen_activations.T)
@@ -134,15 +138,15 @@ def frechet_chemnet_distance(ref, gen, gpu=-1):
     return fcd
 
 
-def fingerprint_similarity(ref, gen, type='morgan', n_jobs=1, gpu=-1):
+def fingerprint_similarity(ref, gen, fp_type='morgan', n_jobs=1, gpu=-1):
     '''
     Computes average max similarities of gen SMILES to ref SMILES
     '''
-    ref_fp = fingerprints(ref, n_jobs=n_jobs, type=type, morgan__r=2,
+    ref_fp = fingerprints(ref, n_jobs=n_jobs, fp_type=fp_type, morgan__r=2,
                           morgan__n=1024)
-    gen_fp = fingerprints(gen, n_jobs=n_jobs, type=type, morgan__r=2,
+    gen_fp = fingerprints(gen, n_jobs=n_jobs, fp_type=fp_type, morgan__r=2,
                           morgan__n=1024)
-    similarity = average_max_tanimoto(ref_fp, gen_fp, gpu=gpu)
+    similarity = average_agg_tanimoto(ref_fp, gen_fp, gpu=gpu)
     return similarity
 
 
