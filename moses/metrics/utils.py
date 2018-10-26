@@ -260,12 +260,11 @@ def mol_passes_filters(mol,
     if ring_info.NumRings() != 0 and any(len(x) >= 8 for x in ring_info.AtomRings()):
         return False
     h_mol = Chem.AddHs(mol)
-    for smarts in _filters:
-        if h_mol.HasSubstructMatch(smarts):
-            return False
-    if not all(atom.GetFormalCharge() == 0 for atom in mol.GetAtoms()):
+    if any(atom.GetFormalCharge() != 0 for atom in mol.GetAtoms()):
         return False
-    if not all(atom.GetSymbol() in allowed for atom in mol.GetAtoms()):
+    if any(atom.GetSymbol() not in allowed for atom in mol.GetAtoms()):
+        return False
+    if any(h_mol.HasSubstructMatch(smarts) for smarts in _filters):
         return False
     smiles = Chem.MolToSmiles(mol, isomericSmiles=isomericSmiles)
     if smiles is None or len(smiles) == 0:
