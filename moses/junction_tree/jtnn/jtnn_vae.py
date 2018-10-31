@@ -3,6 +3,7 @@ import copy
 import rdkit.Chem as Chem
 import torch
 import torch.nn as nn
+from collections import OrderedDict
 
 from .chemutils import enum_assemble, set_atommap, copy_edit_mol, attach_mols, decode_stereo
 from .jtmpn import JTMPN
@@ -207,8 +208,8 @@ class JTNNVAE(nn.Module):
         tree_mess = self.jtnn([pred_root])[0]
 
         cur_mol = copy_edit_mol(pred_root.mol)
-        global_amap = [{}] + [{} for _ in pred_nodes]
-        global_amap[1] = {atom.GetIdx(): atom.GetIdx() for atom in cur_mol.GetAtoms()}
+        global_amap = [OrderedDict()] + [OrderedDict() for _ in pred_nodes]
+        global_amap[1] = OrderedDict([(atom.GetIdx(), atom.GetIdx()) for atom in cur_mol.GetAtoms()])
 
         cur_mol = self.dfs_assemble(tree_mess, mol_vec, pred_nodes, cur_mol, global_amap, [], pred_root, None,
                                     prob_decode)

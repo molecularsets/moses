@@ -4,6 +4,7 @@ import torch.nn as nn
 from .chemutils import enum_assemble
 from .mol_tree import MolTreeNode
 from .nnutils import gru_cell
+from collections import OrderedDict
 
 MAX_NB = 8  # TODO
 MAX_DECODE_LEN = 100  # TODO
@@ -62,7 +63,7 @@ class JTNNDecoder(nn.Module):
 
         max_iter = max([len(tr) for tr in traces])
         padding = torch.zeros(self.hidden_size, device=device)
-        h = {}
+        h = OrderedDict()
 
         for t in range(max_iter):
             prop_list = []
@@ -187,7 +188,7 @@ class JTNNDecoder(nn.Module):
         stack.append((root, self.vocab.get_slots(root.wid)))
 
         all_nodes = [root]
-        h = {}
+        h = OrderedDict()
         for step in range(MAX_DECODE_LEN):
             node_x, fa_slot = stack[-1]
             cur_h_nei = [h[(node_y.idx, node_x.idx)] for node_y in node_x.neighbors]

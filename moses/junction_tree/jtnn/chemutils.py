@@ -4,6 +4,7 @@ import rdkit.Chem as Chem
 from rdkit.Chem.EnumerateStereoisomers import EnumerateStereoisomers
 from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import minimum_spanning_tree
+from collections import OrderedDict
 
 MST_MAX_WEIGHT = 100  # TODO
 MAX_NCAND = 2000  # TODO
@@ -196,7 +197,7 @@ def attach_mols(ctr_mol, neighbors, prev_nodes, nei_amap):
 
 def local_attach(ctr_mol, neighbors, prev_nodes, amap_list):
     ctr_mol = copy_edit_mol(ctr_mol)
-    nei_amap = {nei.nid: {} for nei in prev_nodes + neighbors}
+    nei_amap = OrderedDict([(nei.nid, OrderedDict()) for nei in prev_nodes + neighbors])
 
     for nei_id, ctr_atom, nei_atom in amap_list:
         nei_amap[nei_id][nei_atom] = ctr_atom

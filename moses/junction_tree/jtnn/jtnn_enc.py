@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 
 from .nnutils import gru_cell
+from collections import OrderedDict
 
 MAX_NB = 8  # TODO
 
@@ -38,7 +39,7 @@ class JTNNEncoder(nn.Module):
             order = get_prop_order(root)
             orders.append(order)
 
-        h = {}
+        h = OrderedDict()
         max_depth = max([len(x) for x in orders])
         padding = torch.zeros(self.hidden_size, device=device)
 
