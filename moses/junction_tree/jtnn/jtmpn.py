@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 
 from .nnutils import index_select_nd
+from collections import OrderedDict
 
 ELEM_LIST = ['C', 'N', 'O', 'S', 'F', 'Si',
              'P', 'Cl', 'Br', 'Mg', 'Na', 'Ca',
@@ -33,7 +34,7 @@ class JTMPN(nn.Module):
         device = JTMPN._device(self)
         fatoms, fbonds = [], []
         in_bonds, all_bonds = [], []
-        mess_dict, all_mess = {}, [torch.zeros(self.hidden_size, device=device)]
+        mess_dict, all_mess = OrderedDict(), [torch.zeros(self.hidden_size, device=device)]
         total_atoms = 0
         scope = []
 
