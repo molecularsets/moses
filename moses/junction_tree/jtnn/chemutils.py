@@ -109,7 +109,9 @@ def tree_decomp(mol):
                 inter = set(cliques[i]) & set(cliques[j])
                 if len(inter) > 2:
                     cliques[i].extend(cliques[j])
-                    cliques[i] = sorted(list(set(cliques[i])))
+                    cliques[i] = list(set(cliques[i]))
+                    if len(cliques[i]) != 0:
+                        cliques[i] = sorted(cliques[i])
                     cliques[j] = []
 
     cliques = [c for c in cliques if len(c) > 0]

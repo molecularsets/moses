@@ -33,7 +33,9 @@ class MolTreeNode(object):
                     atom = original_mol.GetAtomWithIdx(cidx)
                     atom.SetAtomMapNum(nei_node.nid)
 
-        clique = sorted(list(set(clique)))
+        clique = list(set(clique))
+        if len(clique) != 0:
+            clique = sorted(clique)
         label_mol = get_clique_mol(original_mol, clique)
         self.label = Chem.MolToSmiles(Chem.MolFromSmiles(get_smiles(label_mol)))
         self.label_mol = get_mol(self.label)
