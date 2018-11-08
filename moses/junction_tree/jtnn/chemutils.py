@@ -145,7 +145,7 @@ def tree_decomp(mol):
                     if edges[(c1, c2)] < len(inter):
                         edges[(c1, c2)] = len(inter)
 
-    edges = [u + (MST_MAX_WEIGHT - v,) for u, v in edges.items()]
+    edges = sorted([u + (MST_MAX_WEIGHT - v,) for u, v in edges.items()])
     if len(edges) == 0:
         return cliques, edges
 

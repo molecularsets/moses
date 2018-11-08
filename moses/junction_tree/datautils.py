@@ -10,7 +10,6 @@ from moses.utils import SmilesDataset
 
 
 class JTreeVocab:
-
     def __init__(self, smiles_list):
         self.vocab = smiles_list
         self.vmap = {x: i for i, x in enumerate(self.vocab)}
