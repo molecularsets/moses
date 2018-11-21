@@ -1,4 +1,4 @@
-# MOSES: Molecular Sets
+# MOSES: A benchmarking platform for molecular generation models
 
 TODO: Abstract
 

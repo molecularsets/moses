@@ -2,6 +2,7 @@ import argparse
 import os
 import pandas as pd
 import importlib.util
+import sys
 
 
 def get_models():
@@ -47,7 +48,6 @@ def get_parser():
                         help='Size of testing dataset')
     parser.add_argument('--experiment_suff', type=str, default='',
                         help='Experiment suffix to break ambiguity')
-
     return parser
 
 
@@ -83,29 +83,30 @@ def train_model(config, model, train_path):
 
     trainer = get_trainer(model)
     trainer_parser = trainer.get_parser()
-    trainer_config = trainer_parser.parse_args(['--device', config.device,
-                                                '--train_load', train_path,
-                                                '--model_save', model_path,
-                                                '--config_save', config_path,
-                                                '--vocab_save', vocab_path,
-                                                '--n_jobs', str(config.n_jobs)])
+    trainer_config = trainer_parser.parse_known_args(sys.argv+[
+                                                     '--device', config.device,
+                                                     '--train_load', train_path,
+                                                     '--model_save', model_path,
+                                                     '--config_save', config_path,
+                                                     '--vocab_save', vocab_path,
+                                                     '--n_jobs', str(config.n_jobs)])[0]
     trainer.main(trainer_config)
 
 
 def sample_from_model(config, model):
     sampler = get_sampler(model)
     sampler_parser = sampler.get_parser()
-    sampler_config = sampler_parser.parse_args(['--device', config.device,
-                                                '--model_load', os.path.join(config.checkpoint_dir,
+    sampler_config = sampler_parser.parse_known_args(sys.argv+['--device', config.device,
+                                                     '--model_load', os.path.join(config.checkpoint_dir,
                                                                              model + '_model.pt'),
-                                                '--config_load', os.path.join(config.checkpoint_dir,
+                                                     '--config_load', os.path.join(config.checkpoint_dir,
                                                                               model + '_config.pt'),
-                                                '--vocab_load', os.path.join(config.checkpoint_dir,
+                                                     '--vocab_load', os.path.join(config.checkpoint_dir,
                                                                              model + '_vocab.pt'),
-                                                '--gen_save', os.path.join(config.data_dir, model +
+                                                     '--gen_save', os.path.join(config.data_dir, model +
                                                                            config.experiment_suff +
                                                                            '_generated.csv'),
-                                                '--n_samples', str(config.n_samples)])
+                                                     '--n_samples', str(config.n_samples)])[0]
     sampler.main(sampler_config)
 
 

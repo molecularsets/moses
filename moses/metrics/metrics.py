@@ -176,9 +176,13 @@ def scaffold_similarity(ref, gen, n_jobs=1):
     return count_distance(ref_scaffolds, gen_scaffolds)
 
 
-def frechet_distance(ref, gen, func, n_jobs=1):
-    ref_values = mapper(n_jobs)(func, ref)
-    gen_values = mapper(n_jobs)(func, gen)
+def frechet_distance(ref, gen, func=None, n_jobs=1):
+    if func is not None:
+        ref_values = mapper(n_jobs)(func, ref)
+        gen_values = mapper(n_jobs)(func, gen)
+    else:
+        ref_values = ref
+        gen_values = gen
     ref_mean = np.mean(ref_values)
     ref_var = np.var(ref_values)
     gen_mean = np.mean(gen_values)
