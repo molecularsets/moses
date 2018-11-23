@@ -138,7 +138,7 @@ class AAETrainer:
                 tqdm_data = tqdm(val_loader, desc='Validation (epoch #{})'.format(epoch))
                 self._train_epoch(model, tqdm_data, criterions)
 
-            if epoch % 20 == 0:
+            if epoch % self.config.save_frequency == 0:
                 model.to('cpu')
                 torch.save(model.state_dict(), self.config.model_save[:-3]+'_{0:03d}.pt'.format(epoch))
                 model.to(device)
@@ -147,6 +147,7 @@ class AAETrainer:
         self.log_file = open(self.config.log_file, 'w')
         self.log_file.write(str(self.config)+'\n')
         self.log_file.write(str(model)+'\n')
+
         def collate(data):
             data.sort(key=lambda x: len(x), reverse=True)
 
