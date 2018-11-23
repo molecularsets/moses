@@ -109,6 +109,7 @@ class AAETrainer:
         postfix['mode'] = 'Test' if optimizers is None else 'Eval'
         for field, value in postfix.items():
             self.log_file.write(field+' = '+str(value)+'\n')
+        self.log_file.write('===\n')
         self.log_file.flush()
 
     def _train(self, model, train_loader, val_loader=None):
@@ -124,6 +125,7 @@ class AAETrainer:
             k: torch.optim.lr_scheduler.StepLR(v, self.config.step_size, self.config.gamma)
             for k, v in optimizers.items()
         }
+        device = torch.device(self.config.device)
         for epoch in range(self.config.train_epochs):
             tqdm_data = tqdm(train_loader, desc='Training (epoch #{})'.format(epoch))
 
@@ -135,6 +137,11 @@ class AAETrainer:
             if val_loader is not None:
                 tqdm_data = tqdm(val_loader, desc='Validation (epoch #{})'.format(epoch))
                 self._train_epoch(model, tqdm_data, criterions)
+
+            if epoch % 20 == 0:
+                model.to('cpu')
+                torch.save(model.state_dict(), self.config.model_save[:-3]+'_{0:03d}.pt'.format(epoch))
+                model.to(device)
 
     def fit(self, model, train_data, val_data=None):
         self.log_file = open(self.config.log_file, 'w')

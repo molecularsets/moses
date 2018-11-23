@@ -72,9 +72,9 @@ def get_sampler(model):
 
 
 def train_model(config, model, train_path):
-    model_path = os.path.join(config.checkpoint_dir, model + '_model.pt')
-    config_path = os.path.join(config.checkpoint_dir, model + '_config.pt')
-    vocab_path = os.path.join(config.checkpoint_dir, model + '_vocab.pt')
+    model_path = os.path.join(config.checkpoint_dir, model + config.experiment_suff + '_model.pt')
+    config_path = os.path.join(config.checkpoint_dir, model + config.experiment_suff + '_config.pt')
+    vocab_path = os.path.join(config.checkpoint_dir, model + config.experiment_suff + '_vocab.pt')
 
     if os.path.exists(model_path) and \
             os.path.exists(config_path) and \
@@ -96,26 +96,25 @@ def train_model(config, model, train_path):
 def sample_from_model(config, model):
     sampler = get_sampler(model)
     sampler_parser = sampler.get_parser()
-    sampler_config = sampler_parser.parse_known_args(sys.argv+['--device', config.device,
-                                                     '--model_load', os.path.join(config.checkpoint_dir,
-                                                                             model + '_model.pt'),
-                                                     '--config_load', os.path.join(config.checkpoint_dir,
-                                                                              model + '_config.pt'),
-                                                     '--vocab_load', os.path.join(config.checkpoint_dir,
-                                                                             model + '_vocab.pt'),
-                                                     '--gen_save', os.path.join(config.data_dir, model +
-                                                                           config.experiment_suff +
-                                                                           '_generated.csv'),
+    model_path = os.path.join(config.checkpoint_dir, model + config.experiment_suff + '_model.pt')
+    config_path = os.path.join(config.checkpoint_dir, model + config.experiment_suff + '_config.pt')
+    vocab_path = os.path.join(config.checkpoint_dir, model + config.experiment_suff + '_vocab.pt')
+    gen_save = os.path.join(config.data_dir, model + config.experiment_suff + '_generated.csv')
+    sampler_config = sampler_parser.parse_known_args(sys.argv+[
+                                                     '--device', config.device,
+                                                     '--model_load', model_path,
+                                                     '--config_load', config_path,
+                                                     '--vocab_load', vocab_path,
+                                                     '--gen_save', gen_save,
                                                      '--n_samples', str(config.n_samples)])[0]
     sampler.main(sampler_config)
 
 
 def eval_metrics(config, model, ref_path):
     eval_parser = eval_script.get_parser()
+    gen_path = os.path.join(config.data_dir, model + config.experiment_suff + '_generated.csv')
     eval_config = eval_parser.parse_args(['--ref_path', ref_path,
-                                          '--gen_path', os.path.join(config.data_dir, model +
-                                                                     config.experiment_suff +
-                                                                     '_generated.csv'),
+                                          '--gen_path', gen_path,
                                           '--n_jobs', str(config.n_jobs)])
     metrics = eval_script.main(eval_config, print_metrics=False)
 
