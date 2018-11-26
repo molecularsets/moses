@@ -1,14 +1,15 @@
 import argparse
 import random
 import re
+from collections import Counter
 
 import numpy as np
 import pandas as pd
 import torch
 
-from moses.metrics import get_mol, fraction_valid, morgan_similarity, remove_invalid, \
+from moses.metrics import get_mol, morgan_similarity, remove_invalid, \
                           fragment_similarity, scaffold_similarity, fraction_passes_filters, \
-                          fraction_unique, internal_diversity, frechet_distance, \
+                          internal_diversity, frechet_distance, \
                           frechet_chemnet_distance, logP, QED, SA, NP, weight
 from moses.utils import mapper
 
@@ -124,43 +125,44 @@ class MetricsReward:
         self.metrics = metrics
 
     def _get_metrics(self, ref, ref_mols, rollout):
-        result = [fraction_valid(rollout, n_jobs=self.n_jobs)]
-        if result[0] == 0:
+        rollout_mols = mapper(self.n_jobs)(get_mol, rollout)
+        result = [[0 if m is None else 1] for m in rollout_mols]
+
+        if sum([r[0] for r in result], 0) == 0:
             return result
 
         rollout = remove_invalid(rollout, canonize=True, n_jobs=self.n_jobs)
         if len(rollout) < 2:
             return result
 
-        result.append(fraction_unique(rollout, n_jobs=self.n_jobs))
-
         if len(self.metrics):
-            rollout_mols = mapper(self.n_jobs)(get_mol, rollout)
             for metric_name in self.metrics:
                 if metric_name == 'fcd':
-                    result.append(frechet_chemnet_distance(ref, rollout, n_jobs=self.n_jobs))
+                    m = frechet_chemnet_distance(ref, rollout, n_jobs=self.n_jobs)
                 elif metric_name == 'morgan':
-                    result.append(morgan_similarity(ref_mols, rollout_mols, n_jobs=self.n_jobs))
+                    m = morgan_similarity(ref_mols, rollout_mols, n_jobs=self.n_jobs)
                 elif metric_name == 'fragments':
-                    result.append(fragment_similarity(ref_mols, rollout_mols, n_jobs=self.n_jobs))
+                    m = fragment_similarity(ref_mols, rollout_mols, n_jobs=self.n_jobs)
                 elif metric_name == 'scaffolds':
-                    result.append(scaffold_similarity(ref_mols, rollout_mols, n_jobs=self.n_jobs))
+                    m = scaffold_similarity(ref_mols, rollout_mols, n_jobs=self.n_jobs)
                 elif metric_name == 'internal_diversity':
-                    result.append(internal_diversity(rollout_mols, n_jobs=self.n_jobs))
+                    m = internal_diversity(rollout_mols, n_jobs=self.n_jobs)
                 elif metric_name == 'filters':
-                    result.append(fraction_passes_filters(rollout_mols, n_jobs=self.n_jobs))
+                    m = fraction_passes_filters(rollout_mols, n_jobs=self.n_jobs)
                 elif metric_name == 'logp':
-                    result.append(frechet_distance(ref_mols, rollout_mols, logP, n_jobs=self.n_jobs))
+                    m = frechet_distance(ref_mols, rollout_mols, logP, n_jobs=self.n_jobs)
                 elif metric_name == 'sa':
-                    result.append(frechet_distance(ref_mols, rollout_mols, SA, n_jobs=self.n_jobs))
+                    m = frechet_distance(ref_mols, rollout_mols, SA, n_jobs=self.n_jobs)
                 elif metric_name == 'qed':
-                    result.append(frechet_distance(ref_mols, rollout_mols, QED, n_jobs=self.n_jobs))
+                    m = frechet_distance(ref_mols, rollout_mols, QED, n_jobs=self.n_jobs)
                 elif metric_name == 'np':
-                    result.append(frechet_distance(ref_mols, rollout_mols, NP, n_jobs=self.n_jobs))
+                    m = frechet_distance(ref_mols, rollout_mols, NP, n_jobs=self.n_jobs)
                 elif metric_name == 'weight':
-                    result.append(frechet_distance(ref_mols, rollout_mols, weight, n_jobs=self.n_jobs))
+                    m = frechet_distance(ref_mols, rollout_mols, weight, n_jobs=self.n_jobs)
 
-                result[-1] = MetricsReward._nan2zero(result[-1])
+                m = MetricsReward._nan2zero(m)
+                for i in range(len(rollout)):
+                    result[i].append(m)
 
         return result
 
@@ -169,11 +171,15 @@ class MetricsReward:
         ref_subsample = [self.ref[idx] for idx in idxs]
         ref_mols_subsample = [self.ref_mols[idx] for idx in idxs]
 
+        gen_counter = Counter(gen)
+        gen_counts = [gen_counter[g] for g in gen]
+
         n = len(gen) // self.n_rollouts
-        rollouts = [gen[i::n] for i in range(0, n)]
+        rollouts = [gen[i::n] for i in range(n)]
 
         metrics_values = [self._get_metrics(ref_subsample, ref_mols_subsample, rollout) for rollout in rollouts]
-        metrics_values = map(lambda m: [sum(m, 0) / len(m)] * self.n_rollouts, metrics_values)
-        reward_values = sum(metrics_values, [])
+        metrics_values = map(lambda rollout_metrics: [sum(r, 0) / len(r) for r in rollout_metrics], metrics_values)
+        reward_values = sum(zip(*metrics_values), ())
+        reward_values = [v / c for v, c in zip(reward_values, gen_counts)]
 
         return reward_values
