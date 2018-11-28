@@ -7,4 +7,4 @@ Character-level recurrent neural networks (CharRNN) [1] treats the task of gener
 
 ## Links
 
-[1] [Generating Focused Molecule Libraries for Drug Discovery with Recurrent Neural Networks] https://pubs.acs.org/doi/full/10.1021/acscentsci.7b00512
+[1] [Generating Focused Molecule Libraries for Drug Discovery with Recurrent Neural Networks](https://pubs.acs.org/doi/full/10.1021/acscentsci.7b00512)
