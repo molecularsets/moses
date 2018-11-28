@@ -19,7 +19,7 @@ The dataset contains 1,936,962 molecular structures. For experiments, we also pr
 * [Variational Autoencoder (VAE)](./moses/vae/README.md)
 * [Adversarial Autoencoder (AAE)](./moses/aae/README.md)
 * [Objective-Reinforced Generative Adversarial Network (ORGAN)](./moses/organ/README.md)
-* [Junction Tree Variational Autoencoder (JT)](./moses/junction_tree/README.md)
+* [Junction Tree Variational Autoencoder (JTN-VAE)](./moses/junction_tree/README.md)
 
 ## Metrics
 
