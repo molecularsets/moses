@@ -19,9 +19,9 @@ setup(name='moses',
           # rdkit
       ],
       description='MOSES: A benchmarking platform for molecular generation models',
-      author='Neuromation & Insilico Teams',
-      author_email='engineering@neuromation.io',  # TODO: add email of insilico team
-      # TODO: add license
+      author='Neuromation & Insilico Medicine Teams',
+      author_email='engineering@neuromation.io, zhebrak@insilico.com',
+      license='MIT',
       package_data={
           '': ['*.csv', '*.h5', '*.gz'],
       }
