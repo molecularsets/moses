@@ -15,6 +15,8 @@ def main(config):
     train = read_smiles_csv(config.train_load)
 
     vocab = CharVocab.from_data(train)
+    torch.save(config, config.config_save)
+    torch.save(vocab, config.vocab_save)
 
     device = torch.device(config.device)
 
@@ -24,9 +26,8 @@ def main(config):
     trainer = AAETrainer(config)
     trainer.fit(model, train)
 
+    model.to('cpu')
     torch.save(model.state_dict(), config.model_save)
-    torch.save(config, config.config_save)
-    torch.save(vocab, config.vocab_save)
 
 
 if __name__ == '__main__':

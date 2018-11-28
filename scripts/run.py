@@ -2,6 +2,7 @@ import argparse
 import os
 import pandas as pd
 import importlib.util
+import sys
 
 
 def get_models():
@@ -47,7 +48,6 @@ def get_parser():
                         help='Size of testing dataset')
     parser.add_argument('--experiment_suff', type=str, default='',
                         help='Experiment suffix to break ambiguity')
-
     return parser
 
 
@@ -72,9 +72,9 @@ def get_sampler(model):
 
 
 def train_model(config, model, train_path):
-    model_path = os.path.join(config.checkpoint_dir, model + '_model.pt')
-    config_path = os.path.join(config.checkpoint_dir, model + '_config.pt')
-    vocab_path = os.path.join(config.checkpoint_dir, model + '_vocab.pt')
+    model_path = os.path.join(config.checkpoint_dir, model + config.experiment_suff + '_model.pt')
+    config_path = os.path.join(config.checkpoint_dir, model + config.experiment_suff + '_config.pt')
+    vocab_path = os.path.join(config.checkpoint_dir, model + config.experiment_suff + '_vocab.pt')
 
     if os.path.exists(model_path) and \
             os.path.exists(config_path) and \
@@ -83,38 +83,38 @@ def train_model(config, model, train_path):
 
     trainer = get_trainer(model)
     trainer_parser = trainer.get_parser()
-    trainer_config = trainer_parser.parse_args(['--device', config.device,
-                                                '--train_load', train_path,
-                                                '--model_save', model_path,
-                                                '--config_save', config_path,
-                                                '--vocab_save', vocab_path,
-                                                '--n_jobs', str(config.n_jobs)])
+    trainer_config = trainer_parser.parse_known_args(sys.argv+[
+                                                     '--device', config.device,
+                                                     '--train_load', train_path,
+                                                     '--model_save', model_path,
+                                                     '--config_save', config_path,
+                                                     '--vocab_save', vocab_path,
+                                                     '--n_jobs', str(config.n_jobs)])[0]
     trainer.main(trainer_config)
 
 
 def sample_from_model(config, model):
     sampler = get_sampler(model)
     sampler_parser = sampler.get_parser()
-    sampler_config = sampler_parser.parse_args(['--device', config.device,
-                                                '--model_load', os.path.join(config.checkpoint_dir,
-                                                                             model + '_model.pt'),
-                                                '--config_load', os.path.join(config.checkpoint_dir,
-                                                                              model + '_config.pt'),
-                                                '--vocab_load', os.path.join(config.checkpoint_dir,
-                                                                             model + '_vocab.pt'),
-                                                '--gen_save', os.path.join(config.data_dir, model +
-                                                                           config.experiment_suff +
-                                                                           '_generated.csv'),
-                                                '--n_samples', str(config.n_samples)])
+    model_path = os.path.join(config.checkpoint_dir, model + config.experiment_suff + '_model.pt')
+    config_path = os.path.join(config.checkpoint_dir, model + config.experiment_suff + '_config.pt')
+    vocab_path = os.path.join(config.checkpoint_dir, model + config.experiment_suff + '_vocab.pt')
+    gen_save = os.path.join(config.data_dir, model + config.experiment_suff + '_generated.csv')
+    sampler_config = sampler_parser.parse_known_args(sys.argv+[
+                                                     '--device', config.device,
+                                                     '--model_load', model_path,
+                                                     '--config_load', config_path,
+                                                     '--vocab_load', vocab_path,
+                                                     '--gen_save', gen_save,
+                                                     '--n_samples', str(config.n_samples)])[0]
     sampler.main(sampler_config)
 
 
 def eval_metrics(config, model, ref_path):
     eval_parser = eval_script.get_parser()
+    gen_path = os.path.join(config.data_dir, model + config.experiment_suff + '_generated.csv')
     eval_config = eval_parser.parse_args(['--ref_path', ref_path,
-                                          '--gen_path', os.path.join(config.data_dir, model +
-                                                                     config.experiment_suff +
-                                                                     '_generated.csv'),
+                                          '--gen_path', gen_path,
                                           '--n_jobs', str(config.n_jobs)])
     metrics = eval_script.main(eval_config, print_metrics=False)
 
