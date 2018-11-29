@@ -1,7 +1,6 @@
-# MOSES: A benchmarking platform for molecular generation models
+# Molecular Sets (MOSES): A benchmarking platform for molecular generation models
 
 Deep generative models such as generative adversarial networks, variational autoencoders, and autoregressive models are rapidly growing in popularity for the discovery of new molecules and materials. In this work, we introduce MOlecular SEtS (MOSES), a benchmarking platform to support research on machine learning for drug discovery. MOSES implements several popular molecular generation models and includes a set of metrics that evaluate the diversity and quality of generated molecules. MOSES is meant to standardize the research on molecular generation and facilitate the sharing and comparison of new models. Additionally, we provide a large-scale comparison of existing state of the art models and elaborate on current challenges for generative models that might prove fertile ground for new research. Our platform and source code are freely available here.
-
 
 ![pipeline](images/pipeline.png)
 
@@ -9,9 +8,9 @@ Deep generative models such as generative adversarial networks, variational auto
 
 We propose a biological molecule benchmark set refined from the ZINC database.
 
-The set is based on the ZINC Clean Leads collection. It contains 4,591,276 molecules in total, filtered by molecular weight in the range from 250 to 350 Daltons, a number of rotatable bonds not greater than 7, and XlogP less than or equal to 3.5. We removed molecules containing charged atoms or atoms besides C, N, S, O, F, Cl, Br, H or cycles longer than 8 atoms. The molecules were filtered via medicinal chemistry filters (MCFs) and PAINS filters18.
+The set is based on the ZINC Clean Leads collection. It contains 4,591,276 molecules in total, filtered by molecular weight in the range from 250 to 350 Daltons, a number of rotatable bonds not greater than 7, and XlogP less than or equal to 3.5. We removed molecules containing charged atoms or atoms besides C, N, S, O, F, Cl, Br, H or cycles longer than 8 atoms. The molecules were filtered via medicinal chemistry filters (MCFs) and PAINS filters.
 
-The dataset contains 1,936,962 molecular structures. For experiments, we also provide a training, test and scaffold test sets containing 250k, 10k, and 10k molecules respectively. The scaffold test set contains unique Bemis-Murcko scaffolds26 that were not present in the training and test sets. We use this set to assess how well the model can generate previously unobserved scaffolds.
+The dataset contains 1,936,962 molecular structures. For experiments, we also provide a training, test and scaffold test sets containing 250k, 10k, and 10k molecules respectively. The scaffold test set contains unique Bemis-Murcko scaffolds that were not present in the training and test sets. We use this set to assess how well the model can generate previously unobserved scaffolds.
 
 ## Models
 
@@ -22,14 +21,15 @@ The dataset contains 1,936,962 molecular structures. For experiments, we also pr
 * [Junction Tree Variational Autoencoder (JTN-VAE)](./moses/junction_tree/README.md)
 
 ## Metrics
+Besides standard uniqueness and validity metrics, MOSES provides other metrics to access the overall quality of generated molecules. Fragment similarity (Frag) and Scaffold similarity (Scaff) are cosine distances between vectors of fragment or scaffold frequencies correspondingly of the generated and test sets. Nearest neighbor similarity (SNN) is the average similarity of generated molecules to the nearest molecule from the test set. Internal diversity (IntDiv) is an average pairwise similarity of generated molecules. Fréchet ChemNet Distance (FCD) measures the difference in distributions of last layer activations of ChemNet.
 
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
-      <th rowspan="2">model</th>
+      <th rowspan="2">Model</th>
       <th rowspan="2">Valid (↑)</th>
-      <th rowspan="2">U@1k (↑)</th>
-      <th rowspan="2">U@10k (↑)</th>
+      <th rowspan="2">Unique@1k (↑)</th>
+      <th rowspan="2">Unique@10k (↑)</th>
       <th colspan="2">FCD (↓)</th>
       <th colspan="2">SNN (↓)</th>
       <th colspan="2">Frag (↑)</th>
@@ -132,6 +132,15 @@ The dataset contains 1,936,962 molecular structures. For experiments, we also pr
   </tbody>
 </table>
 
+For comparison of molecular properties, we computed the Frèchet distance between distributions of molecules in the generated and test sets. Below, we provide plots for lipophilicity (logP), Synthetic Accessibility (SA), Quantitative Estimation of Drug-likeness (QED), Natural Product-likeness (NP) and molecular weight.
+
+|logP|SA|
+|----|--|
+|![logP](images/logP.png)|![SA](images/SA.png)|
+|NP|QED|
+|![NP](images/NP.png)|![QED](images/QED.png)|
+|weight|
+|![weight](images/weight.png)|
 
 ### Calculation of metrics for all models
 
