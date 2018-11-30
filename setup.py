@@ -16,7 +16,7 @@ setup(name='moses',
           'scipy>=1.1.0',
           'tensorflow>=1.0',
           'torch>=0.4.1',
-          # rdkit
+          'rdkit>=2018.09.1',
       ],
       description='MOSES: A benchmarking platform for molecular generation models',
       author='Neuromation & Insilico Medicine Teams',
