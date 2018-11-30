@@ -10,25 +10,24 @@ RUN set -ex \
     && apt-get update -yqq \
     && apt-get upgrade -yqq \
     && apt-get install -yqq --no-install-recommends \
-        wget libxrender1 libxext6 \
+        git wget curl libxrender1 libxext6 software-properties-common \
     && wget --no-check-certificate https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
     && /bin/bash Miniconda3-latest-Linux-x86_64.sh -f -b -p /opt/miniconda \
+    && add-apt-repository ppa:git-core/ppa \
+    && (curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash) \
+    && apt-get install git-lfs \
+    && git lfs install \
     && apt-get clean
 
 ENV PATH /opt/miniconda/bin:$PATH
 RUN conda update conda
 
-RUN for i in 1 2 3 4 5; do echo $i && conda install -y -q numpy=1.15.0 && break || sleep 15; done
-RUN for i in 1 2 3 4 5; do echo $i && conda install -y -q scipy=1.1.0 && break || sleep 15; done
-RUN for i in 1 2 3 4 5; do echo $i && conda install -c anaconda tensorflow-gpu=1.12 && break || sleep 15; done
-RUN for i in 1 2 3 4 5; do echo $i && conda install -y -q keras-gpu=2.2.4 && break || sleep 15; done
-RUN for i in 1 2 3 4 5; do echo $i && conda install -y -q matplotlib=2.2.2 && break || sleep 15; done
-RUN for i in 1 2 3 4 5; do echo $i && conda install -y -q pandas=0.23.3 && break || sleep 15; done
-RUN for i in 1 2 3 4 5; do echo $i && conda install -y -q scikit-learn=0.19.1 && break || sleep 15; done
-RUN for i in 1 2 3 4 5; do echo $i && conda install -y -q -c rdkit rdkit && break || sleep 15; done
-RUN for i in 1 2 3 4 5; do echo $i && conda install -y -q tqdm && break || sleep 15; done
-RUN for i in 1 2 3 4 5; do echo $i && conda install -y -q -c pytorch pytorch=0.4.1 && break || sleep 15; done
-RUN for i in 1 2 3 4 5; do echo $i && conda install -y -q -c pytorch torchvision=0.2.1 && break || sleep 15; done
+RUN conda install -y -q numpy=1.15.0 scipy=1.1.0 matplotlib=2.2.2 pandas=0.23.3 scikit-learn=0.19.1 tqdm
+RUN conda install -c anaconda tensorflow-gpu=1.12
+RUN conda install -y -q keras-gpu=2.2.4
+RUN conda install -y -q -c rdkit rdkit
+RUN conda install -y -q -c pytorch pytorch=0.4.1
+RUN conda install -y -q -c pytorch torchvision=0.2.1
 
 RUN cd /code && python setup.py install
 
