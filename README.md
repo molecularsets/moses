@@ -144,8 +144,12 @@ If necessary, dataset will be downloaded, splited and all models will be trained
 For more details use `python run.py --help`.
 
 ## Installation
+
+Build an image based on the Dockerfile. The repository code will be available at `/code` inside a docker container.
+
+Alternatively, install dependencies and install MOSES manually:
 * [Install RDKit](https://www.rdkit.org/docs/Install.html) for metrics calculation.
-* Install models with `python setup.py install`
+* Install MOSES with `python setup.py install`
 
 ## Usage
 

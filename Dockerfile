@@ -12,7 +12,8 @@ RUN set -ex \
     && apt-get install -yqq --no-install-recommends \
         wget libxrender1 libxext6 \
     && wget --no-check-certificate https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
-    && /bin/bash Miniconda3-latest-Linux-x86_64.sh -f -b -p /opt/miniconda
+    && /bin/bash Miniconda3-latest-Linux-x86_64.sh -f -b -p /opt/miniconda \
+    && apt-get clean
 
 ENV PATH /opt/miniconda/bin:$PATH
 RUN conda update conda
