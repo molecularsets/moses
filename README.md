@@ -145,13 +145,17 @@ You can specify the device and model by running `python run.py --device cuda:5 -
 
 ## Installation
 
-Build an image based on the Dockerfile. The repository code will be available at `/code` inside a docker container.
+### Docker
+* Build an image based on the Dockerfile `nvidia-docker image build --tag <image_name> moses/`, where `moses/` is a cloned repository from github.
+* Create a container from the created image, e.g. by running `nvidia-docker run -it <container_name> --network="host" --shm-size 1G <image_name>`
+* The dataset is already downloaded during image building and the current repository is available at `/code` inside the docker container.
 
+### Manually
 Alternatively, install dependencies and MOSES manually:
 * [Install RDKit](https://www.rdkit.org/docs/Install.html) for metrics calculation.
 * Install MOSES with `python setup.py install`
+* Use `git lfs pull` to download the dataset
 
-Use `git lfs pull` to download the dataset
 ## Usage
 
 ### Training of model

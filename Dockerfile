@@ -30,7 +30,7 @@ RUN conda install -y -q -c rdkit rdkit=2018.09.1.0
 RUN conda install -y -q -c pytorch pytorch=0.4.1
 RUN conda install -y -q -c pytorch torchvision=0.2.1
 
-RUN cd /code && python setup.py install
+RUN cd /code && python setup.py install && git lfs pull
 
 RUN conda clean -yq -a
 
