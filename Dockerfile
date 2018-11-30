@@ -17,7 +17,8 @@ RUN set -ex \
     && (curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash) \
     && apt-get install git-lfs \
     && git lfs install \
-    && apt-get clean
+    && apt-get clean \ 
+    && rm Miniconda3-latest-Linux-x86_64.sh
 
 ENV PATH /opt/miniconda/bin:$PATH
 RUN conda update conda
