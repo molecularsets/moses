@@ -20,7 +20,7 @@ setup(name='moses',
       ],
       description='MOSES: A benchmarking platform for molecular generation models',
       author='Neuromation & Insilico Medicine Teams',
-      author_email='engineering@neuromation.io, zhebrak@insilico.com',
+      author_email='developers@neuromation.io, zhebrak@insilico.com',
       license='MIT',
       package_data={
           '': ['*.csv', '*.h5', '*.gz'],
