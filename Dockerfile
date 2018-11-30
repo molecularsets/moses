@@ -23,7 +23,7 @@ RUN set -ex \
 ENV PATH /opt/miniconda/bin:$PATH
 RUN conda update conda
 
-RUN conda install -y -q numpy=1.15.0 scipy=1.1.0 matplotlib=2.2.2 pandas=0.23.3 scikit-learn=0.19.1 tqdm
+RUN conda install -y -q numpy=1.15.0 scipy=1.1.0 matplotlib=3.0.1 pandas=0.23.3 scikit-learn=0.19.1 tqdm
 RUN conda install -c anaconda tensorflow-gpu=1.12
 RUN conda install -y -q keras-gpu=2.2.4
 RUN conda install -y -q -c rdkit rdkit

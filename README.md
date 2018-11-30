@@ -147,7 +147,7 @@ You can specify the device and model by running `python run.py --device cuda:5 -
 
 Build an image based on the Dockerfile. The repository code will be available at `/code` inside a docker container.
 
-Alternatively, install dependencies and install MOSES manually:
+Alternatively, install dependencies and MOSES manually:
 * [Install RDKit](https://www.rdkit.org/docs/Install.html) for metrics calculation.
 * Install MOSES with `python setup.py install`
 
