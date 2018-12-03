@@ -2,7 +2,7 @@
 
 Deep generative models such as generative adversarial networks, variational autoencoders, and autoregressive models are rapidly growing in popularity for the discovery of new molecules and materials. In this work, we introduce MOlecular SEtS (MOSES), a benchmarking platform to support research on machine learning for drug discovery. MOSES implements several popular molecular generation models and includes a set of metrics that evaluate the diversity and quality of generated molecules. MOSES is meant to standardize the research on molecular generation and facilitate the sharing and comparison of new models. Additionally, we provide a large-scale comparison of existing state of the art models and elaborate on current challenges for generative models that might prove fertile ground for new research. Our platform and source code are freely available here.
 
-__For more details, please refer to the [paper](images/Molecular_Sets__MOSES___A_Benchmarking_Platform_for_Molecular_Generation_Models.pdf).__
+__For more details, please refer to the [paper](https://arxiv.org/abs/1811.12823).__
 
 ![pipeline](images/pipeline.png)
 
