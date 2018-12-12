@@ -26,112 +26,112 @@ The dataset contains 1,936,962 molecular structures. For experiments, we also pr
 Besides standard uniqueness and validity metrics, MOSES provides other metrics to access the overall quality of generated molecules. Fragment similarity (Frag) and Scaffold similarity (Scaff) are cosine distances between vectors of fragment or scaffold frequencies correspondingly of the generated and test sets. Nearest neighbor similarity (SNN) is the average similarity of generated molecules to the nearest molecule from the test set. Internal diversity (IntDiv) is an average pairwise similarity of generated molecules. Fréchet ChemNet Distance (FCD) measures the difference in distributions of last layer activations of ChemNet.
 
 <table border="1" class="dataframe">
-<thead>
-<tr style="text-align: right;">
-<th rowspan="2">Model</th>
-<th rowspan="2">Valid (↑)</th>
-<th rowspan="2">Unique@1k (↑)</th>
-<th rowspan="2">Unique@10k (↑)</th>
-<th colspan="2">FCD (↓)</th>
-<th colspan="2">SNN (↓)</th>
-<th colspan="2">Frag (↑)</th>
-<th colspan="2">Scaff (↑)</th>
-<th rowspan="2">IntDiv (↑)</th>
-<th rowspan="2">Filters (↑)</th>
-</tr>
-<tr>
-<th>Test</th>
-<th>TestSF</th>
-<th>Test</th>
-<th>TestSF</th>
-<th>Test</th>
-<th>TestSF</th>
-<th>Test</th>
-<th>TestSF</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<th>CharRNN</th>
-<td>0.9598</td>
-<td><b>1.0000</b></td>
-<td>0.9993</td>
-<td>0.3233</td>
-<td>0.8355</td>
-<td>0.4606</td>
-<td>0.4492</td>
-<td>0.9977</td>
-<td>0.9962</td>
-<td>0.7964</td>
-<td>0.1281</td>
-<td><b>0.8561</b></td>
-<td>0.9920</td>
-</tr>
-<tr>
-<th>VAE</th>
-<td>0.9528</td>
-<td><b>1.0000</b></td>
-<td>0.9992</td>
-<td><b>0.2540</b></td>
-<td><b>0.6959</b></td>
-<td>0.4684</td>
-<td>0.4547</td>
-<td><b>0.9978</b></td>
-<td><b>0.9963</b></td>
-<td><b>0.8277</b></td>
-<td>0.0925</td>
-<td>0.8548</td>
-<td>0.9925</td>
-</tr>
-<tr>
-<th>AAE</th>
-<td>0.9341</td>
-<td><b>1.0000</b></td>
-<td><b>1.0000</b></td>
-<td>1.3511</td>
-<td>1.8587</td>
-<td>0.4191</td>
-<td>0.4113</td>
-<td>0.9865</td>
-<td>0.9852</td>
-<td>0.6637</td>
-<td><b>0.1538</b></td>
-<td>0.8531</td>
-<td>0.9759</td>
-</tr>
-<tr>
-<th>ORGAN</th>
-<td>0.8731</td>
-<td>0.9910</td>
-<td>0.9260</td>
-<td>1.5748</td>
-<td>2.4306</td>
-<td>0.4745</td>
-<td>0.4593</td>
-<td>0.9897</td>
-<td>0.9883</td>
-<td>0.7843</td>
-<td>0.0632</td>
-<td>0.8526</td>
-<td><b>0.9934</b></td>
-</tr>
-<tr>
-<th>JTN-VAE</th>
-<td><b>1.0000</b></td>
-<td>0.9980</td>
-<td>0.9972</td>
-<td>4.3769</td>
-<td>4.6299</td>
-<td><b>0.3909</b></td>
-<td><b>0.3902</b></td>
-<td>0.9679</td>
-<td>0.9699</td>
-<td>0.3868</td>
-<td>0.1163</td>
-<td>0.8495</td>
-<td>0.9566</td>
-</tr>
-</tbody>
+    <thead>
+        <tr style="text-align: right;">
+            <th rowspan="2">Model</th>
+            <th rowspan="2">Valid (↑)</th>
+            <th rowspan="2">Unique@1k (↑)</th>
+            <th rowspan="2">Unique@10k (↑)</th>
+            <th colspan="2">FCD (↓)</th>
+            <th colspan="2">SNN (↓)</th>
+            <th colspan="2">Frag (↑)</th>
+            <th colspan="2">Scaff (↑)</th>
+            <th rowspan="2">IntDiv (↑)</th>
+            <th rowspan="2">Filters (↑)</th>
+        </tr>
+        <tr>
+            <th>Test</th>
+            <th>TestSF</th>
+            <th>Test</th>
+            <th>TestSF</th>
+            <th>Test</th>
+            <th>TestSF</th>
+            <th>Test</th>
+            <th>TestSF</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <th>CharRNN</th>
+            <td>0.9598</td>
+            <td><b>1.0000</b></td>
+            <td>0.9993</td>
+            <td>0.3233</td>
+            <td>0.8355</td>
+            <td>0.4606</td>
+            <td>0.4492</td>
+            <td>0.9977</td>
+            <td>0.9962</td>
+            <td>0.7964</td>
+            <td>0.1281</td>
+            <td><b>0.8561</b></td>
+            <td>0.9920</td>
+        </tr>
+        <tr>
+            <th>VAE</th>
+            <td>0.9528</td>
+            <td><b>1.0000</b></td>
+            <td>0.9992</td>
+            <td><b>0.2540</b></td>
+            <td><b>0.6959</b></td>
+            <td>0.4684</td>
+            <td>0.4547</td>
+            <td><b>0.9978</b></td>
+            <td><b>0.9963</b></td>
+            <td><b>0.8277</b></td>
+            <td>0.0925</td>
+            <td>0.8548</td>
+            <td>0.9925</td>
+        </tr>
+        <tr>
+            <th>AAE</th>
+            <td>0.9341</td>
+            <td><b>1.0000</b></td>
+            <td><b>1.0000</b></td>
+            <td>1.3511</td>
+            <td>1.8587</td>
+            <td>0.4191</td>
+            <td>0.4113</td>
+            <td>0.9865</td>
+            <td>0.9852</td>
+            <td>0.6637</td>
+            <td><b>0.1538</b></td>
+            <td>0.8531</td>
+            <td>0.9759</td>
+        </tr>
+        <tr>
+            <th>ORGAN</th>
+            <td>0.8731</td>
+            <td>0.9910</td>
+            <td>0.9260</td>
+            <td>1.5748</td>
+            <td>2.4306</td>
+            <td>0.4745</td>
+            <td>0.4593</td>
+            <td>0.9897</td>
+            <td>0.9883</td>
+            <td>0.7843</td>
+            <td>0.0632</td>
+            <td>0.8526</td>
+            <td><b>0.9934</b></td>
+        </tr>
+        <tr>
+            <th>JTN-VAE</th>
+            <td><b>1.0000</b></td>
+            <td>0.9980</td>
+            <td>0.9972</td>
+            <td>4.3769</td>
+            <td>4.6299</td>
+            <td><b>0.3909</b></td>
+            <td><b>0.3902</b></td>
+            <td>0.9679</td>
+            <td>0.9699</td>
+            <td>0.3868</td>
+            <td>0.1163</td>
+            <td>0.8495</td>
+            <td>0.9566</td>
+        </tr>
+    </tbody>
 </table>
 
 For comparison of molecular properties, we computed the Frèchet distance between distributions of molecules in the generated and test sets. Below, we provide plots for lipophilicity (logP), Synthetic Accessibility (SA), Quantitative Estimation of Drug-likeness (QED), Natural Product-likeness (NP) and molecular weight.
@@ -146,7 +146,7 @@ For comparison of molecular properties, we computed the Frèchet distance betwee
 
 # Installation
 
-## Docker
+### Docker
 
 1. Install [docker](https://docs.docker.com/install/) and [nvidia-docker](https://github.com/nvidia/nvidia-docker/wiki/Installation-(version-2.0)).
 
@@ -161,15 +161,13 @@ or clone the repository and build it manually:
 
 ```
 git lfs install
-
 git clone https://github.com/molecularsets/moses.git
-
 nvidia-docker image build --tag molecularsets/moses moses/
 ```
 
 3. Create a container:
 ```
-nvidia-docker run -it moses --network="host" --shm-size 1G molecularsets/moses`
+nvidia-docker run -it moses --network="host" --shm-size 1G molecularsets/moses
 ```
 
 4. The dataset and source code is available inside the docker container:
@@ -177,13 +175,12 @@ nvidia-docker run -it moses --network="host" --shm-size 1G molecularsets/moses`
 docker exec -it molecularsets/moses bash
 ```
 
-## Manually
+### Manually
 Alternatively, install dependencies and MOSES manually.
 
 1. Clone the repository:
 ```
 git lfs install
-
 git clone https://github.com/molecularsets/moses.git
 ```
 
@@ -207,7 +204,7 @@ python scripts/metrics/eval.py --ref_path <reference dataset> --gen_path <genera
 
 # Platform usage
 
-## Training
+### Training
 
 ```
 python scripts/<model name>/train.py \
@@ -218,7 +215,7 @@ python scripts/<model name>/train.py \
 ```
 For more details run `python scripts/<model name>/train.py --help`.
 
-## Generation
+### Generation
 
 ```
 python scripts/<model name>/sample.py \
@@ -231,7 +228,7 @@ python scripts/<model name>/sample.py \
 
 For more details run `python scripts/<model name>/sample.py --help`
 
-## Evaluation
+### Evaluation
 
 ```
 python metrics/eval.py \
@@ -242,7 +239,7 @@ python metrics/eval.py \
 For more details run `python scripts/eval.py --help`.
 
 
-## End-to-End launch
+### End-to-End launch
 
 You can run pretty much everything with:
 ```
