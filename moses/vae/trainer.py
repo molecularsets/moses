@@ -77,6 +77,7 @@ class VAETrainer:
 
             # Save model at each epoch
             torch.save(model.state_dict(), self.config.model_save)
+            elog.save(self.config.log_file)
 
             # Epoch end
             lr_annealer.step()

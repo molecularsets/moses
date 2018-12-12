@@ -3,6 +3,7 @@ from collections import UserList, defaultdict
 
 import matplotlib.pyplot as plt
 from torch.optim.lr_scheduler import _LRScheduler
+import pandas as pd
 
 
 class KLAnnealer:
@@ -73,6 +74,10 @@ class Logger(UserList):
         super().append(step_dict)
         for k, v in step_dict.items():
             self.sdata[k].append(v)
+
+    def save(self, path):
+        df = pd.DataFrame(list(self))
+        df.to_csv(path, index=None)
 
 
 class LogPlotter:
