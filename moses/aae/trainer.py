@@ -6,6 +6,7 @@ from tqdm import tqdm
 from torch.utils.data import DataLoader
 from torch.nn.utils.rnn import pad_sequence
 from collections import OrderedDict
+from moses.utils import Logger
 
 
 __all__ = ['AAETrainer']
@@ -107,10 +108,7 @@ class AAETrainer:
             tqdm_data.set_postfix(postfix)
 
         postfix['mode'] = 'Test' if optimizers is None else 'Eval'
-        for field, value in postfix.items():
-            self.log_file.write(field+' = '+str(value)+'\n')
-        self.log_file.write('===\n')
-        self.log_file.flush()
+        return postfix
 
     def _train(self, model, train_loader, val_loader=None):
         criterions = {'autoencoder': nn.CrossEntropyLoss(),
@@ -126,14 +124,14 @@ class AAETrainer:
             for k, v in optimizers.items()
         }
         device = torch.device(self.config.device)
+        log = Logger()
+
         for epoch in range(self.config.train_epochs):
             tqdm_data = tqdm(train_loader, desc='Training (epoch #{})'.format(epoch))
-
             for scheduler in schedulers.values():
                 scheduler.step()
-
-            self._train_epoch(model, tqdm_data, criterions, optimizers)
-
+            log.append(self._train_epoch(model, tqdm_data, criterions, optimizers))
+            log.write(self.config.log_file)
             if val_loader is not None:
                 tqdm_data = tqdm(val_loader, desc='Validation (epoch #{})'.format(epoch))
                 self._train_epoch(model, tqdm_data, criterions)
@@ -144,9 +142,6 @@ class AAETrainer:
                 model.to(device)
 
     def fit(self, model, train_data, val_data=None):
-        self.log_file = open(self.config.log_file, 'w')
-        self.log_file.write(str(self.config)+'\n')
-        self.log_file.write(str(model)+'\n')
 
         def collate(data):
             data.sort(key=lambda x: len(x), reverse=True)

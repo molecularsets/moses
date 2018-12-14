@@ -14,6 +14,8 @@ def get_parser():
     model_arg.add_argument("--batch", type=int, default=64, help="Batch size")
     model_arg.add_argument("--num_epochs", type=int, default=50, help="Number of epochs")
     model_arg.add_argument('--lr', type=float, default=0.001, help='Initial lr value')
+    model_arg.add_argument('--step_size', type=float, default=50, help='Period of learning rate decay')
+    model_arg.add_argument('--gamma', type=float, default=0.5, help='Multiplicative factor of learning rate decay')
     model_arg.add_argument('--n_jobs', type=int, default=1, help='Number of threads')
     return parser
 

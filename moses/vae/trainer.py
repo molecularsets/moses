@@ -4,8 +4,8 @@ import torch.optim as optim
 import tqdm
 from torch.nn.utils import clip_grad_norm_
 
-from moses.vae.misc import CosineAnnealingLRWithRestart, KLAnnealer, \
-    Logger
+from moses.vae.misc import CosineAnnealingLRWithRestart, KLAnnealer
+from moses.utils import Logger
 
 
 class VAETrainer:
@@ -76,12 +76,17 @@ class VAETrainer:
             })
 
             # Save model at each epoch
-            torch.save(model.state_dict(), self.config.model_save)
+            if epoch % self.config.save_frequency == 0:
+                model.to('cpu')
+                torch.save(model.state_dict(), self.config.model_save[:-3]+'_{0:03d}.pt'.format(epoch))
+                model.to(device)
+
             elog.save(self.config.log_file)
 
             # Epoch end
             lr_annealer.step()
 
+        torch.save(model.state_dict(), self.config.model_save)
         return elog, ilog
 
     def _n_epoch(self):
