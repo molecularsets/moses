@@ -110,11 +110,13 @@ def sample_from_model(config, model):
     sampler.main(sampler_config)
 
 
-def eval_metrics(config, model, test_path, test_scaffolds_path):
+def eval_metrics(config, model, test_path, test_scaffolds_path, ptest_path, ptest_scaffolds_path):
     eval_parser = eval_script.get_parser()
     gen_path = os.path.join(config.data_dir, model + config.experiment_suff + '_generated.csv')
     eval_config = eval_parser.parse_args(['--test_path', test_path,
                                           '--test_scaffolds_path', test_scaffolds_path,
+                                          '--ptest_path', ptest_path,
+                                          '--ptest_scaffolds_path', ptest_scaffolds_path,
                                           '--gen_path', gen_path,
                                           '--n_jobs', str(config.n_jobs)])
     metrics = eval_script.main(eval_config, print_metrics=False)
@@ -132,6 +134,10 @@ def main(config):
     train_path = os.path.join(config.data_dir, 'train.csv')
     test_path = os.path.join(config.data_dir, 'test.csv')
     test_scaffolds_path = os.path.join(config.data_dir, 'test_scaffolds.csv')
+    train_path = os.path.join(config.data_dir, 'train.csv')
+    ptest_path = os.path.join(config.data_dir, 'test_stats.npz')
+    ptest_scaffolds_path = os.path.join(config.data_dir, 'test_scaffolds_stats.npz')
+
 
     if not os.path.exists(train_path) or \
             not os.path.exists(test_path) or \
@@ -152,7 +158,9 @@ def main(config):
 
     metrics = []
     for model in models:
-        model_metrics = eval_metrics(config, model, test_path, test_scaffolds_path)
+        model_metrics = eval_metrics(config, model,
+                                     test_path, test_scaffolds_path,
+                                     ptest_path, ptest_scaffolds_path)
         model_metrics.update({'model': model})
         metrics.append(model_metrics)
 
