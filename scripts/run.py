@@ -110,10 +110,11 @@ def sample_from_model(config, model):
     sampler.main(sampler_config)
 
 
-def eval_metrics(config, model, ref_path):
+def eval_metrics(config, model, test_path, test_scaffolds_path):
     eval_parser = eval_script.get_parser()
     gen_path = os.path.join(config.data_dir, model + config.experiment_suff + '_generated.csv')
-    eval_config = eval_parser.parse_args(['--ref_path', ref_path,
+    eval_config = eval_parser.parse_args(['--test_path', test_path,
+                                          '--test_scaffolds_path', test_scaffolds_path,
                                           '--gen_path', gen_path,
                                           '--n_jobs', str(config.n_jobs)])
     metrics = eval_script.main(eval_config, print_metrics=False)
@@ -151,12 +152,8 @@ def main(config):
 
     metrics = []
     for model in models:
-        model_metrics = eval_metrics(config, model, test_path)
-        model_metrics.update({'model': model + '_test'})
-        metrics.append(model_metrics)
-
-        model_metrics = eval_metrics(config, model, test_scaffolds_path)
-        model_metrics.update({'model': model + '_test_scaffolds'})
+        model_metrics = eval_metrics(config, model, test_path, test_scaffolds_path)
+        model_metrics.update({'model': model})
         metrics.append(model_metrics)
 
     table = pd.DataFrame(metrics)
