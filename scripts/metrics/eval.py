@@ -33,7 +33,7 @@ def main(config, print_metrics=True):
             ptest_scaffolds = np.load(config.ptest_scaffolds_path)['stats'].item()
     gen = read_smiles_csv(config.gen_path)
     metrics = get_all_metrics(test, gen, k=config.ks, n_jobs=config.n_jobs,
-                              gpu=config.device_code, test_scaffolds=test_scaffolds,
+                              gpu=config.gpu, test_scaffolds=test_scaffolds,
                               ptest=ptest, ptest_scaffolds=ptest_scaffolds)
     
     if print_metrics:
@@ -68,9 +68,9 @@ def get_parser():
     parser.add_argument('--n_jobs',
                         type=int, default=1,
                         help='Number of processes to run metrics')
-    parser.add_argument('--device_code',
+    parser.add_argument('--gpu',
                         type=int, default=-1,
-                        help='Device code to run (-1 for cpu)')
+                        help='GPU index (-1 for cpu)')
 
     return parser
 

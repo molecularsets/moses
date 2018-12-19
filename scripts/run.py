@@ -38,8 +38,8 @@ def get_parser():
                         help='Number of samples to sample')
     parser.add_argument('--n_jobs', type=int, default=1,
                         help='Number of threads')
-    parser.add_argument('--device', type=str, default='cuda',
-                        help='Device to run: "cpu" or "cuda:<device number>"')
+    parser.add_argument('--gpu', type=int, default=-1,
+                        help='GPU index (-1 for cpu)')
     parser.add_argument('--metrics', type=str, default='metrics.csv',
                         help='Path to output file with metrics')
     parser.add_argument('--train_size', type=int, default=None,
@@ -83,8 +83,9 @@ def train_model(config, model, train_path):
 
     trainer = get_trainer(model)
     trainer_parser = trainer.get_parser()
+    device = f'cuda:{config.gpu}' if config.gpu >= 0 else 'cpu'
     trainer_config = trainer_parser.parse_known_args(sys.argv+[
-                                                     '--device', config.device,
+                                                     '--device', device,
                                                      '--train_load', train_path,
                                                      '--model_save', model_path,
                                                      '--config_save', config_path,
@@ -100,8 +101,9 @@ def sample_from_model(config, model):
     config_path = os.path.join(config.checkpoint_dir, model + config.experiment_suff + '_config.pt')
     vocab_path = os.path.join(config.checkpoint_dir, model + config.experiment_suff + '_vocab.pt')
     gen_save = os.path.join(config.data_dir, model + config.experiment_suff + '_generated.csv')
+    device = f'cuda:{config.gpu}' if config.gpu >= 0 else 'cpu'
     sampler_config = sampler_parser.parse_known_args(sys.argv+[
-                                                     '--device', config.device,
+                                                     '--device', device,
                                                      '--model_load', model_path,
                                                      '--config_load', config_path,
                                                      '--vocab_load', vocab_path,
@@ -118,7 +120,8 @@ def eval_metrics(config, model, test_path, test_scaffolds_path, ptest_path, ptes
                                           '--ptest_path', ptest_path,
                                           '--ptest_scaffolds_path', ptest_scaffolds_path,
                                           '--gen_path', gen_path,
-                                          '--n_jobs', str(config.n_jobs)])
+                                          '--n_jobs', str(config.n_jobs),
+                                          '--gpu', str(config.gpu)])
     metrics = eval_script.main(eval_config, print_metrics=False)
 
     return metrics

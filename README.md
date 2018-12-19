@@ -152,7 +152,7 @@ cd scripts
 python run.py 
 ```
 If necessary, dataset will be downloaded, splited and all models will be trained. As result in current directory will appear `metrics.csv` with values.
-You can specify the device and model by running `python run.py --device cuda:5 --model aae`. For more details use `python run.py --help`.
+You can specify the GPU index (-1 for CPU) and model by running `python run.py --gpu 1 --model aae`. For more details use `python run.py --help`.
 
 ## Installation
 
