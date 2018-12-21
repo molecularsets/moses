@@ -194,7 +194,7 @@ python setup.py install
 
 # Benchmarking your models
 
-* Install MOSES as described in the previous secion.
+* Install MOSES as described in the previous section.
 
 * Calculate metrics for the trained model:
 
@@ -231,12 +231,12 @@ For more details run `python scripts/<model name>/sample.py --help`
 ### Evaluation
 
 ```
-python metrics/eval.py \
+python scripts/metrics/eval.py \
 --ref_path <reference dataset> \
 --gen_path <generated dataset>
 ```
 
-For more details run `python scripts/eval.py --help`.
+For more details run `python scripts/metrics/eval.py --help`.
 
 
 ### End-to-End launch
