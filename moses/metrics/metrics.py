@@ -268,6 +268,7 @@ class ScafMetric(Metric):
     def metric(self, ptest, pgen):
         return cos_distance(ptest['scaf'], pgen['scaf'])
 
+
 class FrechetMetric(Metric):
     def __init__(self, func=None, **kwargs):
         self.func = func
