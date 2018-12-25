@@ -1,12 +1,10 @@
-import argparse
-
-import rdkit
-
-from moses.metrics.metrics import get_all_metrics
-from moses.script_utils import read_smiles_csv
 import numpy as np
 import os
+import argparse
+import rdkit
 import warnings
+from moses.metrics.metrics import get_all_metrics
+from moses.script_utils import read_smiles_csv
 
 lg = rdkit.RDLogger.logger()
 lg.setLevel(rdkit.RDLogger.CRITICAL)

@@ -1,8 +1,9 @@
-import argparse
 import os
 import pandas as pd
-from moses.metrics import compute_intermediate_statistics
 import numpy as np
+import argparse
+from moses.metrics import compute_intermediate_statistics
+
 
 def str2bool(v):
     if v.lower() in ('yes', 'true', 't', 'y', '1'):

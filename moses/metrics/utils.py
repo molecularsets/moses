@@ -145,6 +145,7 @@ def average_agg_tanimoto(stock_vecs, gen_vecs,
     :param stock_vecs: numpy array <n_vectors x dim>
     :param gen_vecs: numpy array <n_vectors' x dim>
     :param agg: max or mean
+    :param p: power for averaging: (mean x^p)^(1/p)
     '''
     assert agg in ['max', 'mean'], "Can aggregate only max or mean"
     if gpu != -1:
