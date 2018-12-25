@@ -40,7 +40,7 @@ def get_all_metrics(test, gen, k=[1000, 10000], n_jobs=1, gpu=-1,
         * Scaffold similarity (Scaf)
         * Similarity to nearest neighbour (SNN)
         * Internal diversity (IntDiv)
-        * Internal diversity 2: using square root of Tanimoto similarity (IntDiv2)
+        * Internal diversity 2: using square root of mean squared Tanimoto similarity (IntDiv2)
         * %passes filters (Filters)
         * Distribution difference for logP, SA, QED, NP, weight
     '''
