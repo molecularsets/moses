@@ -138,13 +138,14 @@ def compute_scaffold(mol, min_rings=2):
 
 def average_agg_tanimoto(stock_vecs, gen_vecs,
                          batch_size=5000, agg='max',
-                         gpu=-1):
+                         gpu=-1, p=1):
     '''
     For each molecule in gen_vecs finds closest molecule in stock_vecs.
     Returns average tanimoto score for between these molecules
     :param stock_vecs: numpy array <n_vectors x dim>
     :param gen_vecs: numpy array <n_vectors' x dim>
     :param agg: max or mean
+    :param p: power for averaging: (mean x^p)^(1/p)
     '''
     assert agg in ['max', 'mean'], "Can aggregate only max or mean"
     if gpu != -1:
@@ -162,6 +163,8 @@ def average_agg_tanimoto(stock_vecs, gen_vecs,
             jac = (tp / (x_stock.sum(1, keepdim=True) +
                          y_gen.sum(0, keepdim=True) - tp)).cpu().numpy()
             jac[np.isnan(jac)] = 1
+            if p != 1:
+                jac = jac**p
             if agg == 'max':
                 agg_tanimoto[i:i + y_gen.shape[1]] = np.maximum(
                     agg_tanimoto[i:i + y_gen.shape[1]], jac.max(0))
@@ -170,6 +173,8 @@ def average_agg_tanimoto(stock_vecs, gen_vecs,
                 total[i:i + y_gen.shape[1]] += jac.shape[0]
     if agg == 'mean':
         agg_tanimoto /= total
+    if p != 1:
+        agg_tanimoto = (agg_tanimoto)**(1/p)
     return np.mean(agg_tanimoto)
 
 
