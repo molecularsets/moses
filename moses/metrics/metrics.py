@@ -75,7 +75,7 @@ def get_all_metrics(test, gen, k=[1000, 10000], n_jobs=1, gpu=-1,
         metrics['Scaf/TestSF'] = ScafMetric(**kwargs)(gen=mols, ptest=ptest_scaffolds['Scaf'])
 
     metrics['IntDiv'] = internal_diversity(mols, pool, gpu=gpu)
-    metrics['IntDiv2'] = internal_diversity(mols, pool, gpu=gpu,p=2)
+    metrics['IntDiv2'] = internal_diversity(mols, pool, gpu=gpu, p=2)
     metrics['Filters'] = fraction_passes_filters(mols, pool)
 
     # Properties
