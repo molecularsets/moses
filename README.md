@@ -159,7 +159,7 @@ You can specify the device and model by running `python run.py --device cuda:5 -
 ### Docker
 * You can pull already existing image from DockerHub by `docker pull molecularsets/moses`. Otherwise, build an image based on the Dockerfile `nvidia-docker image build --tag <image_name> moses/`, where `moses/` is a cloned repository from github.
 * Create a container from the created image, e.g. by running `nvidia-docker run -it <container_name> --network="host" --shm-size 1G <image_name>`
-* The dataset is already downloaded during image building and the current repository is available at `/code` inside the docker container.
+* The dataset is already downloaded during image building and the current repository is available at `/moses` inside the docker container.
 
 ### Manually
 Alternatively, install dependencies and MOSES manually:
