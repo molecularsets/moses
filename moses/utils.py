@@ -1,5 +1,6 @@
 from torch.utils.data import Dataset
 from multiprocessing import Pool
+from rdkit import rdBase
 
 
 class SS:
@@ -119,3 +120,11 @@ def mapper(n_jobs):
         return _mapper
     else:
         return n_jobs.map
+
+
+def disable_rdkit_log():
+    rdBase.DisableLog('rdApp.*')
+
+
+def enable_rdkit_log():
+    rdBase.EnableLog('rdApp.*')

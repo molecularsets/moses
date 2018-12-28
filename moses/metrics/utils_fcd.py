@@ -162,12 +162,14 @@ def load_ref_model(model_file):
     return model
 
 
-def get_predictions(gen_mol, ref_mol, gpu=-1, batch_size=128):
+def get_predictions(smiles, gpu=-1, batch_size=128):
     assert isinstance(gpu, int), "GPU should be an integer"
     model_dir = os.path.split(__file__)[0]
     model_path = os.path.join(model_dir, 'ChemNet_v0.13_pretrained.h5')
     cuda_old = os.environ.get("CUDA_VISIBLE_DEVICES", None)
-    os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu)
+    order_old = os.environ.get("CUDA_DEVICE_ORDER", None)
+    os.environ["CUDA_VISIBLE_DEVICES"] = (str(gpu) if gpu != -1 else "")
+    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID" 
     if gpu != -1:
         device = "/gpu:{}".format(gpu)
     else:
@@ -179,13 +181,9 @@ def get_predictions(gen_mol, ref_mol, gpu=-1, batch_size=128):
         set_session(sess)
         K.clear_session()
         model = load_ref_model(model_path)
-        gen_mol_act = model.predict_generator(
-             myGenerator_predict(gen_mol, batch_size=batch_size),
-             steps=np.ceil(len(gen_mol)/batch_size)
-        )
-        ref_mol_act = model.predict_generator(
-             myGenerator_predict(ref_mol, batch_size=batch_size),
-             steps=np.ceil(len(ref_mol)/batch_size)
+        smiles_act = model.predict_generator(
+             myGenerator_predict(smiles, batch_size=batch_size),
+             steps=np.ceil(len(smiles)/batch_size)
         )
         K.clear_session()
         sess.close()
@@ -193,4 +191,8 @@ def get_predictions(gen_mol, ref_mol, gpu=-1, batch_size=128):
         os.environ["CUDA_VISIBLE_DEVICES"] = str(cuda_old)
     else:
         os.environ.pop("CUDA_VISIBLE_DEVICES")
-    return gen_mol_act, ref_mol_act
+    if order_old is not None:
+        os.environ["CUDA_DEVICE_ORDER"] = str(order_old)
+    else:
+        os.environ.pop("CUDA_DEVICE_ORDER") 
+    return smiles_act
