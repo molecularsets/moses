@@ -46,7 +46,7 @@ class CharRNNTrainer:
                 torch.save(model.state_dict(), self.config.model_save[:-3]+'_{0:03d}.pt'.format(epoch))
                 model.to(device)
             elog.save(self.config.log_file)
-        torch.save(model.state_dict(), config.model_save)
+        torch.save(model.state_dict(), self.config.model_save)
 
 
     def _pass_data(self, model, dataloader, criterion, optimizer=None):

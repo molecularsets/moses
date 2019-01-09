@@ -45,7 +45,7 @@ class JTreeTrainer:
 
                     train_dataloader.set_postfix(postfix)
             log.append(postfix)
-            log.write(self.config.log_file)
+            log.save(self.config.log_file)
             if epoch % self.config.save_frequency == 0:
                 model.to('cpu')
                 torch.save(model.state_dict(), self.config.model_save[:-3]+'_{0:03d}.pt'.format(epoch))

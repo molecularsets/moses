@@ -24,12 +24,12 @@ def main(config):
 
     model = CharRNN(corpus.vocab, config.hidden, config.num_layers, config.dropout, device).to(device)
     trainer = CharRNNTrainer(config)
-    trainer.fit(model, train_dataloader)
 
-    torch.save(model.state_dict(), config.model_save)
     torch.save(config, config.config_save)
     torch.save(corpus.vocab, config.vocab_save)
 
+    trainer.fit(model, train_dataloader)
+    torch.save(model.state_dict(), config.model_save)
 
 if __name__ == '__main__':
     parser = get_parser()

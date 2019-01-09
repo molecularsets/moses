@@ -24,6 +24,7 @@ class VAETrainer:
         optimizer = optim.Adam(get_params(), lr=self.config.lr_start)
         lr_annealer = CosineAnnealingLRWithRestart(optimizer, self.config)
 
+        device = torch.device(self.config.device)
         n_last = self.config.n_last
         elog, ilog = Logger(), Logger()
 
