@@ -1,12 +1,22 @@
-import argparse
 import os
 import pandas as pd
+import numpy as np
+import argparse
+from moses.metrics import compute_intermediate_statistics
 
+
+def str2bool(v):
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 def get_parser():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--output_dir', type=str, default='./data',
+    parser.add_argument('--dir', type=str, default='./data',
                         help='Directory for splitted dataset')
     parser.add_argument('--no_subset', action='store_true',
                         help='Do not create subsets for training and testing')
@@ -16,15 +26,23 @@ def get_parser():
                         help='Size of testing dataset')
     parser.add_argument('--seed', type=int, default=0,
                         help='Random state')
-
+    parser.add_argument('--precompute', type=str2bool, default=True,
+                        help='Precompute intermediate statistics')
+    parser.add_argument('--n_jobs', type=int, default=1,
+                        help='Number of workers')
+    parser.add_argument('--gpu', type=int, default=-1,
+                        help='GPU id')
+    parser.add_argument('--batch_size', type=int, default=512,
+                        help='Batch size for FCD calculation')
     return parser
 
 
 def main(config):
-    dataset_path = os.path.join(config.output_dir, 'dataset.csv')
+    dataset_path = os.path.join(config.dir, 'dataset.csv')
     download_url = 'https://media.githubusercontent.com/media/molecularsets/moses/master/data/dataset.csv'
     if not os.path.exists(dataset_path):
-        raise ValueError("Missing dataset.csv. Please, use 'git lfs pull' or download it manually from " + download_url)
+        raise ValueError(f"Missing dataset.csv in {config.dir}; "
+                         f"Please, use 'git lfs pull' or download it manually from {download_url}")
 
     if config.no_subset:
         return
@@ -42,9 +60,18 @@ def main(config):
         test_data = test_data.sample(config.test_size, random_state=config.seed)
         test_scaffolds_data = test_scaffolds_data.sample(config.test_size, random_state=config.seed)
 
-    train_data.to_csv(os.path.join(config.output_dir, 'train.csv'), index=False)
-    test_data.to_csv(os.path.join(config.output_dir, 'test.csv'), index=False)
-    test_scaffolds_data.to_csv(os.path.join(config.output_dir, 'test_scaffolds.csv'), index=False)
+    train_data.to_csv(os.path.join(config.dir, 'train.csv'), index=False)
+    test_data.to_csv(os.path.join(config.dir, 'test.csv'), index=False)
+    test_scaffolds_data.to_csv(os.path.join(config.dir, 'test_scaffolds.csv'), index=False)
+
+    if config.precompute:
+        test_stats = compute_intermediate_statistics(
+            test_data['SMILES'].values, n_jobs=config.n_jobs, gpu=config.gpu, batch_size=config.batch_size)
+        test_sf_stats = compute_intermediate_statistics(
+            test_scaffolds_data['SMILES'].values, n_jobs=config.n_jobs, gpu=config.gpu, batch_size=config.batch_size)
+
+        np.savez(os.path.join(config.dir, 'test_stats.npz'), stats=test_stats)
+        np.savez(os.path.join(config.dir, 'test_scaffolds_stats.npz'), stats=test_sf_stats)
 
 
 if __name__ == '__main__':

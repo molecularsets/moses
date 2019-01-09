@@ -8,7 +8,7 @@ __For more details, please refer to the [paper](https://arxiv.org/abs/1811.12823
 
 ## Dataset
 
-We propose a biological molecule benchmark set refined from the ZINC database.
+We propose [a benchmarking dataset](https://media.githubusercontent.com/media/molecularsets/moses/master/data/dataset.csv) refined from the ZINC database.
 
 The set is based on the ZINC Clean Leads collection. It contains 4,591,276 molecules in total, filtered by molecular weight in the range from 250 to 350 Daltons, a number of rotatable bonds not greater than 7, and XlogP less than or equal to 3.5. We removed molecules containing charged atoms or atoms besides C, N, S, O, F, Cl, Br, H or cycles longer than 8 atoms. The molecules were filtered via medicinal chemistry filters (MCFs) and PAINS filters.
 
@@ -26,112 +26,112 @@ The dataset contains 1,936,962 molecular structures. For experiments, we also pr
 Besides standard uniqueness and validity metrics, MOSES provides other metrics to access the overall quality of generated molecules. Fragment similarity (Frag) and Scaffold similarity (Scaff) are cosine distances between vectors of fragment or scaffold frequencies correspondingly of the generated and test sets. Nearest neighbor similarity (SNN) is the average similarity of generated molecules to the nearest molecule from the test set. Internal diversity (IntDiv) is an average pairwise similarity of generated molecules. Fréchet ChemNet Distance (FCD) measures the difference in distributions of last layer activations of ChemNet.
 
 <table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th rowspan="2">Model</th>
-      <th rowspan="2">Valid (↑)</th>
-      <th rowspan="2">Unique@1k (↑)</th>
-      <th rowspan="2">Unique@10k (↑)</th>
-      <th colspan="2">FCD (↓)</th>
-      <th colspan="2">SNN (↓)</th>
-      <th colspan="2">Frag (↑)</th>
-      <th colspan="2">Scaff (↑)</th>
-      <th rowspan="2">IntDiv (↑)</th>
-      <th rowspan="2">Filters (↑)</th>
-    </tr>
-    <tr>
-      <th>Test</th>
-      <th>TestSF</th>
-      <th>Test</th>
-      <th>TestSF</th>
-      <th>Test</th>
-      <th>TestSF</th>
-      <th>Test</th>
-      <th>TestSF</th>
-    </tr>
-  </thead>
- <tbody>
-    <tr>
-      <th>CharRNN</th>
-      <td>0.9598</td>
-      <td><b>1.0000</b></td>
-      <td>0.9993</td>
-      <td>0.3233</td>
-      <td>0.8355</td>
-      <td>0.4606</td>
-      <td>0.4492</td>
-      <td>0.9977</td>
-      <td>0.9962</td>
-      <td>0.7964</td>
-      <td>0.1281</td>
-      <td><b>0.8561</b></td>
-      <td>0.9920</td>
-    </tr>
-    <tr>
-      <th>VAE</th>
-      <td>0.9528</td>
-      <td><b>1.0000</b></td>
-      <td>0.9992</td>
-      <td><b>0.2540</b></td>
-      <td><b>0.6959</b></td>
-      <td>0.4684</td>
-      <td>0.4547</td>
-      <td><b>0.9978</b></td>
-      <td><b>0.9963</b></td>
-      <td><b>0.8277</b></td>
-      <td>0.0925</td>
-      <td>0.8548</td>
-      <td>0.9925</td>
-    </tr>
-    <tr>
-      <th>AAE</th>
-      <td>0.9341</td>
-      <td><b>1.0000</b></td>
-      <td><b>1.0000</b></td>
-      <td>1.3511</td>
-      <td>1.8587</td>
-      <td>0.4191</td>
-      <td>0.4113</td>
-      <td>0.9865</td>
-      <td>0.9852</td>
-      <td>0.6637</td>
-      <td><b>0.1538</b></td>
-      <td>0.8531</td>
-      <td>0.9759</td>
-    </tr>
-    <tr>
-      <th>ORGAN</th>
-      <td>0.8731</td>
-      <td>0.9910</td>
-      <td>0.9260</td>
-      <td>1.5748</td>
-      <td>2.4306</td>
-      <td>0.4745</td>
-      <td>0.4593</td>
-      <td>0.9897</td>
-      <td>0.9883</td>
-      <td>0.7843</td>
-      <td>0.0632</td>
-      <td>0.8526</td>
-      <td><b>0.9934</b></td>
-    </tr>
-    <tr>
-      <th>JTN-VAE</th>
-      <td><b>1.0000</b></td>
-      <td>0.9980</td>
-      <td>0.9972</td>
-      <td>4.3769</td>
-      <td>4.6299</td>
-      <td><b>0.3909</b></td>
-      <td><b>0.3902</b></td>
-      <td>0.9679</td>
-      <td>0.9699</td>
-      <td>0.3868</td>
-      <td>0.1163</td>
-      <td>0.8495</td>
-      <td>0.9566</td>
-    </tr>
-  </tbody>
+    <thead>
+        <tr style="text-align: right;">
+            <th rowspan="2">Model</th>
+            <th rowspan="2">Valid (↑)</th>
+            <th rowspan="2">Unique@1k (↑)</th>
+            <th rowspan="2">Unique@10k (↑)</th>
+            <th colspan="2">FCD (↓)</th>
+            <th colspan="2">SNN (↓)</th>
+            <th colspan="2">Frag (↑)</th>
+            <th colspan="2">Scaff (↑)</th>
+            <th rowspan="2">IntDiv (↑)</th>
+            <th rowspan="2">Filters (↑)</th>
+        </tr>
+        <tr>
+            <th>Test</th>
+            <th>TestSF</th>
+            <th>Test</th>
+            <th>TestSF</th>
+            <th>Test</th>
+            <th>TestSF</th>
+            <th>Test</th>
+            <th>TestSF</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <th>CharRNN</th>
+            <td>0.9598</td>
+            <td><b>1.0000</b></td>
+            <td>0.9993</td>
+            <td>0.3233</td>
+            <td>0.8355</td>
+            <td>0.4606</td>
+            <td>0.4492</td>
+            <td>0.9977</td>
+            <td>0.9962</td>
+            <td>0.7964</td>
+            <td>0.1281</td>
+            <td><b>0.8561</b></td>
+            <td>0.9920</td>
+        </tr>
+        <tr>
+            <th>VAE</th>
+            <td>0.9528</td>
+            <td><b>1.0000</b></td>
+            <td>0.9992</td>
+            <td><b>0.2540</b></td>
+            <td><b>0.6959</b></td>
+            <td>0.4684</td>
+            <td>0.4547</td>
+            <td><b>0.9978</b></td>
+            <td><b>0.9963</b></td>
+            <td><b>0.8277</b></td>
+            <td>0.0925</td>
+            <td>0.8548</td>
+            <td>0.9925</td>
+        </tr>
+        <tr>
+            <th>AAE</th>
+            <td>0.9341</td>
+            <td><b>1.0000</b></td>
+            <td><b>1.0000</b></td>
+            <td>1.3511</td>
+            <td>1.8587</td>
+            <td>0.4191</td>
+            <td>0.4113</td>
+            <td>0.9865</td>
+            <td>0.9852</td>
+            <td>0.6637</td>
+            <td><b>0.1538</b></td>
+            <td>0.8531</td>
+            <td>0.9759</td>
+        </tr>
+        <tr>
+            <th>ORGAN</th>
+            <td>0.8731</td>
+            <td>0.9910</td>
+            <td>0.9260</td>
+            <td>1.5748</td>
+            <td>2.4306</td>
+            <td>0.4745</td>
+            <td>0.4593</td>
+            <td>0.9897</td>
+            <td>0.9883</td>
+            <td>0.7843</td>
+            <td>0.0632</td>
+            <td>0.8526</td>
+            <td><b>0.9934</b></td>
+        </tr>
+        <tr>
+            <th>JTN-VAE</th>
+            <td><b>1.0000</b></td>
+            <td>0.9980</td>
+            <td>0.9972</td>
+            <td>4.3769</td>
+            <td>4.6299</td>
+            <td><b>0.3909</b></td>
+            <td><b>0.3902</b></td>
+            <td>0.9679</td>
+            <td>0.9699</td>
+            <td>0.3868</td>
+            <td>0.1163</td>
+            <td>0.8495</td>
+            <td>0.9566</td>
+        </tr>
+    </tbody>
 </table>
 
 For comparison of molecular properties, we computed the Frèchet distance between distributions of molecules in the generated and test sets. Below, we provide plots for lipophilicity (logP), Synthetic Accessibility (SA), Quantitative Estimation of Drug-likeness (QED), Natural Product-likeness (NP) and molecular weight.
@@ -144,48 +144,112 @@ For comparison of molecular properties, we computed the Frèchet distance betwee
 |weight|
 |![weight](images/weight.png)|
 
-### Calculation of metrics for all models
-
-You can calculate all metrics with:
-```
-cd scripts
-python run.py 
-```
-If necessary, dataset will be downloaded, splited and all models will be trained. As result in current directory will appear `metrics.csv` with values.
-You can specify the device and model by running `python run.py --device cuda:5 --model aae`. For more details use `python run.py --help`.
-
-## Installation
+# Installation
 
 ### Docker
-* You can pull already existing image from DockerHub by `docker pull molecularsets/moses`. Otherwise, build an image based on the Dockerfile `nvidia-docker image build --tag <image_name> moses/`, where `moses/` is a cloned repository from github.
-* Create a container from the created image, e.g. by running `nvidia-docker run -it <container_name> --network="host" --shm-size 1G <image_name>`
-* The dataset is already downloaded during image building and the current repository is available at `/code` inside the docker container.
+
+1. Install [docker](https://docs.docker.com/install/) and [nvidia-docker](https://github.com/nvidia/nvidia-docker/wiki/Installation-(version-2.0)).
+
+2. Pull an existing image from DockerHub:
+
+```
+docker pull molecularsets/moses
+```
+
+or clone the repository and build it manually:
+
+
+```
+git lfs install
+git clone https://github.com/molecularsets/moses.git
+nvidia-docker image build --tag molecularsets/moses moses/
+```
+
+3. Create a container:
+```
+nvidia-docker run -it moses --network="host" --shm-size 1G molecularsets/moses
+```
+
+4. The dataset and source code is available inside the docker container:
+```
+docker exec -it molecularsets/moses bash
+```
 
 ### Manually
-Alternatively, install dependencies and MOSES manually:
-* [Install RDKit](https://www.rdkit.org/docs/Install.html) for metrics calculation.
-* Install MOSES with `python setup.py install`
-* Use `git lfs pull` to download the dataset
+Alternatively, install dependencies and MOSES manually.
 
-## Usage
+1. Clone the repository:
+```
+git lfs install
+git clone https://github.com/molecularsets/moses.git
+```
 
-### Training of model
-You can train model with:
-```
-cd scripts/<model name>
-python train.py --train_load <path to train dataset> --model_save <path to model> --config_save <path to config> --vocab_save <path to vocabulary>
-```
-For more details use `python train.py --help`.
+2. [Install RDKit](https://www.rdkit.org/docs/Install.html) for metrics calculation.
 
-### Calculation of metrics for trained model
-You can calculate metrics with:
+3. Install MOSES:
 ```
-cd scripts/<model name>
-python sample.py --model_load <path to model> --config_load <path to config> --vocab_load <path to vocabulary> --n_samples <number of smiles> --gen_save <path to generated smiles>
-cd ../metrics
-python eval.py --ref_path <path to referenced smiles> --gen_path <path to generated smiles>
+python setup.py install
 ```
-All metrics output to screen.
-For more details use `python sample.py --help` and `python eval.py --help`.
 
-You also can use `python run.py --model <model name>` for calculation metrics.
+
+# Benchmarking your models
+
+* Install MOSES as described in the previous section.
+
+* Calculate metrics for the trained model:
+
+```
+python scripts/metrics/eval.py --ref_path <reference dataset> --gen_path <generated dataset>
+```
+
+# Platform usage
+
+### Training
+
+```
+python scripts/<model name>/train.py \
+--train_load <train dataset> \
+--model_save <path to model> \
+--config_save <path to config> \
+--vocab_save <path to vocabulary>
+```
+For more details run `python scripts/<model name>/train.py --help`.
+
+### Generation
+
+```
+python scripts/<model name>/sample.py \
+--model_load <path to model> \
+--vocab_load <path to vocabulary> \
+--config_load <path to config> \
+--n_samples <number of samples> \
+--gen_save <path to generated dataset>
+```
+
+For more details run `python scripts/<model name>/sample.py --help`
+
+### Evaluation
+
+```
+python scripts/metrics/eval.py \
+--ref_path <reference dataset> \
+--gen_path <generated dataset>
+```
+
+For more details run `python scripts/metrics/eval.py --help`.
+
+
+### End-to-End launch
+
+You can run pretty much everything with:
+```
+python scripts/run.py
+```
+This will **download** the dataset, **train** the models, **generate** new molecules, and **calculate** the metrics. Evaluation results will be saved in `metrics.csv`.
+
+You can specify the GPU index (-1 for CPU) and/or model by running:
+```
+python scripts/run.py --gpu 1 --model aae
+```
+
+For more details run `python scripts/run.py --help`.

@@ -2,6 +2,7 @@ from torch.utils.data import Dataset
 from multiprocessing import Pool
 from collections import UserList, defaultdict
 import pandas as pd
+from rdkit import rdBase
 
 
 class SS:
@@ -174,3 +175,11 @@ class LogPlotter:
 
         for ax, name in zip(axs.flatten(), names):
             self.line(ax, name)
+
+
+def disable_rdkit_log():
+    rdBase.DisableLog('rdApp.*')
+
+
+def enable_rdkit_log():
+    rdBase.EnableLog('rdApp.*')
