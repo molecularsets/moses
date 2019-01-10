@@ -91,6 +91,7 @@ def train_model(config, model, train_path):
                                                      '--config_save', config_path,
                                                      '--vocab_save', vocab_path,
                                                      '--n_jobs', str(config.n_jobs)])[0]
+
     trainer.main(trainer_config)
 
 
@@ -146,7 +147,7 @@ def main(config):
             not os.path.exists(test_path) or \
             not os.path.exists(test_scaffolds_path):
         splitting_config = split_dataset.get_parser()
-        conf = ['--output_dir', config.data_dir]
+        conf = ['--dir', config.data_dir]
         if config.train_size is not None:
             conf.extend(['--train_size', str(config.train_size)])
         if config.test_size is not None:
