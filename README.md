@@ -150,7 +150,7 @@ For comparison of molecular properties, we computed the Frèchet distance betwee
 
 1. Install [docker](https://docs.docker.com/install/) and [nvidia-docker](https://github.com/nvidia/nvidia-docker/wiki/Installation-(version-2.0)).
 
-2. Pull an existing image from DockerHub:
+2. Pull an existing image (4.1Gb to download) from DockerHub:
 
 ```
 docker pull molecularsets/moses
@@ -158,19 +158,17 @@ docker pull molecularsets/moses
 
 or clone the repository and build it manually:
 
-
 ```
-git lfs install
 git clone https://github.com/molecularsets/moses.git
 nvidia-docker image build --tag molecularsets/moses moses/
 ```
 
 3. Create a container:
 ```
-nvidia-docker run -it moses --network="host" --shm-size 1G molecularsets/moses
+nvidia-docker run -it --name moses --network="host" --shm-size 1G molecularsets/moses
 ```
 
-4. The dataset and source code is available inside the docker container:
+4. The dataset and source code are available inside the docker container at /moses:
 ```
 docker exec -it molecularsets/moses bash
 ```
