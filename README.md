@@ -150,7 +150,7 @@ For comparison of molecular properties, we computed the Frèchet distance betwee
 
 1. Install [docker](https://docs.docker.com/install/) and [nvidia-docker](https://github.com/nvidia/nvidia-docker/wiki/Installation-(version-2.0)).
 
-2. Pull an existing image (4.1Gb to download / 8.1GB after docker pull) from DockerHub:
+2. Pull an existing image (4.1Gb to download) from DockerHub:
 
 ```
 docker pull molecularsets/moses
