@@ -1,6 +1,8 @@
 import torch.optim as optim
 import tqdm
 from moses.utils import Logger
+import torch
+
 
 class JTreeTrainer:
     def __init__(self, config):
