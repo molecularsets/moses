@@ -50,7 +50,7 @@ def add_train_args(parser):
                             type=str, default='model.pt',
                             help='Where to save the model')
     common_arg.add_argument('--save_frequency',
-                            type=str, default=20,
+                            type=int, default=20,
                             help='How often to save the model')
     common_arg.add_argument('--log_file',
                             type=str, default='log.txt',
