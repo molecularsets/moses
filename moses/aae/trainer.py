@@ -7,11 +7,13 @@ from torch.utils.data import DataLoader
 from torch.nn.utils.rnn import pad_sequence
 from collections import OrderedDict
 
+from moses.interfaces import MosesTrainer
+from moses.utils import CharVocab
 
 __all__ = ['AAETrainer']
 
 
-class AAETrainer:
+class AAETrainer(MosesTrainer):
     def __init__(self, config):
         self.config = config
 
@@ -38,7 +40,7 @@ class AAETrainer:
                 loss.backward()
                 optimizer.step()
 
-            postfix['loss'] = (postfix['loss'] * i + loss.item()) / (i + 1)
+            postfix['loss'] += (loss.item() - postfix['loss']) / (i + 1)
 
             tqdm_data.set_postfix(postfix)
 
@@ -100,13 +102,13 @@ class AAETrainer:
                 discriminator_loss.backward()
                 optimizers['discriminator'].step()
 
-            postfix['autoencoder_loss'] = (postfix['autoencoder_loss'] * i + autoencoder_loss.item()) / (i + 1)
-            postfix['generator_loss'] = (postfix['generator_loss'] * i + generator_loss.item()) / (i + 1)
-            postfix['discriminator_loss'] = (postfix['discriminator_loss'] * i + discriminator_loss.item()) / (i + 1)
+            postfix['autoencoder_loss'] += (autoencoder_loss.item() - postfix['autoencoder_loss']) / (i + 1)
+            postfix['generator_loss'] += (generator_loss.item() - postfix['generator_loss']) / (i + 1)
+            postfix['discriminator_loss'] += (discriminator_loss.item() - postfix['discriminator_loss']) / (i + 1)
 
             tqdm_data.set_postfix(postfix)
 
-        postfix['mode'] = 'Test' if optimizers is None else 'Eval'
+        postfix['mode'] = 'Eval' if optimizers is None else 'Train'
         for field, value in postfix.items():
             self.log_file.write(field+' = '+str(value)+'\n')
         self.log_file.write('===\n')
@@ -126,6 +128,7 @@ class AAETrainer:
             for k, v in optimizers.items()
         }
         device = torch.device(self.config.device)
+                
         for epoch in range(self.config.train_epochs):
             tqdm_data = tqdm(train_loader, desc='Training (epoch #{})'.format(epoch))
 
@@ -143,11 +146,10 @@ class AAETrainer:
                 torch.save(model.state_dict(), self.config.model_save[:-3]+'_{0:03d}.pt'.format(epoch))
                 model.to(device)
 
-    def fit(self, model, train_data, val_data=None):
-        self.log_file = open(self.config.log_file, 'w')
-        self.log_file.write(str(self.config)+'\n')
-        self.log_file.write(str(model)+'\n')
-
+    def get_vocabulary(self, data):
+        return CharVocab.from_data(data)
+    
+    def get_dataloader(self, model, data, shuffle=True):
         def collate(data):
             data.sort(key=lambda x: len(x), reverse=True)
 
@@ -169,10 +171,18 @@ class AAETrainer:
                    (decoder_inputs, decoder_input_lengths), \
                    (decoder_targets, decoder_target_lengths)
 
-        train_loader = DataLoader(train_data, batch_size=self.config.n_batch, shuffle=True, collate_fn=collate)
-        val_loader = None if val_data is None else DataLoader(
-            val_data, batch_size=self.config.n_batch, shuffle=False, collate_fn=collate)
+        return DataLoader(data, batch_size=self.config.n_batch, shuffle=shuffle, collate_fn=collate)
+        
+    
+    def fit(self, model, train_data, val_data=None):
+        self.log_file = open(self.config.log_file, 'w')
+        self.log_file.write(str(self.config)+'\n')
+        self.log_file.write(str(model)+'\n')
+
+        train_loader = self.get_dataloader(model, train_data, shuffle=True)
+        val_loader = None if val_data is None else self.get_dataloader(model, val_data, shuffle=False)
 
         self._pretrain(model, train_loader, val_loader)
         self._train(model, train_loader, val_loader)
         self.log_file.close()
+        return model
