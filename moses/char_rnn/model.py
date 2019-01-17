@@ -6,18 +6,13 @@ import torch.nn.utils.rnn as rnn_utils
 
 class CharRNN(nn.Module):
 
-    @staticmethod
-    def _device(model):
-        return next(model.parameters()).device
-
-    def __init__(self, vocabulary, hidden_size, num_layers, dropout, device):
+    def __init__(self, vocabulary, config):
         super(CharRNN, self).__init__()
 
         self.vocabulary = vocabulary
-        self.hidden_size = hidden_size
-        self.num_layers = num_layers
-        self.dropout = dropout
-        self.device = device
+        self.hidden_size = config.hidden
+        self.num_layers = config.num_layers
+        self.dropout = config.dropout
         self.vocab_size = self.input_size = self.output_size = len(vocabulary)
 
         self.embedding_layer = nn.Embedding(self.vocab_size, self.vocab_size, padding_idx=vocabulary.pad)
@@ -25,15 +20,15 @@ class CharRNN(nn.Module):
                                   batch_first=True)
         self.linear_layer = nn.Linear(self.hidden_size, self.output_size)
 
+    @property
+    def device(self):
+        return next(self.embedding_layer.parameters()).device
+        
     def forward(self, x, lengths, hiddens=None):
         x = self.embedding_layer(x)
-
         x = rnn_utils.pack_padded_sequence(x, lengths, batch_first=True)
-
         x, hiddens = self.lstm_layer(x, hiddens)
-
         x, _ = rnn_utils.pad_packed_sequence(x, batch_first=True)
-
         x = self.linear_layer(x)
 
         return x, lengths, hiddens
