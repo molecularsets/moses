@@ -38,10 +38,10 @@ def get_parser():
 
 
 def main(config):
-    dataset_path = os.path.join(config.dir, 'dataset.csv')
-    download_url = 'https://media.githubusercontent.com/media/molecularsets/moses/master/data/dataset.csv'
+    dataset_path = os.path.join(config.dir, 'dataset_v1.csv')
+    download_url = 'https://media.githubusercontent.com/media/molecularsets/moses/master/data/dataset_v1.csv'
     if not os.path.exists(dataset_path):
-        raise ValueError(f"Missing dataset.csv in {config.dir}; "
+        raise ValueError(f"Missing dataset_v1.csv in {config.dir}; "
                          f"Please, use 'git lfs pull' or download it manually from {download_url}")
 
     if config.no_subset:
