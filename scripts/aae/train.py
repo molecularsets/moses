@@ -7,7 +7,6 @@ from moses.script_utils import add_train_args, read_smiles_csv, set_seed
 def get_parser():
     return add_train_args(aae_parser())
 
-
 def main(config):
     set_seed(config.seed)
     device = torch.device(config.device)
@@ -20,7 +19,8 @@ def main(config):
 
     trainer.fit(model, train_data)
 
-    model.to('cpu')
+    model = model.to('cpu')
+
     torch.save(model.state_dict(), config.model_save)
     torch.save(config, config.config_save)
     torch.save(vocab, config.vocab_save)

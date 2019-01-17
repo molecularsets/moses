@@ -9,7 +9,6 @@ from moses.script_utils import add_train_args, read_smiles_csv, set_seed
 def get_parser():
     return add_train_args(char_rnn_parser())
 
-
 def main(config):
     set_seed(config.seed)
     device = torch.device(config.device)

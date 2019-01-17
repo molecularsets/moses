@@ -173,7 +173,6 @@ class AAETrainer(MosesTrainer):
 
         return DataLoader(data, batch_size=self.config.n_batch, shuffle=shuffle, collate_fn=collate)
 
-
     def fit(self, model, train_data, val_data=None):
         self.log_file = open(self.config.log_file, 'w')
         self.log_file.write(str(self.config)+'\n')
