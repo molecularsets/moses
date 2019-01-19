@@ -16,7 +16,12 @@ def main(config):
     train_data = read_smiles_csv(config.train_load)
     trainer = CharRNNTrainer(config)
 
-    vocab = trainer.get_vocabulary(train_data)
+    if config.vocab_load is not None:
+        assert os.path.exists(config.vocab_load), 'vocab_load path doesn\'t exist!'
+        vocab = torch.load(config.vocab_load)
+    else:
+        vocab = trainer.get_vocabulary(train_data)
+
     model = CharRNN(vocab, config).to(device)
 
     trainer.fit(model, train_data)
@@ -24,7 +29,8 @@ def main(config):
     model = model.to('cpu')
     torch.save(model.state_dict(), config.model_save)
     torch.save(config, config.config_save)
-    torch.save(vocab, config.vocab_save)
+    if config.vocab_save is not None:
+        torch.save(vocab, config.vocab_save)
 
 if __name__ == '__main__':
     parser = get_parser()

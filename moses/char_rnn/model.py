@@ -22,7 +22,7 @@ class CharRNN(nn.Module):
 
     @property
     def device(self):
-        return next(self.embedding_layer.parameters()).device
+        return next(self.parameters()).device
 
     def forward(self, x, lengths, hiddens=None):
         x = self.embedding_layer(x)
