@@ -84,7 +84,7 @@ class AAE(nn.Module):
 
     @property
     def device(self):
-        return next(self.embeddings.parameters()).device
+        return next(self.parameters()).device
 
     def encoder_forward(self, *args, **kwargs):
         return self.encoder(*args, **kwargs)

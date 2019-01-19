@@ -82,7 +82,6 @@ class CharVocab:
 
         return string
 
-
 class SmilesDataset(Dataset):
     def __init__(self, data, transform):
         self.data = data
@@ -93,7 +92,6 @@ class SmilesDataset(Dataset):
 
     def __getitem__(self, i):
         return self.transform(self.data[i])
-
 
 def mapper(n_jobs):
     '''

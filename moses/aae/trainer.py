@@ -125,10 +125,11 @@ class AAETrainer(MosesTrainer):
                       'discriminator': torch.optim.Adam(model.discriminator.parameters(), lr=self.config.lr)}
         schedulers = {
             k: torch.optim.lr_scheduler.StepLR(v, self.config.step_size, self.config.gamma)
-            for k, v in optimizers.items()
-        }
-        device = torch.device(self.config.device)
+            for k, v in optimizers.items()}
 
+        device = model.device
+
+        model.zero_grad()
         for epoch in range(self.config.train_epochs):
             tqdm_data = tqdm(train_loader, desc='Training (epoch #{})'.format(epoch))
 
@@ -171,7 +172,9 @@ class AAETrainer(MosesTrainer):
                    (decoder_inputs, decoder_input_lengths), \
                    (decoder_targets, decoder_target_lengths)
 
-        return DataLoader(data, batch_size=self.config.n_batch, shuffle=shuffle, collate_fn=collate)
+        return DataLoader(data, batch_size=self.config.n_batch, shuffle=shuffle,
+                          num_workers=0, # avoids reproducibility's and CUDA issues
+                          collate_fn=collate)
 
     def fit(self, model, train_data, val_data=None):
         self.log_file = open(self.config.log_file, 'w')

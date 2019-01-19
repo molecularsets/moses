@@ -59,8 +59,11 @@ def add_train_args(parser):
                             type=str, default='config.pt',
                             help='Where to save the config')
     common_arg.add_argument('--vocab_save',
-                            type=str, default='vocab.pt',
+                            type=str,
                             help='Where to save the vocab')
+    common_arg.add_argument('--vocab_load',
+                            type=str,
+                            help='Where to load the vocab; otherwise it will be evaluated')
 
     return parser
 
