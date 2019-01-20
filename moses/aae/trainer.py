@@ -8,7 +8,7 @@ from torch.nn.utils.rnn import pad_sequence
 from collections import OrderedDict
 
 from moses.interfaces import MosesTrainer
-from moses.utils import CharVocab
+from moses.utils import CharVocab, set_torch_seed_to_all_gens
 
 __all__ = ['AAETrainer']
 
@@ -26,6 +26,10 @@ class AAETrainer(MosesTrainer):
         postfix = {'loss': 0}
 
         for i, (encoder_inputs, decoder_inputs, decoder_targets) in enumerate(tqdm_data):
+            encoder_inputs = (data.to(model.device) for data in encoder_inputs)
+            decoder_inputs = (data.to(model.device) for data in decoder_inputs)
+            decoder_targets = (data.to(model.device) for data in decoder_targets)
+
             latent_codes = model.encoder_forward(*encoder_inputs)
             decoder_outputs, decoder_output_lengths, _ = model.decoder_forward(
                 *decoder_inputs, latent_codes, is_latent_states=True)
@@ -69,6 +73,10 @@ class AAETrainer(MosesTrainer):
         postfix['discriminator_loss'] = 0
 
         for i, (encoder_inputs, decoder_inputs, decoder_targets) in enumerate(tqdm_data):
+            encoder_inputs = (data.to(model.device) for data in encoder_inputs)
+            decoder_inputs = (data.to(model.device) for data in decoder_inputs)
+            decoder_targets = (data.to(model.device) for data in decoder_targets)
+
             latent_codes = model.encoder_forward(*encoder_inputs)
             decoder_outputs, decoder_output_lengths, _ = model.decoder_forward(
                 *decoder_inputs, latent_codes, is_latent_states=True)
@@ -143,19 +151,24 @@ class AAETrainer(MosesTrainer):
                 self._train_epoch(model, tqdm_data, criterions)
 
             if epoch % self.config.save_frequency == 0:
-                model.to('cpu')
+                model = model.to('cpu')
                 torch.save(model.state_dict(), self.config.model_save[:-3]+'_{0:03d}.pt'.format(epoch))
-                model.to(device)
+                model = model.to(device)
 
     def get_vocabulary(self, data):
         return CharVocab.from_data(data)
 
     def get_dataloader(self, model, data, shuffle=True):
+        n_workers = self.config.n_workers
+        if n_workers == 1:
+            n_workers = 0
+        device = 'cpu' if n_workers > 0 else model.device
+
         def collate(data):
             data.sort(key=lambda x: len(x), reverse=True)
 
-            tensors = [model.string2tensor(string) for string in data]
-            lengths = torch.tensor([len(t) for t in tensors], dtype=torch.long, device=model.device)
+            tensors = [model.string2tensor(string, device=device) for string in data]
+            lengths = torch.tensor([len(t) for t in tensors], dtype=torch.long, device=device)
 
             encoder_inputs = pad_sequence(tensors, batch_first=True, padding_value=model.vocabulary.pad)
             encoder_input_lengths = lengths - 2
@@ -173,8 +186,8 @@ class AAETrainer(MosesTrainer):
                    (decoder_targets, decoder_target_lengths)
 
         return DataLoader(data, batch_size=self.config.n_batch, shuffle=shuffle,
-                          num_workers=0, # avoids reproducibility's and CUDA issues
-                          collate_fn=collate)
+                          num_workers=n_workers, collate_fn=collate,
+                          worker_init_fn=set_torch_seed_to_all_gens if n_workers > 0 else None)
 
     def fit(self, model, train_data, val_data=None):
         self.log_file = open(self.config.log_file, 'w')

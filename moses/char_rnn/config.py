@@ -23,6 +23,8 @@ def get_parser():
                            help='Learning rate')
     train_arg.add_argument('--n_jobs', type=int, default=1,
                            help='Number of threads')
+    train_arg.add_argument('--n_workers', type=int, default=1,
+                           help='Number of workers for DataLoaders')
 
     return parser
 

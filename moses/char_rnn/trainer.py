@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from torch.nn.utils.rnn import pad_sequence
 
 from moses.interfaces import MosesTrainer
-from moses.utils import CharVocab
+from moses.utils import CharVocab, set_torch_seed_to_all_gens
 
 class CharRNNTrainer(MosesTrainer):
 
@@ -26,6 +26,10 @@ class CharRNNTrainer(MosesTrainer):
         postfix['running_loss'] = 0
 
         for i, (prevs, nexts, lens) in enumerate(tqdm_data):
+            prevs = prevs.to(model.device)
+            nexts = nexts.to(model.device)
+            lens = lens.to(model.device)
+            
             outputs, _, _ = model(prevs, lens)
 
             loss = criterion(outputs.view(-1, outputs.shape[-1]), nexts.view(-1))
@@ -64,20 +68,24 @@ class CharRNNTrainer(MosesTrainer):
                 self._train_epoch(model, tqdm_data, criterion)
 
             if epoch % self.config.save_frequency == 0:
-                model.to('cpu')
+                model = model.to('cpu')
                 torch.save(model.state_dict(), self.config.model_save[:-3]+'_{0:03d}.pt'.format(epoch))
-                model.to(device)
+                model = model.to(device)
 
     def get_vocabulary(self, data):
         return CharVocab.from_data(data)
 
     def get_dataloader(self, model, data, shuffle=True):
+        n_workers = self.config.n_workers
+        if n_workers == 1:
+            n_workers = 0
+        device = 'cpu' if n_workers > 0 else model.device
+        
         def collate(smiles):
             smiles.sort(key=len, reverse=True)
             tensors = []
 
             vocab = model.vocabulary
-            device = model.device
             for s in smiles:
                 ids = vocab.string2ids(s, add_bos=True, add_eos=True)
                 tensors.append(torch.tensor(ids, dtype=torch.long, device=device))
@@ -88,8 +96,8 @@ class CharRNNTrainer(MosesTrainer):
             return prevs, nexts, lens
 
         return DataLoader(data, batch_size=self.config.n_batch, shuffle=shuffle,
-                          num_workers=0, # avoids reproducibility's and CUDA issues
-                          collate_fn=collate)
+                          num_workers=n_workers, collate_fn=collate,
+                          worker_init_fn=set_torch_seed_to_all_gens if n_workers > 0 else None)
 
     def fit(self, model, train_data, val_data=None):
         self.log_file = open(self.config.log_file, 'w')

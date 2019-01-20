@@ -98,9 +98,10 @@ class AAE(nn.Module):
     def forward(self, *args, **kwargs):
         return self.sample(*args, **kwargs)
 
-    def string2tensor(self, string):
+    def string2tensor(self, string, device='model'):
         ids = self.vocabulary.string2ids(string, add_bos=True, add_eos=True)
-        tensor = torch.tensor(ids, dtype=torch.long, device=self.device)
+        tensor = torch.tensor(ids, dtype=torch.long,
+                              device=self.device if device == 'model' else device)
 
         return tensor
 

@@ -1,7 +1,15 @@
+import random
+import torch
+import numpy as np
 from torch.utils.data import Dataset
 from multiprocessing import Pool
 from rdkit import rdBase
 
+# https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader
+def set_torch_seed_to_all_gens(worker_id):
+    seed = torch.initial_seed() % (2**32 - 1)
+    random.seed(seed)
+    np.random.seed(seed)
 
 class SS:
     bos = '<bos>'
