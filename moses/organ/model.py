@@ -4,6 +4,8 @@ import torch.nn.functional as F
 
 from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
 
+from moses.organ.metrics_reward import MetricsReward
+
 
 class Generator(nn.Module):
     def __init__(self, embedding_layer, hidden_size, num_layers, dropout):
@@ -54,10 +56,13 @@ class Discriminator(nn.Module):
 
 
 class ORGAN(nn.Module):
-    def __init__(self, vocabulary, config, reward_fn=None):
+    def __init__(self, vocabulary, config):
         super(ORGAN, self).__init__()
 
-        self.reward_fn = reward_fn
+        self.metrics_reward = None
+        if len(config.addition_rewards) > 0:
+            self.metrics_reward = MetricsReward(config.n_ref_subsample, config.rollouts,
+                                                config.n_jobs, config.addition_rewards)
         self.reward_weight = config.reward_weight
 
         self.vocabulary = vocabulary
@@ -71,7 +76,7 @@ class ORGAN(nn.Module):
 
     @property
     def device(self):
-        return next(self.generator_embeddings.parameters()).device
+        return next(self.parameters()).device
 
     def generator_forward(self, *args, **kwargs):
         return self.generator(*args, **kwargs)
@@ -82,9 +87,11 @@ class ORGAN(nn.Module):
     def forward(self, *args, **kwargs):
         return self.sample(*args, **kwargs)
 
-    def string2tensor(self, string):
+    def string2tensor(self, string, device='model'):
         ids = self.vocabulary.string2ids(string, add_bos=True, add_eos=True)
-        tensor = torch.tensor(ids, dtype=torch.long)
+        tensor = torch.tensor(ids, dtype=torch.long,
+                              device=self.device if device == 'model' else device)
+
         return tensor
 
     def tensor2string(self, tensor):
@@ -122,7 +129,7 @@ class ORGAN(nn.Module):
 
         return sequences, lengths
 
-    def rollout(self, n_samples, n_rollouts, max_len=100):
+    def rollout(self, n_samples, n_rollouts, ref_smiles, ref_mols, max_len=100):
         with torch.no_grad():
             sequences = []
             rewards = []
@@ -157,9 +164,10 @@ class ORGAN(nn.Module):
 
                 rollout_rewards = torch.sigmoid(self.discriminator(rollout_sequences).detach())
 
-                if self.reward_fn is not None and self.reward_weight > 0:
+                if self.metrics_reward is not None and self.reward_weight > 0:
                     strings = [self.tensor2string(t[:l]) for t, l in zip(rollout_sequences, rollout_lengths)]
-                    obj_rewards = torch.tensor(self.reward_fn(strings), device=rollout_rewards.device).view(-1, 1)
+                    obj_rewards = torch.tensor(self.metrics_reward(strings, ref_smiles, ref_mols),
+                                               device=rollout_rewards.device).view(-1, 1)
                     rollout_rewards = rollout_rewards * (1 - self.reward_weight) + obj_rewards * self.reward_weight
 
                 current_rewards = torch.zeros(n_samples, device=self.device)

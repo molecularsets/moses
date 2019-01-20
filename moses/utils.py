@@ -1,7 +1,6 @@
 import random
 import torch
 import numpy as np
-from torch.utils.data import Dataset
 from multiprocessing import Pool
 from rdkit import rdBase
 
@@ -89,17 +88,6 @@ class CharVocab:
         string = ''.join([self.id2char(id) for id in ids])
 
         return string
-
-class SmilesDataset(Dataset):
-    def __init__(self, data, transform):
-        self.data = data
-        self.transform = transform
-
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, i):
-        return self.transform(self.data[i])
 
 def mapper(n_jobs):
     '''

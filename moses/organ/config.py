@@ -48,9 +48,15 @@ def get_parser():
                            help='Size of batch')
     train_arg.add_argument('--lr', type=float, default=1e-4,
                            help='Learning rate')
-    train_arg.add_argument('--n_jobs', type=int, default=8, help='Number of threads')
+    train_arg.add_argument('--n_jobs', type=int, default=8,
+                           help='Number of threads')
+
+    train_arg.add_argument('--n_workers', type=int, default=1,
+                           help='Number of workers for DataLoaders')
     train_arg.add_argument('--max_length', type=int, default=100,
                            help='Maximum length for sequence')
+    train_arg.add_argument('--clip_grad', type=float, default=5,
+                           help='Clip PG generator gradients to this value')
     train_arg.add_argument('--rollouts', type=int, default=16,
                            help='Number of rollouts')
     train_arg.add_argument('--generator_updates', type=int, default=1,
@@ -59,6 +65,8 @@ def get_parser():
                            help='Number of updates of discriminator per iteration')
     train_arg.add_argument('--discriminator_epochs', type=int, default=10,
                            help='Number of epochs of discriminator per iteration')
+    train_arg.add_argument('--pg_smooth_const', type=float, default=0.1,
+                           help='Smoothing factor for Policy Gradient logs')
 
     return parser
 
