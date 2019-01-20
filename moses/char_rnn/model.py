@@ -33,6 +33,19 @@ class CharRNN(nn.Module):
 
         return x, lengths, hiddens
 
+    def string2tensor(self, string, device='model'):
+        ids = self.vocabulary.string2ids(string, add_bos=True, add_eos=True)
+        tensor = torch.tensor(ids, dtype=torch.long,
+                              device=self.device if device == 'model' else device)
+
+        return tensor
+
+    def tensor2string(self, tensor):
+        ids = tensor.tolist()
+        string = self.vocabulary.ids2string(ids, rem_bos=True, rem_eos=True)
+
+        return string
+
     def sample_smiles(self, max_length, batch_size):
         with torch.no_grad():
             starts = [torch.tensor([self.vocabulary.bos], dtype=torch.long, device=self.device)

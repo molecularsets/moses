@@ -70,9 +70,9 @@ class JTreeTrainer(MosesTrainer):
                 self._train_epoch(model, tqdm_data, criterion)
 
             if epoch % self.config.save_frequency == 0:
-                model.to('cpu')
+                model = model.to('cpu')
                 torch.save(model.state_dict(), self.config.model_save[:-3]+'_{0:03d}.pt'.format(epoch))
-                model.to(device)
+                model = model.to(device)
 
     def get_vocabulary(self, data):
         clusters = set()
@@ -85,6 +85,10 @@ class JTreeTrainer(MosesTrainer):
         return JTreeVocab(sorted(list(clusters)))
 
     def get_dataloader(self, model, data, shuffle=True):
+        n_workers = self.config.n_workers
+        if n_workers == 1:
+            n_workers = 0
+
         def parse_molecule(smiles):
             mol_tree = MolTree(smiles)
             mol_tree.recover()
@@ -102,9 +106,10 @@ class JTreeTrainer(MosesTrainer):
 
         return DataLoader(SmilesDataset(data, transform=parse_molecule),
                           batch_size=self.config.n_batch, shuffle=shuffle,
-                          num_workers=self.config.n_workers,
-                          collate_fn=collate,
-                          drop_last=True)
+                          num_workers=n_workers, collate_fn=collate,
+                          drop_last=True,
+                          worker_init_fn=set_torch_seed_to_all_gens if n_workers > 0 else None
+                         )
 
     def fit(self, model, train_data, val_data=None):
         self.log_file = open(self.config.log_file, 'w')

@@ -29,7 +29,7 @@ class CharRNNTrainer(MosesTrainer):
             prevs = prevs.to(model.device)
             nexts = nexts.to(model.device)
             lens = lens.to(model.device)
-            
+
             outputs, _, _ = model(prevs, lens)
 
             loss = criterion(outputs.view(-1, outputs.shape[-1]), nexts.view(-1))
@@ -80,18 +80,14 @@ class CharRNNTrainer(MosesTrainer):
         if n_workers == 1:
             n_workers = 0
         device = 'cpu' if n_workers > 0 else model.device
-        
-        def collate(smiles):
-            smiles.sort(key=len, reverse=True)
-            tensors = []
 
-            vocab = model.vocabulary
-            for s in smiles:
-                ids = vocab.string2ids(s, add_bos=True, add_eos=True)
-                tensors.append(torch.tensor(ids, dtype=torch.long, device=device))
+        def collate(data):
+            data.sort(key=len, reverse=True)
+            tensors = [model.string2tensor(string, device=device) for string in data]
 
-            prevs = pad_sequence([t[:-1] for t in tensors], batch_first=True, padding_value=vocab.pad)
-            nexts = pad_sequence([t[1:] for t in tensors], batch_first=True, padding_value=vocab.pad)
+            pad = model.vocabulary.pad
+            prevs = pad_sequence([t[:-1] for t in tensors], batch_first=True, padding_value=pad)
+            nexts = pad_sequence([t[1:] for t in tensors], batch_first=True, padding_value=pad)
             lens = torch.tensor([len(t) - 1 for t in tensors], dtype=torch.long, device=device)
             return prevs, nexts, lens
 
