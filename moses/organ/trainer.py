@@ -83,6 +83,11 @@ class ORGANTrainer:
                 tqdm_data = tqdm(val_loader, desc='Generator validation (epoch #{})'.format(epoch))
                 self._pretrain_generator_epoch(model, tqdm_data, criterion)
 
+            if epoch % self.config.save_frequency == 0:
+                model.to('cpu')
+                torch.save(model.state_dict(), self.config.model_save[:-3]+'_g{0:03d}.pt'.format(epoch))
+                model.to(self.config.device)
+
     def _pretrain_discriminator_epoch(self, model, tqdm_data, criterion, optimizer=None):
         model.generator.eval()
         if optimizer is None:
@@ -137,6 +142,12 @@ class ORGANTrainer:
             if val_data is not None:
                 tqdm_data = tqdm(val_loader, desc='Discriminator validation (epoch #{})'.format(epoch))
                 self._pretrain_discriminator_epoch(model, tqdm_data, criterion)
+                
+            if epoch % self.config.save_frequency == 0:
+                model.to('cpu')
+                torch.save(model.state_dict(), self.config.model_save[:-3]+'_d{0:03d}.pt'.format(epoch))
+                model.to(self.config.device)
+
 
     def _train_policy_gradient(self, model, train_data, log):
         def collate(data):
@@ -221,6 +232,12 @@ class ORGANTrainer:
             log.append({'discriminator_loss': postfix['discriminator_loss'],
                         'generator_loss': postfix['generator_loss']})
             log.save(self.config.log_file)
+            
+            if i % self.config.save_frequency*100 == 0:
+                model.to('cpu')
+                torch.save(model.state_dict(), self.config.model_save[:-3]+'_pg{0:03d}.pt'.format(i))
+                model.to(self.config.device)
+
 
 
     def fit(self, model, train_data, val_data=None):
