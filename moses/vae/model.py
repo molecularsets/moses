@@ -4,17 +4,18 @@ import torch.nn.functional as F
 
 
 class VAE(nn.Module):
-    def __init__(self, x_vocab, config):
+    def __init__(self, vocab, config):
         super().__init__()
 
+        self.vocabulary = vocab
         # Special symbols
         for ss in ('bos', 'eos', 'unk', 'pad'):
-            setattr(self, ss, getattr(x_vocab, ss))
+            setattr(self, ss, getattr(vocab, ss))
 
         # Word embeddings layer
-        n_vocab, d_emb = len(x_vocab), x_vocab.vectors.size(1)
+        n_vocab, d_emb = len(vocab), vocab.vectors.size(1)
         self.x_emb = nn.Embedding(n_vocab, d_emb, self.pad)
-        self.x_emb.weight.data.copy_(x_vocab.vectors)
+        self.x_emb.weight.data.copy_(vocab.vectors)
         if config.freeze_embeddings:
             self.x_emb.weight.requires_grad = False
 
@@ -70,6 +71,23 @@ class VAE(nn.Module):
             self.encoder,
             self.decoder
         ])
+
+    @property
+    def device(self):
+        return next(self.parameters()).device
+
+    def string2tensor(self, string, device='model'):
+        ids = self.vocabulary.string2ids(string, add_bos=True, add_eos=True)
+        tensor = torch.tensor(ids, dtype=torch.long,
+                              device=self.device if device == 'model' else device)
+
+        return tensor
+
+    def tensor2string(self, tensor):
+        ids = tensor.tolist()
+        string = self.vocabulary.ids2string(ids, rem_bos=True, rem_eos=True)
+
+        return string
 
     def forward(self, x):
         """Do the VAE forward step

@@ -146,7 +146,7 @@ def main(config):
             not os.path.exists(test_path) or \
             not os.path.exists(test_scaffolds_path):
         splitting_config = split_dataset.get_parser()
-        conf = ['--output_dir', config.data_dir]
+        conf = ['--dir', config.data_dir]
         if config.train_size is not None:
             conf.extend(['--train_size', str(config.train_size)])
         if config.test_size is not None:

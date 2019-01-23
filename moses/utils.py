@@ -91,6 +91,11 @@ class CharVocab:
 
         return string
 
+class OneHotVocab(CharVocab):
+    def __init__(self, *args, **kwargs):
+        super(OneHotVocab, self).__init__(*args, **kwargs)
+        self.vectors = torch.eye(len(self.c2i))
+
 def mapper(n_jobs):
     '''
     Returns function for map call.
@@ -168,6 +173,26 @@ class LogPlotter:
 
         for ax, name in zip(axs.flatten(), names):
             self.line(ax, name)
+
+class CircularBuffer:
+    def __init__(self, size):
+        self.max_size = size
+        self.data = np.zeros(self.max_size)
+        self.size = 0
+        self.pointer = -1
+
+    def add(self, element):
+        self.size = min(self.size + 1, self.max_size)
+        self.pointer = (self.pointer + 1) % self.max_size
+        self.data[self.pointer] = element
+        return element
+
+    def last(self):
+        assert self.pointer != -1, "Can't get an element from the empty buffer!"
+        return self.data[self.pointer]
+
+    def mean(self):
+        return self.data.mean()
 
 def disable_rdkit_log():
     rdBase.DisableLog('rdApp.*')

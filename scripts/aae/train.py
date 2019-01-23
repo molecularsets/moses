@@ -24,7 +24,6 @@ def main(config):
 
     trainer.fit(model, train_data)
 
-
     model = model.to('cpu')
     torch.save(model.state_dict(), config.model_save)
     if config.config_save is not None:
