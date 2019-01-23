@@ -1,7 +1,8 @@
 import argparse
 
+from moses.organ.metrics_reward import MetricsReward
 
-def get_parser():
+def get_parser(parser=None):
     def restricted_float(arg):
         if float(arg) < 0 or float(arg) > 1:
             raise argparse.ArgumentTypeError('{} not in range [0, 1]'.format(arg))
@@ -17,7 +18,8 @@ def get_parser():
 
         return feats, kernel_size
 
-    parser = argparse.ArgumentParser()
+    if parser == None:
+        parser = argparse.ArgumentParser()
 
     model_arg = parser.add_argument_group('Model')
     model_arg.add_argument('--embedding_size', type=int, default=32,
@@ -68,6 +70,11 @@ def get_parser():
     train_arg.add_argument('--pg_smooth_const', type=float, default=0.1,
                            help='Smoothing factor for Policy Gradient logs')
 
+    parser.add_argument('--n_ref_subsample', type=int, default=500,
+                        help='Number of reference molecules (sampling from training data)')
+    parser.add_argument('--addition_rewards', nargs='+', type=str,
+                        choices=MetricsReward.supported_metrics, default=[],
+                        help='Adding of addition rewards')
     return parser
 
 

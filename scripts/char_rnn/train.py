@@ -1,8 +1,6 @@
 import torch
 
-from moses.char_rnn.config import get_parser as char_rnn_parser
-from moses.char_rnn.model import CharRNN
-from moses.char_rnn.trainer import CharRNNTrainer
+from moses.char_rnn import CharRNN, CharRNNTrainer, get_parser as char_rnn_parser
 from moses.script_utils import add_train_args, read_smiles_csv, set_seed
 
 

@@ -1,7 +1,7 @@
 import torch
 import rdkit
 
-from moses.organ import ORGAN, ORGANTrainer, MetricsReward, get_parser as organ_parser
+from moses.organ import ORGAN, ORGANTrainer, get_parser as organ_parser
 from moses.script_utils import add_train_args, read_smiles_csv, set_seed
 
 lg = rdkit.RDLogger.logger()
@@ -9,15 +9,7 @@ lg.setLevel(rdkit.RDLogger.CRITICAL)
 
 
 def get_parser():
-    parser = add_train_args(organ_parser())
-
-    parser.add_argument('--n_ref_subsample', type=int, default=500,
-                        help='Number of reference molecules (sampling from training data)')
-    parser.add_argument('--addition_rewards', nargs='+', type=str,
-                        choices=MetricsReward.supported_metrics, default=[],
-                        help='Adding of addition rewards')
-
-    return parser
+    return add_train_args(organ_parser())
 
 
 def main(config):

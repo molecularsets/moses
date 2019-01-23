@@ -8,8 +8,9 @@ def str2bool(v):
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
-def get_parser():
-    parser = argparse.ArgumentParser()
+def get_parser(parser=None):
+    if parser == None:
+        parser = argparse.ArgumentParser()
 
     # Model
     model_arg = parser.add_argument_group('Model')

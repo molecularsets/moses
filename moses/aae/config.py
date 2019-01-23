@@ -1,8 +1,9 @@
 import argparse
 
 
-def get_parser():
-    parser = argparse.ArgumentParser()
+def get_parser(parser=None):
+    if parser == None:
+        parser = argparse.ArgumentParser()
 
     model_arg = parser.add_argument_group('Model')
     model_arg.add_argument('--embedding_size', type=int, default=32,

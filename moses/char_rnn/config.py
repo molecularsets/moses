@@ -1,8 +1,9 @@
 import argparse
 
 
-def get_parser():
-    parser = argparse.ArgumentParser()
+def get_parser(parser=None):
+    if parser is None:
+        parser = argparse.ArgumentParser()
 
     # Model
     model_arg = parser.add_argument_group('Model')

@@ -2,9 +2,7 @@ import os
 import torch
 import rdkit
 
-from moses.junction_tree.config import get_parser as junction_tree_parser
-from moses.junction_tree.jtnn.jtnn_vae import JTNNVAE
-from moses.junction_tree.trainer import JTreeTrainer
+from moses.junction_tree import JTNNVAE, JTreeTrainer, get_parser as junction_tree_parser
 from moses.script_utils import add_train_args, read_smiles_csv, set_seed
 
 lg = rdkit.RDLogger.logger()

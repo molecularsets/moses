@@ -1,8 +1,6 @@
 import torch
 
-from moses.vae.model import VAE
-from moses.vae.trainer import VAETrainer
-from moses.vae.config import get_parser as vae_parser
+from moses.vae import VAE, VAETrainer, get_parser as vae_parser
 from moses.script_utils import add_train_args, read_smiles_csv, set_seed
 
 
