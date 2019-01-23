@@ -6,7 +6,7 @@ def get_parser():
         if float(arg) < 0 or float(arg) > 1:
             raise argparse.ArgumentTypeError('{} not in range [0, 1]'.format(arg))
 
-        return arg
+        return float(arg)
 
     def conv_pair(arg):
         if arg[0] != '(' or arg[-1] != ')':

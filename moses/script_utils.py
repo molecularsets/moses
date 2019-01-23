@@ -38,16 +38,16 @@ def add_train_args(parser):
                             type=str, required=True,
                             help='Input data in csv format to train')
     common_arg.add_argument('--model_save',
-                            type=str, default='model.pt',
+                            type=str, required=True, default='model.pt',
                             help='Where to save the model')
     common_arg.add_argument('--save_frequency',
                             type=int, default=20,
                             help='How often to save the model')
     common_arg.add_argument('--log_file',
-                            type=str, default='log.txt',
+                            type=str, required=True,
                             help='Where to save the log')
     common_arg.add_argument('--config_save',
-                            type=str, default='config.pt',
+                            type=str, required=True,
                             help='Where to save the config')
     common_arg.add_argument('--vocab_save',
                             type=str,
@@ -95,6 +95,7 @@ def read_smiles_csv(path):
 
 def set_seed(seed):
     torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
     random.seed(seed)
     np.random.seed(seed)
     torch.backends.cudnn.deterministic = True

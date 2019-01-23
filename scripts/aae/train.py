@@ -24,9 +24,11 @@ def main(config):
 
     trainer.fit(model, train_data)
 
+
     model = model.to('cpu')
     torch.save(model.state_dict(), config.model_save)
-    torch.save(config, config.config_save)
+    if config.config_save is not None:
+        torch.save(config, config.config_save)
     if config.vocab_save is not None:
         torch.save(vocab, config.vocab_save)
 

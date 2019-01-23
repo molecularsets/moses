@@ -4,10 +4,9 @@ import torch.nn.functional as F
 import random
 
 from tqdm import tqdm
-from collections import OrderedDict
 from torch.utils.data import DataLoader
 from torch.nn.utils.rnn import pad_sequence
-from moses.utils import CharVocab, set_torch_seed_to_all_gens
+from moses.utils import CharVocab, set_torch_seed_to_all_gens, Logger
 
 
 class PolicyGradientLoss(nn.Module):
@@ -61,9 +60,8 @@ class ORGANTrainer:
         else:
             model.generator.train()
 
-        postfix = OrderedDict()
-        postfix['loss'] = 0
-        postfix['running_loss'] = 0
+        postfix = { 'loss' : 0,
+                    'running_loss' : 0,}
 
         for i, batch in enumerate(tqdm_data):
             (prevs, nexts, lens) = (data.to(model.device) for data in batch)
@@ -81,12 +79,9 @@ class ORGANTrainer:
             tqdm_data.set_postfix(postfix)
 
         postfix['mode'] = 'Eval generator' if optimizer is None else 'Train generator'
-        for field, value in postfix.items():
-            self.log_file.write(field+' = '+str(value)+'\n')
-        self.log_file.write('===\n')
-        self.log_file.flush()
+        return { 'gen_pretrain_' + k: v for k, v in postfix.items() }
 
-    def _pretrain_generator(self, model, train_loader, val_loader=None):
+    def _pretrain_generator(self, model, train_loader, val_loader=None, logger=None):
         device = model.device
         generator = model.generator
         criterion = nn.CrossEntropyLoss(ignore_index=model.vocabulary.pad)
@@ -95,11 +90,17 @@ class ORGANTrainer:
         generator.zero_grad()
         for epoch in range(self.config.generator_pretrain_epochs):
             tqdm_data = tqdm(train_loader, desc='Generator training (epoch #{})'.format(epoch))
-            self._pretrain_generator_epoch(model, tqdm_data, criterion, optimizer)
+            postfix = self._pretrain_generator_epoch(model, tqdm_data, criterion, optimizer)
+            if logger is not None:
+                logger.append(postfix)
+                logger.save(self.config.log_file)
 
             if val_loader is not None:
                 tqdm_data = tqdm(val_loader, desc='Generator validation (epoch #{})'.format(epoch))
-                self._pretrain_generator_epoch(model, tqdm_data, criterion)
+                postfix = self._pretrain_generator_epoch(model, tqdm_data, criterion)
+                if logger is not None:
+                    logger.append(postfix)
+                    logger.save(self.config.log_file)
 
             if epoch % self.config.save_frequency == 0:
                 generator = generator.to('cpu')
@@ -113,9 +114,8 @@ class ORGANTrainer:
         else:
             model.discriminator.train()
 
-        postfix = OrderedDict()
-        postfix['loss'] = 0
-        postfix['running_loss'] = 0
+        postfix = { 'loss' : 0,
+                    'running_loss' : 0,}
 
         for i, inputs_from_data in enumerate(tqdm_data):
             inputs_from_data = inputs_from_data.to(model.device)
@@ -139,10 +139,7 @@ class ORGANTrainer:
             tqdm_data.set_postfix(postfix)
 
         postfix['mode'] = 'Eval discriminator' if optimizer is None else 'Train discriminator'
-        for field, value in postfix.items():
-            self.log_file.write(field+' = '+str(value)+'\n')
-        self.log_file.write('===\n')
-        self.log_file.flush()
+        return { 'discr_pretrain_' + k: v for k, v in postfix.items() }
 
     def discriminator_collate_fn(self, model):
         device = self.get_collate_device(model)
@@ -155,7 +152,7 @@ class ORGANTrainer:
 
         return collate
 
-    def _pretrain_discriminator(self, model, train_loader, val_loader=None):
+    def _pretrain_discriminator(self, model, train_loader, val_loader=None, logger=None):
         device = model.device
         discriminator = model.discriminator
         criterion = nn.BCEWithLogitsLoss()
@@ -164,11 +161,17 @@ class ORGANTrainer:
         discriminator.zero_grad()
         for epoch in range(self.config.discriminator_pretrain_epochs):
             tqdm_data = tqdm(train_loader, desc='Discriminator training (epoch #{})'.format(epoch))
-            self._pretrain_discriminator_epoch(model, tqdm_data, criterion, optimizer)
+            postfix = self._pretrain_discriminator_epoch(model, tqdm_data, criterion, optimizer)
+            if logger is not None:
+                logger.append(postfix)
+                logger.save(self.config.log_file)
 
             if val_loader is not None:
                 tqdm_data = tqdm(val_loader, desc='Discriminator validation (epoch #{})'.format(epoch))
-                self._pretrain_discriminator_epoch(model, tqdm_data, criterion)
+                postfix = self._pretrain_discriminator_epoch(model, tqdm_data, criterion)
+                if logger is not None:
+                    logger.append(postfix)
+                    logger.save(self.config.log_file)
 
             if epoch % self.config.save_frequency == 0:
                 discriminator = discriminator.to('cpu')
@@ -179,9 +182,9 @@ class ORGANTrainer:
         smooth = self.config.pg_smooth_const if iter_ > 0 else 1
 
         # Generator
-        postfix = OrderedDict()
-        postfix['generator_loss'] = 0
-        postfix['smoothed_reward'] = 0
+        gen_postfix = { 'generator_loss' : 0,
+                        'smoothed_reward' : 0,}
+
         gen_tqdm = tqdm(range(self.config.generator_updates),
                         desc='PG generator training (iter #{})'.format(iter_))
         for _ in gen_tqdm:
@@ -202,19 +205,13 @@ class ORGANTrainer:
             nn.utils.clip_grad_value_(model.generator.parameters(), self.config.clip_grad)
             optimizer['generator'].step()
 
-            postfix['generator_loss'] += (generator_loss.item() - postfix['generator_loss']) * smooth
+            gen_postfix['generator_loss'] += (generator_loss.item() - gen_postfix['generator_loss']) * smooth
             mean_episode_reward = torch.cat([t[:l] for t, l in zip(rewards, lengths)]).mean().item()
-            postfix['smoothed_reward'] += (mean_episode_reward - postfix['smoothed_reward']) * smooth
-            gen_tqdm.set_postfix(postfix)
-
-        postfix['mode'] = 'PG generator (iter #{})'.format(iter_)
-        for field, value in postfix.items():
-            self.log_file.write(field+' = '+str(value)+'\n')
-        self.log_file.write('===\n')
-        self.log_file.flush()
+            gen_postfix['smoothed_reward'] += (mean_episode_reward - gen_postfix['smoothed_reward']) * smooth
+            gen_tqdm.set_postfix(gen_postfix)
 
         # Discriminator
-        postfix = { 'discriminator_loss' : 0 }
+        discrim_postfix = { 'discrim-r_loss' : 0,}
         discrim_tqdm = tqdm(range(self.config.discriminator_updates),
                             desc='PG discrim-r training (iter #{})'.format(iter_))
         for _ in discrim_tqdm:
@@ -241,17 +238,15 @@ class ORGANTrainer:
                     discrim_loss.backward()
                     optimizer['discriminator'].step()
 
-                    postfix['discriminator_loss'] += (discrim_loss.item() - postfix['discriminator_loss']) * smooth
+                    discrim_postfix['discrim-r_loss'] += (discrim_loss.item() - discrim_postfix['discrim-r_loss']) * smooth
 
-            discrim_tqdm.set_postfix(postfix)
+            discrim_tqdm.set_postfix(discrim_postfix)
 
-        postfix['mode'] = 'PG discriminator (iter #{})'.format(iter_)
-        for field, value in postfix.items():
-            self.log_file.write(field+' = '+str(value)+'\n')
-        self.log_file.write('===\n')
-        self.log_file.flush()
+        postfix = { **gen_postfix, **discrim_postfix }
+        postfix['mode'] = 'Policy Gradient (iter #{})'.format(iter_)
+        return postfix
 
-    def _train_policy_gradient(self, model, train_loader):
+    def _train_policy_gradient(self, model, train_loader, logger=None):
         device = model.device
 
         criterion = {
@@ -266,7 +261,10 @@ class ORGANTrainer:
 
         model.zero_grad()
         for iter_ in range(self.config.pg_iters):
-            self._policy_gradient_iter(model, train_loader, criterion, optimizer, iter_)
+            postfix = self._policy_gradient_iter(model, train_loader, criterion, optimizer, iter_)
+            if logger is not None:
+                logger.append(postfix)
+                logger.save(self.config.log_file)
 
             if iter_ % self.config.save_frequency == 0:
                 model = model.to('cpu')
@@ -274,21 +272,19 @@ class ORGANTrainer:
                 model = model.to(device)
 
     def fit(self, model, train_data, val_data=None):
-        self.log_file = open(self.config.log_file, 'w')
-        self.log_file.write(str(self.config)+'\n')
-        self.log_file.write(str(model)+'\n')
+        logger = Logger() if self.config.log_file is not None else None
 
         # Generator
         gen_collate_fn = self.generator_collate_fn(model)
         gen_train_loader = self.get_dataloader(model, train_data, gen_collate_fn, shuffle=True)
         gen_val_loader = None if val_data is None else self.get_dataloader(model, val_data, gen_collate_fn, shuffle=False)
-        self._pretrain_generator(model, gen_train_loader, gen_val_loader)
+        self._pretrain_generator(model, gen_train_loader, gen_val_loader, logger)
 
         # Discriminator
         dsc_collate_fn = self.discriminator_collate_fn(model)
         dsc_train_loader = self.get_dataloader(model, train_data, dsc_collate_fn, shuffle=True)
         dsc_val_loader = None if val_data is None else self.get_dataloader(model, val_data, dsc_collate_fn, shuffle=False)
-        self._pretrain_discriminator(model, dsc_train_loader, dsc_val_loader)
+        self._pretrain_discriminator(model, dsc_train_loader, dsc_val_loader, logger)
 
         # Policy gradient
         self.ref_smiles, self.ref_mols = None, None
@@ -296,10 +292,9 @@ class ORGANTrainer:
             self.ref_smiles, self.ref_mols = model.metrics_reward.get_reference_data(train_data)
 
         pg_train_loader = dsc_train_loader
-        self._train_policy_gradient(model, pg_train_loader)
+        self._train_policy_gradient(model, pg_train_loader, logger)
 
         del self.ref_smiles
         del self.ref_mols
 
-        self.log_file.close()
         return model

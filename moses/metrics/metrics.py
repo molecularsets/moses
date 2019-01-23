@@ -24,7 +24,7 @@ def get_all_metrics(test, gen, k=[1000, 10000], n_jobs=1, gpu=-1,
         k: list with values for unique@k.
             Will calculate number of unique molecules in the first k molecules.
         n_jobs: number of workers for parallel processing
-        gpu: index of GPU for FCD metric
+        gpu: index of GPU for FCD metric and internal diversity, -1 means use CPU
         batch_size: batch size for FCD metric
         test_scaffolds: list of scaffold test SMILES
             Will compute only on the general test set if not specified
@@ -40,6 +40,7 @@ def get_all_metrics(test, gen, k=[1000, 10000], n_jobs=1, gpu=-1,
         * Scaffold similarity (Scaf)
         * Similarity to nearest neighbour (SNN)
         * Internal diversity (IntDiv)
+        * Internal diversity 2: using square root of mean squared Tanimoto similarity (IntDiv2)
         * %passes filters (Filters)
         * Distribution difference for logP, SA, QED, NP, weight
     '''
@@ -73,8 +74,8 @@ def get_all_metrics(test, gen, k=[1000, 10000], n_jobs=1, gpu=-1,
         metrics['Frag/TestSF'] = FragMetric(**kwargs)(gen=mols, ptest=ptest_scaffolds['Frag'])
         metrics['Scaf/TestSF'] = ScafMetric(**kwargs)(gen=mols, ptest=ptest_scaffolds['Scaf'])
 
-    metrics['IntDiv'] = internal_diversity(mols, pool)
-    metrics['IntDiv2'] = internal_diversity(mols, pool, p=2)
+    metrics['IntDiv'] = internal_diversity(mols, pool, gpu=gpu)
+    metrics['IntDiv2'] = internal_diversity(mols, pool, gpu=gpu, p=2)
     metrics['Filters'] = fraction_passes_filters(mols, pool)
 
     # Properties

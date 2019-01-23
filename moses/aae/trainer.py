@@ -5,10 +5,9 @@ import torch.nn.functional as F
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 from torch.nn.utils.rnn import pad_sequence
-from collections import OrderedDict
 
 from moses.interfaces import MosesTrainer
-from moses.utils import CharVocab, set_torch_seed_to_all_gens
+from moses.utils import CharVocab, set_torch_seed_to_all_gens, Logger
 
 __all__ = ['AAETrainer']
 
@@ -23,7 +22,7 @@ class AAETrainer(MosesTrainer):
         else:
             model.train()
 
-        postfix = {'loss': 0}
+        postfix = { 'pretraining_loss' : 0, }
 
         for i, (encoder_inputs, decoder_inputs, decoder_targets) in enumerate(tqdm_data):
             encoder_inputs = (data.to(model.device) for data in encoder_inputs)
@@ -44,22 +43,37 @@ class AAETrainer(MosesTrainer):
                 loss.backward()
                 optimizer.step()
 
-            postfix['loss'] += (loss.item() - postfix['loss']) / (i + 1)
+            postfix['pretraining_loss'] += (loss.item() - postfix['pretraining_loss']) / (i + 1)
 
             tqdm_data.set_postfix(postfix)
 
-    def _pretrain(self, model, train_loader, val_loader=None):
+        postfix['mode'] = 'Pretraining:Eval' if optimizer is None else 'Pretraining:Train'
+
+        return postfix
+
+    def _pretrain(self, model, train_loader, val_loader=None, logger=None):
         criterion = nn.CrossEntropyLoss()
         optimizer = torch.optim.Adam(list(model.encoder.parameters()) +
                                      list(model.decoder.parameters()), lr=self.config.lr)
+        device = model.device
 
+        model.zero_grad()
         for epoch in range(self.config.pretrain_epochs):
             tqdm_data = tqdm(train_loader, desc='Pretraining (epoch #{})'.format(epoch))
-            self._pretrain_epoch(model, tqdm_data, criterion, optimizer)
+
+            postfix = self._pretrain_epoch(model, tqdm_data, criterion, optimizer)
+            if logger is not None:
+                logger.append(postfix)
+                logger.save(self.config.log_file)
 
             if val_loader is not None:
-                tqdm_data = tqdm(val_loader, desc='Validation (epoch #{})'.format(epoch))
+                tqdm_data = tqdm(val_loader, desc='Pretraining validation (epoch #{})'.format(epoch))
                 self._pretrain_epoch(model, tqdm_data, criterion)
+
+            if epoch % self.config.save_frequency == 0:
+                model = model.to('cpu')
+                torch.save(model.state_dict(), self.config.model_save[:-3]+'_pretraining_{0:03d}.pt'.format(epoch))
+                model = model.to(device)
 
     def _train_epoch(self, model, tqdm_data, criterions, optimizers=None):
         if optimizers is None:
@@ -67,10 +81,9 @@ class AAETrainer(MosesTrainer):
         else:
             model.train()
 
-        postfix = OrderedDict()
-        postfix['autoencoder_loss'] = 0
-        postfix['generator_loss'] = 0
-        postfix['discriminator_loss'] = 0
+        postfix = {'autoencoder_loss' : 0,
+                   'generator_loss' : 0,
+                   'discriminator_loss' : 0,}
 
         for i, (encoder_inputs, decoder_inputs, decoder_targets) in enumerate(tqdm_data):
             encoder_inputs = (data.to(model.device) for data in encoder_inputs)
@@ -117,12 +130,9 @@ class AAETrainer(MosesTrainer):
             tqdm_data.set_postfix(postfix)
 
         postfix['mode'] = 'Eval' if optimizers is None else 'Train'
-        for field, value in postfix.items():
-            self.log_file.write(field+' = '+str(value)+'\n')
-        self.log_file.write('===\n')
-        self.log_file.flush()
+        return postfix
 
-    def _train(self, model, train_loader, val_loader=None):
+    def _train(self, model, train_loader, val_loader=None, logger=None):
         criterions = {'autoencoder': nn.CrossEntropyLoss(),
                       'generator': lambda t: -torch.mean(F.logsigmoid(t)),
                       'discriminator': nn.BCEWithLogitsLoss()}
@@ -134,23 +144,27 @@ class AAETrainer(MosesTrainer):
         schedulers = {
             k: torch.optim.lr_scheduler.StepLR(v, self.config.step_size, self.config.gamma)
             for k, v in optimizers.items()}
-
         device = model.device
 
         model.zero_grad()
         for epoch in range(self.config.train_epochs):
-            tqdm_data = tqdm(train_loader, desc='Training (epoch #{})'.format(epoch))
-
             for scheduler in schedulers.values():
                 scheduler.step()
 
-            self._train_epoch(model, tqdm_data, criterions, optimizers)
+            tqdm_data = tqdm(train_loader, desc='Training (epoch #{})'.format(epoch))
+            postfix = self._train_epoch(model, tqdm_data, criterions, optimizers)
+            if logger is not None:
+                logger.append(postfix)
+                logger.save(self.config.log_file)
 
             if val_loader is not None:
                 tqdm_data = tqdm(val_loader, desc='Validation (epoch #{})'.format(epoch))
-                self._train_epoch(model, tqdm_data, criterions)
+                postfix = self._train_epoch(model, tqdm_data, criterions)
+                if logger is not None:
+                    logger.append(postfix)
+                    logger.save(self.config.log_file)
 
-            if epoch % self.config.save_frequency == 0:
+            if (self.config.model_save is not None) and (epoch % self.config.save_frequency == 0):
                 model = model.to('cpu')
                 torch.save(model.state_dict(), self.config.model_save[:-3]+'_{0:03d}.pt'.format(epoch))
                 model = model.to(device)
@@ -190,14 +204,11 @@ class AAETrainer(MosesTrainer):
                           worker_init_fn=set_torch_seed_to_all_gens if n_workers > 0 else None)
 
     def fit(self, model, train_data, val_data=None):
-        self.log_file = open(self.config.log_file, 'w')
-        self.log_file.write(str(self.config)+'\n')
-        self.log_file.write(str(model)+'\n')
+        logger = Logger() if self.config.log_file is not None else None
 
         train_loader = self.get_dataloader(model, train_data, shuffle=True)
         val_loader = None if val_data is None else self.get_dataloader(model, val_data, shuffle=False)
 
-        self._pretrain(model, train_loader, val_loader)
-        self._train(model, train_loader, val_loader)
-        self.log_file.close()
+        self._pretrain(model, train_loader, val_loader, logger)
+        self._train(model, train_loader, val_loader, logger)
         return model

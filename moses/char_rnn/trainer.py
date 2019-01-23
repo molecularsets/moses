@@ -3,12 +3,11 @@ import torch.nn as nn
 import torch.optim as optim
 
 from tqdm import tqdm
-from collections import OrderedDict
 from torch.utils.data import DataLoader
 from torch.nn.utils.rnn import pad_sequence
 
 from moses.interfaces import MosesTrainer
-from moses.utils import CharVocab, set_torch_seed_to_all_gens
+from moses.utils import CharVocab, set_torch_seed_to_all_gens, Logger
 
 class CharRNNTrainer(MosesTrainer):
 
@@ -21,9 +20,8 @@ class CharRNNTrainer(MosesTrainer):
         else:
             model.train()
 
-        postfix = OrderedDict()
-        postfix['loss'] = 0
-        postfix['running_loss'] = 0
+        postfix = { 'loss' : 0,
+                    'running_loss' : 0, }
 
         for i, (prevs, nexts, lens) in enumerate(tqdm_data):
             prevs = prevs.to(model.device)
@@ -44,33 +42,40 @@ class CharRNNTrainer(MosesTrainer):
             tqdm_data.set_postfix(postfix)
 
         postfix['mode'] = 'Eval' if optimizer is None else 'Train'
-        for field, value in postfix.items():
-            self.log_file.write(field+' = '+str(value)+'\n')
-        self.log_file.write('===\n')
-        self.log_file.flush()
+        return postfix
 
-    def _train(self, model, train_loader, val_loader=None):
+    def _train(self, model, train_loader, val_loader=None, logger=None):
         def get_params():
             return (p for p in model.parameters() if p.requires_grad)
 
         device = model.device
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.Adam(get_params(), lr=self.config.lr)
+        scheduler = optim.lr_scheduler.StepLR(optimizer, self.config.step_size, self.config.gamma)
 
         model.zero_grad()
         for epoch in range(self.config.train_epochs):
-            tqdm_data = tqdm(train_loader, desc='Train (epoch #{})'.format(epoch))
+            scheduler.step()
 
-            self._train_epoch(model, tqdm_data, criterion, optimizer)
+            tqdm_data = tqdm(train_loader, desc='Train (epoch #{})'.format(epoch))
+            postfix = self._train_epoch(model, tqdm_data, criterion, optimizer)
+            if logger is not None:
+                logger.append(postfix)
+                logger.save(self.config.log_file)
 
             if val_loader is not None:
                 tqdm_data = tqdm(val_loader, desc='Validation (epoch #{})'.format(epoch))
-                self._train_epoch(model, tqdm_data, criterion)
+                postfix = self._train_epoch(model, tqdm_data, criterion)
+                if logger is not None:
+                    logger.append(postfix)
+                    logger.save(self.config.log_file)
 
-            if epoch % self.config.save_frequency == 0:
+            if (self.config.model_save is not None) and (epoch % self.config.save_frequency == 0):
                 model = model.to('cpu')
                 torch.save(model.state_dict(), self.config.model_save[:-3]+'_{0:03d}.pt'.format(epoch))
                 model = model.to(device)
+
+
 
     def get_vocabulary(self, data):
         return CharVocab.from_data(data)
@@ -96,13 +101,10 @@ class CharRNNTrainer(MosesTrainer):
                           worker_init_fn=set_torch_seed_to_all_gens if n_workers > 0 else None)
 
     def fit(self, model, train_data, val_data=None):
-        self.log_file = open(self.config.log_file, 'w')
-        self.log_file.write(str(self.config)+'\n')
-        self.log_file.write(str(model)+'\n')
+        logger = Logger() if self.config.log_file is not None else None
 
         train_loader = self.get_dataloader(model, train_data, shuffle=True)
         val_loader = None if val_data is None else self.get_dataloader(model, val_data, shuffle=False)
 
-        self._train(model, train_loader, val_loader)
-        self.log_file.close()
+        self._train(model, train_loader, val_loader, logger)
         return model

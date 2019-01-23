@@ -3,10 +3,8 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 
 from tqdm import tqdm
-from multiprocessing import Pool
-from collections import OrderedDict
 
-from moses.utils import SmilesDataset
+from moses.utils import mapper, Logger
 from moses.interfaces import MosesTrainer
 from moses.junction_tree.jtnn.vocabulary import JTreeVocab
 from moses.junction_tree.jtnn.mol_tree import MolTree
@@ -21,12 +19,11 @@ class JTreeTrainer(MosesTrainer):
         else:
             model.train()
 
-        postfix = OrderedDict()
-        postfix['word_acc'] = 0
-        postfix['topo_acc'] = 0
-        postfix['assm_acc'] = 0
-        postfix['steo_acc'] = 0
-        postfix['kl'] = 0
+        postfix = { 'word_acc' : 0,
+                    'topo_acc' : 0,
+                    'assm_acc' : 0,
+                    'steo_acc' : 0,
+                    'kl' : 0,}
 
         kl_w = 0 if epoch < self.config.kl_start else self.config.kl_w
 
@@ -47,12 +44,9 @@ class JTreeTrainer(MosesTrainer):
             tqdm_data.set_postfix(postfix)
 
         postfix['mode'] = 'Eval' if optimizer is None else 'Train'
-        for field, value in postfix.items():
-            self.log_file.write(field+' = '+str(value)+'\n')
-        self.log_file.write('===\n')
-        self.log_file.flush()
+        return postfix
 
-    def _train(self, model, train_loader, val_loader=None):
+    def _train(self, model, train_loader, val_loader=None, logger=None):
         def get_params():
             return (p for p in model.parameters() if p.requires_grad)
 
@@ -62,12 +56,17 @@ class JTreeTrainer(MosesTrainer):
         model.zero_grad()
         for epoch in range(self.config.train_epochs):
             tqdm_data = tqdm(train_loader, desc='Train (epoch #{})'.format(epoch))
-
-            self._train_epoch(model, tqdm_data, epoch, optimizer)
+            postfix = self._train_epoch(model, tqdm_data, epoch, optimizer)
+            if logger is not None:
+                logger.append(postfix)
+                logger.save(self.config.log_file)
 
             if val_loader is not None:
                 tqdm_data = tqdm(val_loader, desc='Validation (epoch #{})'.format(epoch))
-                self._train_epoch(model, tqdm_data, criterion)
+                postfix = self._train_epoch(model, tqdm_data, criterion)
+                if logger is not None:
+                    logger.append(postfix)
+                    logger.save(self.config.log_file)
 
             if epoch % self.config.save_frequency == 0:
                 model = model.to('cpu')
@@ -76,12 +75,11 @@ class JTreeTrainer(MosesTrainer):
 
     def get_vocabulary(self, data):
         clusters = set()
-        with Pool(self.config.n_jobs) as pool:
-            for mol in tqdm(pool.imap(MolTree, data),
-                            total=len(data),
-                            postfix=['Creating vocab']):
-                for c in mol.nodes:
-                    clusters.add(c.smiles)
+        for mol in tqdm(mapper(self.config.n_jobs)(MolTree, data),
+                        total=len(data),
+                        postfix=['Creating vocab']):
+            for c in mol.nodes:
+                clusters.add(c.smiles)
         return JTreeVocab(sorted(list(clusters)))
 
     def get_dataloader(self, model, data, shuffle=True):
@@ -89,37 +87,33 @@ class JTreeTrainer(MosesTrainer):
         if n_workers == 1:
             n_workers = 0
 
-        def parse_molecule(smiles):
-            mol_tree = MolTree(smiles)
-            mol_tree.recover()
-            mol_tree.assemble()
-
-            for node in mol_tree.nodes:
-                if node.label not in node.cands:
-                    node.cands.append(node.label)
-                    node.cand_mols.append(node.label_mol)
-
-            return mol_tree
-
         def collate(smiles):
-            return list(smiles)
+            mol_trees = []
+            for s in smiles:
+                mol_tree = MolTree(s)
+                mol_tree.recover()
+                mol_tree.assemble()
 
-        return DataLoader(SmilesDataset(data, transform=parse_molecule),
-                          batch_size=self.config.n_batch, shuffle=shuffle,
-                          num_workers=n_workers, collate_fn=collate,
-                          drop_last=True,
-                          worker_init_fn=set_torch_seed_to_all_gens if n_workers > 0 else None
-                         )
+                for node in mol_tree.nodes:
+                    if node.label not in node.cands:
+                        node.cands.append(node.label)
+                        node.cand_mols.append(node.label_mol)
+
+                mol_trees.append(mol_tree)
+
+            return mol_trees
+
+        return DataLoader(data, batch_size=self.config.n_batch, shuffle=shuffle,
+                          num_workers=n_workers, collate_fn=collate, drop_last=True,
+                          worker_init_fn=set_torch_seed_to_all_gens if n_workers > 0 else None)
 
     def fit(self, model, train_data, val_data=None):
-        self.log_file = open(self.config.log_file, 'w')
-        self.log_file.write(str(self.config)+'\n')
-        self.log_file.write(str(model)+'\n')
+        logger = Logger() if self.config.log_file is not None else None
 
         # model ??
         train_loader = self.get_dataloader(model, train_data, shuffle=True)
         val_loader = None if val_data is None else self.get_dataloader(model, val_data, shuffle=False)
 
-        self._train(model, train_loader, val_loader)
-        self.log_file.close()
+        self._train(model, train_loader, val_loader, logger)
+
         return model
