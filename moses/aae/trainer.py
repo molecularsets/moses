@@ -3,11 +3,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from tqdm import tqdm
-from torch.utils.data import DataLoader
 from torch.nn.utils.rnn import pad_sequence
 
 from moses.interfaces import MosesTrainer
-from moses.utils import CharVocab, set_torch_seed_to_all_gens, Logger
+from moses.utils import CharVocab, Logger
 
 __all__ = ['AAETrainer']
 
@@ -172,12 +171,9 @@ class AAETrainer(MosesTrainer):
     def get_vocabulary(self, data):
         return CharVocab.from_data(data)
 
-    def get_dataloader(self, model, data, shuffle=True):
-        n_workers = self.config.n_workers
-        if n_workers == 1:
-            n_workers = 0
-        device = 'cpu' if n_workers > 0 else model.device
-
+    def get_collate_fn(self, model):
+        device = self.get_collate_device(model)
+        
         def collate(data):
             data.sort(key=lambda x: len(x), reverse=True)
 
@@ -198,10 +194,8 @@ class AAETrainer(MosesTrainer):
             return (encoder_inputs, encoder_input_lengths), \
                    (decoder_inputs, decoder_input_lengths), \
                    (decoder_targets, decoder_target_lengths)
-
-        return DataLoader(data, batch_size=self.config.n_batch, shuffle=shuffle,
-                          num_workers=n_workers, collate_fn=collate,
-                          worker_init_fn=set_torch_seed_to_all_gens if n_workers > 0 else None)
+        
+        return collate
 
     def fit(self, model, train_data, val_data=None):
         logger = Logger() if self.config.log_file is not None else None

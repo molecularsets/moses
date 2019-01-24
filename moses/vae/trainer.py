@@ -3,34 +3,30 @@ import torch.optim as optim
 from tqdm import tqdm
 
 from torch.nn.utils import clip_grad_norm_
-from torch.utils.data import DataLoader
 
-from moses.utils import OneHotVocab, Logger, CircularBuffer, set_torch_seed_to_all_gens
+from moses.interfaces import MosesTrainer
+from moses.utils import OneHotVocab, Logger, CircularBuffer
 from moses.vae.misc import CosineAnnealingLRWithRestart, KLAnnealer
 
 
-class VAETrainer:
+class VAETrainer(MosesTrainer):
     def __init__(self, config):
         self.config = config
 
     def get_vocabulary(self, data):
         return OneHotVocab.from_data(data)
 
-    def get_dataloader(self, model, data, shuffle=True):
-        n_workers = self.config.n_workers
-        if n_workers == 1:
-            n_workers = 0
-        device = 'cpu' if n_workers > 0 else model.device
-
+    def get_collate_fn(self, model):
+        device = self.get_collate_device(model)
+        
         def collate(data):
             data.sort(key=len, reverse=True)
-            tensors = [model.string2tensor(string, device=device) for string in data]
-
+            tensors = [model.string2tensor(string, device=device) 
+                       for string in data]
+            
             return tensors
-
-        return DataLoader(data, batch_size=self.config.n_batch, shuffle=shuffle,
-                          num_workers=n_workers, collate_fn=collate,
-                          worker_init_fn=set_torch_seed_to_all_gens if n_workers > 0 else None)
+        
+        return collate
 
     def _train_epoch(self, model, epoch, tqdm_data, kl_weight, optimizer=None):
         if optimizer is None:
@@ -38,7 +34,6 @@ class VAETrainer:
         else:
             model.train()
 
-        postfixes_iter = []
         kl_loss_values = CircularBuffer(self.config.n_last)
         recon_loss_values = CircularBuffer(self.config.n_last)
         loss_values = CircularBuffer(self.config.n_last)
@@ -61,15 +56,6 @@ class VAETrainer:
             recon_loss_values.add(recon_loss.item())
             loss_values.add(loss.item())
             lr = optimizer.param_groups[0]['lr'] if optimizer is not None else None
-            if optimizer is not None:
-                postfixes_iter.append({
-                    'epoch' : epoch,
-                    'kl_weight' : kl_weight,
-                    'lr' : lr,
-                    'kl_loss' : kl_loss.item(),
-                    'recon_loss' : recon_loss.item(),
-                    'loss' : loss.item(),
-                })
 
             # Update tqdm
             kl_loss_value = kl_loss_values.mean()
@@ -80,24 +66,22 @@ class VAETrainer:
                        f'recon={recon_loss_value:.5f})',
                        f'klw={kl_weight:.5f} lr={lr:.5f}']
             tqdm_data.set_postfix_str(' '.join(postfix))
-            #tqdm_data.refresh()
 
-        postfix_epoch = {
+        postfix = {
             'epoch' : epoch,
             'kl_weight' : kl_weight,
             'lr' : lr,
             'kl_loss' : kl_loss_value,
             'recon_loss' : recon_loss_value,
             'loss' : loss_value,
-        }
+            'mode' : 'Eval' if optimizer is None else 'Train',}
 
-        postfix_epoch['mode'] = 'Eval' if optimizer is None else 'Train'
-        return postfixes_iter, postfix_epoch
+        return postfix
 
     def get_optim_params(self, model):
         return (p for p in model.vae.parameters() if p.requires_grad)
 
-    def _train(self, model, train_loader, val_loader=None, loggers=None):
+    def _train(self, model, train_loader, val_loader=None, logger=None):
         device = model.device
         n_epoch = self._n_epoch()
 
@@ -111,21 +95,17 @@ class VAETrainer:
             kl_weight = kl_annealer(epoch)
 
             tqdm_data = tqdm(train_loader, desc='Training (epoch #{})'.format(epoch))
-            postfixes_iter, postfix_epoch = self._train_epoch(model, epoch, tqdm_data, kl_weight, optimizer)
-            if loggers['iter'] is not None:
-                for postfix in postfixes_iter:
-                    loggers['iter'].append(postfix)
-                loggers['iter'].save(self.config.log_iter_file)
-            if loggers['epoch'] is not None:
-                loggers['epoch'].append(postfix_epoch)
-                loggers['epoch'].save(self.config.log_file)
+            postfix = self._train_epoch(model, epoch, tqdm_data, kl_weight, optimizer)
+            if logger is not None:
+                logger.append(postfix)
+                logger.save(self.config.log_file)
 
             if val_loader is not None:
                 tqdm_data = tqdm(val_loader, desc='Validation (epoch #{})'.format(epoch))
-                _, postfix_epoch = self._train_epoch(model, epoch, tqdm_data, kl_weight)
-                if loggers['epoch'] is not None:
-                    loggers['epoch'].append(postfix_epoch)
-                    loggers['epoch'].save(self.config.log_file)
+                postfix = self._train_epoch(model, epoch, tqdm_data, kl_weight)
+                if logger is not None:
+                    logger.append(postfix)
+                    logger.save(self.config.log_file)
 
             if (self.config.model_save is not None) and (epoch % self.config.save_frequency == 0):
                 model = model.to('cpu')
@@ -136,14 +116,12 @@ class VAETrainer:
             lr_annealer.step()
 
     def fit(self, model, train_data, val_data=None):
-        loggers = dict()
-        loggers['epoch'] = Logger() if self.config.log_file is not None else None
-        loggers['iter'] = Logger() if self.config.log_iter_file is not None else None
+        logger = Logger() if self.config.log_file is not None else None
 
         train_loader = self.get_dataloader(model, train_data, shuffle=True)
         val_loader = None if val_data is None else self.get_dataloader(model, val_data, shuffle=False)
 
-        self._train(model, train_loader, val_loader, loggers)
+        self._train(model, train_loader, val_loader, logger)
         return model
 
     def _n_epoch(self):

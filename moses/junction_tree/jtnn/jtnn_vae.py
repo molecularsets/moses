@@ -193,6 +193,14 @@ class JTNNVAE(nn.Module):
         mol_vec = mol_mean + torch.exp(mol_log_var / 2) * epsilon
         return self.decode(tree_vec, mol_vec, prob_decode)
 
+    def sample(self, n_batch, max_len=100):
+        samples = []
+        while len(samples) < n_batch:
+            sample = self.sample_prior(prob_decode=True)
+            if len(sample) <= max_len:
+                samples.append(sample)
+        return samples
+
     def sample_prior(self, prob_decode=False):
         device = self.device
         tree_vec = torch.randn(1, self.latent_size // 2, device=device)
@@ -273,7 +281,7 @@ class JTNNVAE(nn.Module):
         backup_mol = Chem.RWMol(cur_mol)
         for i in range(cand_idx.numel()):
             cur_mol = Chem.RWMol(backup_mol)
-            pred_amap = cand_amap[cand_idx[i].item()]
+            pred_amap = cand_amap[cand_idx[i].item() if cand_idx.numel() > 1 else cand_idx.item()]
             new_global_amap = copy.deepcopy(global_amap)
 
             for nei_id, ctr_atom, nei_atom in pred_amap:

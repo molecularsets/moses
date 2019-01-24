@@ -4,9 +4,10 @@ import torch.nn.functional as F
 import random
 
 from tqdm import tqdm
-from torch.utils.data import DataLoader
 from torch.nn.utils.rnn import pad_sequence
-from moses.utils import CharVocab, set_torch_seed_to_all_gens, Logger
+
+from moses.interfaces import MosesTrainer
+from moses.utils import CharVocab, Logger
 
 
 class PolicyGradientLoss(nn.Module):
@@ -17,18 +18,9 @@ class PolicyGradientLoss(nn.Module):
         return loss
 
 
-class ORGANTrainer:
+class ORGANTrainer(MosesTrainer):
     def __init__(self, config):
         self.config = config
-
-    @property
-    def n_workers(self):
-        n_workers = self.config.n_workers
-        return n_workers if n_workers != 1 else 0
-
-    def get_collate_device(self, model):
-        n_workers = self.n_workers
-        return 'cpu' if n_workers > 0 else model.device
 
     def generator_collate_fn(self, model):
         device = self.get_collate_device(model)
@@ -44,11 +36,6 @@ class ORGANTrainer:
             return prevs, nexts, lens
 
         return collate
-
-    def get_dataloader(self, model, data, collate_fn, shuffle=True):
-        return DataLoader(data, batch_size=self.config.n_batch, shuffle=shuffle,
-                          num_workers=self.n_workers, collate_fn=collate_fn,
-                          worker_init_fn=set_torch_seed_to_all_gens if self.n_workers > 0 else None)
 
     def get_vocabulary(self, data):
         return CharVocab.from_data(data)

@@ -195,9 +195,8 @@ class ORGAN(nn.Module):
 
         return samples, lengths
 
-    def sample(self, n, max_len=100):
-        samples, lengths = self.sample_tensor(n, max_len)
+    def sample(self, batch_n, max_len=100):
+        samples, lengths = self.sample_tensor(batch_n, max_len)
         samples = [t[:l] for t, l in zip(samples, lengths)]
-        samples = [self.tensor2string(t) for t in samples]
 
-        return samples
+        return [self.tensor2string(t) for t in samples]

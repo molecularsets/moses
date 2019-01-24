@@ -90,11 +90,6 @@ def get_parser(parser=None):
                            type=int, default=1,
                            help='Number of workers for DataLoaders')
 
-    experimental_arg = parser.add_argument_group('Experimental')
-    experimental_arg.add_argument('--log_iter_file',
-                                type=str, required=False,
-                                help='Where to save the per-iteration log')
-
     return parser
 
 

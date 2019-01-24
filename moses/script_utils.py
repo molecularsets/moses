@@ -64,19 +64,19 @@ def add_sample_args(parser):
     common_arg = parser.add_argument_group('Common')
     add_common_arg(common_arg)
     common_arg.add_argument('--model_load',
-                            type=str, default='model.pt',
+                            type=str, required=True,
                             help='Where to load the model')
     common_arg.add_argument('--config_load',
-                            type=str, default='config.pt',
+                            type=str, required=True,
                             help='Where to load the config')
     common_arg.add_argument('--vocab_load',
-                            type=str, default='vocab.pt',
+                            type=str, required=True,
                             help='Where to load the vocab')
     common_arg.add_argument('--n_samples',
                             type=int, required=True,
                             help='Number of samples to sample')
     common_arg.add_argument('--gen_save',
-                            type=str, default='gen.csv',
+                            type=str, required=True,
                             help='Where to save the gen molecules')
     common_arg.add_argument("--n_batch",
                             type=int, default=32,

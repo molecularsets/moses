@@ -1,6 +1,5 @@
 import torch
 import torch.optim as optim
-from torch.utils.data import DataLoader
 
 from tqdm import tqdm
 
@@ -82,11 +81,7 @@ class JTreeTrainer(MosesTrainer):
                 clusters.add(c.smiles)
         return JTreeVocab(sorted(list(clusters)))
 
-    def get_dataloader(self, model, data, shuffle=True):
-        n_workers = self.config.n_workers
-        if n_workers == 1:
-            n_workers = 0
-
+    def get_collate_fn(self, model):
         def collate(smiles):
             mol_trees = []
             for s in smiles:
@@ -102,15 +97,12 @@ class JTreeTrainer(MosesTrainer):
                 mol_trees.append(mol_tree)
 
             return mol_trees
-
-        return DataLoader(data, batch_size=self.config.n_batch, shuffle=shuffle,
-                          num_workers=n_workers, collate_fn=collate, drop_last=True,
-                          worker_init_fn=set_torch_seed_to_all_gens if n_workers > 0 else None)
+        
+        return collate
 
     def fit(self, model, train_data, val_data=None):
         logger = Logger() if self.config.log_file is not None else None
 
-        # model ??
         train_loader = self.get_dataloader(model, train_data, shuffle=True)
         val_loader = None if val_data is None else self.get_dataloader(model, val_data, shuffle=False)
 
