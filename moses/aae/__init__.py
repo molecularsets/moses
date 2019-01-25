@@ -1,3 +1,3 @@
-from .config import * # noqa
-from .model import * # noqa
-from .trainer import * # noqa
+from .config import get_parser as aae_parser
+from .model import AAE
+from .trainer import AAETrainer

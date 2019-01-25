@@ -213,12 +213,12 @@ class ORGANTrainer(MosesTrainer):
                 for inputs_from_model, inputs_from_data in zip(sampled_batches, train_loader):
                     inputs_from_data = inputs_from_data.to(model.device)
 
-                    discrim_targets = torch.zeros(self.config.n_batch, 1, device=model.device)
                     discrim_outputs = model.discriminator_forward(inputs_from_model)
+                    discrim_targets = torch.zeros(len(discrim_outputs), 1, device=model.device)
                     discrim_loss = criterion['discriminator'](discrim_outputs, discrim_targets) / 2
 
-                    discrim_targets = torch.ones(self.config.n_batch, 1, device=model.device)
                     discrim_outputs = model.discriminator_forward(inputs_from_data)
+                    discrim_targets = torch.ones(len(discrim_outputs), 1, device=model.device)
                     discrim_loss += criterion['discriminator'](discrim_outputs, discrim_targets) / 2
 
                     optimizer['discriminator'].zero_grad()

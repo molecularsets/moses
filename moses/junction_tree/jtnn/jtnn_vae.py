@@ -265,8 +265,10 @@ class JTNNVAE(nn.Module):
             return None
         cand_smiles, cand_mols, cand_amap = list(zip(*cands))
 
-        cands = [(candmol, all_nodes, cur_node) for candmol in cand_mols]
-
+        cands = [(candmol, all_nodes, cur_node)
+                 for candmol in cand_mols if len(candmol.GetBonds()) > 0]
+        if len(cands) == 0:
+            return None
         cand_vecs = self.jtmpn(cands, tree_mess)
         cand_vecs = self.G_mean(cand_vecs)
         mol_vec = mol_vec.squeeze()

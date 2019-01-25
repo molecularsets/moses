@@ -44,7 +44,7 @@ def add_train_args(parser):
                             type=int, default=20,
                             help='How often to save the model')
     common_arg.add_argument('--log_file',
-                            type=str, required=True,
+                            type=str, required=False,
                             help='Where to save the log')
     common_arg.add_argument('--config_save',
                             type=str, required=True,
