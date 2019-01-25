@@ -7,10 +7,10 @@ import numpy as np
 import pandas as pd
 import torch
 
-from moses.metrics import get_mol, remove_invalid, \
-                          fraction_passes_filters, internal_diversity, \
-                          FCDMetric, SNNMetric, FragMetric, ScafMetric, \
-                          logP, QED, SA, NP, weight
+from moses.metrics import get_mol, morgan_similarity, remove_invalid, \
+                          fragment_similarity, scaffold_similarity, fraction_passes_filters, \
+                          internal_diversity, frechet_distance, \
+                          frechet_chemnet_distance, logP, QED, SA, NP, weight
 from moses.utils import mapper
 
 
@@ -99,7 +99,6 @@ def read_smiles_csv(path):
                        usecols=['SMILES'],
                        squeeze=True).astype(str).tolist()
 
-
 def set_seed(seed):
     torch.manual_seed(seed)
     random.seed(seed)
@@ -109,7 +108,7 @@ def set_seed(seed):
 
 
 class MetricsReward:
-    supported_metrics = ['fcd', 'snn', 'fragments', 'scaffolds', 'internal_diversity',
+    supported_metrics = ['fcd', 'morgan', 'maccs', 'fragments', 'scaffolds', 'internal_diversity',
                          'filters', 'logp', 'sa', 'qed', 'np', 'weight']
 
     @staticmethod
@@ -144,27 +143,30 @@ class MetricsReward:
         if len(self.metrics):
             for metric_name in self.metrics:
                 if metric_name == 'fcd':
-                    m = FCDMetric(n_jobs=self.n_jobs)(ref, rollout)
+                    m = frechet_chemnet_distance(ref, rollout, n_jobs=self.n_jobs)
                 elif metric_name == 'morgan':
-                    m = SNN(n_jobs=self.n_jobs)(ref_mols, rollout_mols)
+                    m = morgan_similarity(ref_mols, rollout_mols, n_jobs=self.n_jobs)
+                # maccs
+                elif metric_name == 'maccs':
+                    m = maccs_similarity(ref_mols, rollout_mols, n_jobs=self.n_jobs)
                 elif metric_name == 'fragments':
-                    m = FragMetric(n_jobs=self.n_jobs)(ref_mols, rollout_mols)
+                    m = fragment_similarity(ref_mols, rollout_mols, n_jobs=self.n_jobs)
                 elif metric_name == 'scaffolds':
-                    m = ScafMetric(n_jobs=self.n_jobs)(ref_mols, rollout_mols)
+                    m = scaffold_similarity(ref_mols, rollout_mols, n_jobs=self.n_jobs)
                 elif metric_name == 'internal_diversity':
                     m = internal_diversity(rollout_mols, n_jobs=self.n_jobs)
                 elif metric_name == 'filters':
                     m = fraction_passes_filters(rollout_mols, n_jobs=self.n_jobs)
                 elif metric_name == 'logp':
-                    m = FrechetMetric(func=logP,  n_jobs=self.n_jobs)(ref_mols, rollout_mols)
+                    m = frechet_distance(ref_mols, rollout_mols, logP, n_jobs=self.n_jobs)
                 elif metric_name == 'sa':
-                    m = FrechetMetric(func=SA, n_jobs=self.n_jobs)(ref_mols, rollout_mols)
+                    m = frechet_distance(ref_mols, rollout_mols, SA, n_jobs=self.n_jobs)
                 elif metric_name == 'qed':
-                    m = FrechetMetric(func=QED, n_jobs=self.n_jobs)(ref_mols, rollout_mols)
+                    m = frechet_distance(ref_mols, rollout_mols, QED, n_jobs=self.n_jobs)
                 elif metric_name == 'np':
-                    m = FrechetMetric(func=NP, n_jobs=self.n_jobs)(ref_mols, rollout_mols)
+                    m = frechet_distance(ref_mols, rollout_mols, NP, n_jobs=self.n_jobs)
                 elif metric_name == 'weight':
-                    m = FrechetMetric(func=weight, n_jobs=self.n_jobs)(ref_mols, rollout_mols)
+                    m = frechet_distance(ref_mols, rollout_mols, weight, n_jobs=self.n_jobs)
 
                 m = MetricsReward._nan2zero(m)
                 for i in range(len(rollout)):
