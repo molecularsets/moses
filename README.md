@@ -205,18 +205,20 @@ python scripts/metrics/eval.py --ref_path <reference dataset> --gen_path <genera
 ### Training
 
 ```
-python scripts/<model name>/train.py \
+python scripts/train.py <model name> \
 --train_load <train dataset> \
 --model_save <path to model> \
 --config_save <path to config> \
 --vocab_save <path to vocabulary>
 ```
-For more details run `python scripts/<model name>/train.py --help`.
+
+To get a list of supported models run `python scripts/train.py --help`.
+For more details of certain model run `python scripts/train.py <model name> --help`.
 
 ### Generation
 
 ```
-python scripts/<model name>/sample.py \
+python scripts/sample.py <model name> \
 --model_load <path to model> \
 --vocab_load <path to vocabulary> \
 --config_load <path to config> \
@@ -224,7 +226,8 @@ python scripts/<model name>/sample.py \
 --gen_save <path to generated dataset>
 ```
 
-For more details run `python scripts/<model name>/sample.py --help`
+To get a list of supported models run `python scripts/sample.py --help`.
+For more details of certain model run `python scripts/sample.py <model name> --help`.
 
 ### Evaluation
 
