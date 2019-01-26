@@ -18,14 +18,14 @@ class VAETrainer(MosesTrainer):
 
     def get_collate_fn(self, model):
         device = self.get_collate_device(model)
-        
+
         def collate(data):
             data.sort(key=len, reverse=True)
-            tensors = [model.string2tensor(string, device=device) 
+            tensors = [model.string2tensor(string, device=device)
                        for string in data]
-            
+
             return tensors
-        
+
         return collate
 
     def _train_epoch(self, model, epoch, tqdm_data, kl_weight, optimizer=None):

@@ -37,6 +37,8 @@ def add_train_args(parser):
     common_arg.add_argument('--train_load',
                             type=str, required=True,
                             help='Input data in csv format to train')
+    common_arg.add_argument('--val_load', type=str, 
+                            help="Input data in csv format to validation")
     common_arg.add_argument('--model_save',
                             type=str, required=True, default='model.pt',
                             help='Where to save the model')

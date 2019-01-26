@@ -173,7 +173,7 @@ class AAETrainer(MosesTrainer):
 
     def get_collate_fn(self, model):
         device = self.get_collate_device(model)
-        
+
         def collate(data):
             data.sort(key=lambda x: len(x), reverse=True)
 
@@ -194,7 +194,7 @@ class AAETrainer(MosesTrainer):
             return (encoder_inputs, encoder_input_lengths), \
                    (decoder_inputs, decoder_input_lengths), \
                    (decoder_targets, decoder_target_lengths)
-        
+
         return collate
 
     def fit(self, model, train_data, val_data=None):

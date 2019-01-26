@@ -1,15 +1,7 @@
 import argparse
 
-def str2bool(v):
-    if v.lower() in ('yes', 'true', 't', 'y', '1'):
-        return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
-        return False
-    else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
-
 def get_parser(parser=None):
-    if parser == None:
+    if parser is None:
         parser = argparse.ArgumentParser()
 
     # Model
@@ -18,7 +10,7 @@ def get_parser(parser=None):
                            type=str, default='gru', choices=['gru'],
                            help='Encoder rnn cell type')
     model_arg.add_argument('--q_bidir',
-                           type=str2bool, default=False,
+                           default=False, action='store_true',
                            help='If to add second direction to encoder')
     model_arg.add_argument('--q_d_h',
                            type=int, default=256,
@@ -45,7 +37,7 @@ def get_parser(parser=None):
                            type=int, default=512,
                            help='Latent vector dimensionality')
     model_arg.add_argument('--freeze_embeddings',
-                           type=str2bool, default=False,
+                           default=False, action='store_true',
                            help='If to freeze embeddings while training')
 
     # Train
@@ -91,8 +83,3 @@ def get_parser(parser=None):
                            help='Number of workers for DataLoaders')
 
     return parser
-
-
-def get_config():
-    parser = get_parser()
-    return parser.parse_known_args()[0]

@@ -81,7 +81,7 @@ class CharRNNTrainer(MosesTrainer):
 
     def get_collate_fn(self, model):
         device = self.get_collate_device(model)
-        
+
         def collate(data):
             data.sort(key=len, reverse=True)
             tensors = [model.string2tensor(string, device=device) for string in data]
@@ -91,7 +91,7 @@ class CharRNNTrainer(MosesTrainer):
             nexts = pad_sequence([t[1:] for t in tensors], batch_first=True, padding_value=pad)
             lens = torch.tensor([len(t) - 1 for t in tensors], dtype=torch.long, device=device)
             return prevs, nexts, lens
-        
+
         return collate
 
     def fit(self, model, train_data, val_data=None):

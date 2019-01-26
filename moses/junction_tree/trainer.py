@@ -97,7 +97,7 @@ class JTreeTrainer(MosesTrainer):
                 mol_trees.append(mol_tree)
 
             return mol_trees
-        
+
         return collate
 
     def fit(self, model, train_data, val_data=None):

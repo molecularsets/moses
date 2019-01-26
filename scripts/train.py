@@ -23,12 +23,13 @@ def get_parser():
 def main(model, config):
     set_seed(config.seed)
     device = torch.device(config.device)
-    
+
     # For CUDNN to work properly
     if device.type.startswith('cuda'):
         torch.cuda.set_device(device.index or 0)
 
     train_data = read_smiles_csv(config.train_load)
+    val_data = read_smiles_csv(config.val_load) if config.val_load is not None else None
     trainer = MODELS.get_model_trainer(model)(config)
 
     if config.vocab_load is not None:
@@ -38,7 +39,7 @@ def main(model, config):
         vocab = trainer.get_vocabulary(train_data)
 
     model = MODELS.get_model_class(model)(vocab, config).to(device)
-    trainer.fit(model, train_data)
+    trainer.fit(model, train_data, val_data)
 
     model = model.to('cpu')
     torch.save(model.state_dict(), config.model_save)

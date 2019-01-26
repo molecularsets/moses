@@ -246,7 +246,7 @@ You can run pretty much everything with:
 ```
 python scripts/run.py
 ```
-This will **download** the dataset, **train** the models, **generate** new molecules, and **calculate** the metrics. Evaluation results will be saved in `metrics.csv`.
+This will **split** the dataset, **train** the models, **generate** new molecules, and **calculate** the metrics. Evaluation results will be saved in `metrics.csv`.
 
 You can specify the GPU index (-1 for CPU) and/or model by running:
 ```
