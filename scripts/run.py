@@ -146,7 +146,6 @@ def main(config):
         train_model(config, model, train_path)
         sample_from_model(config, model)
 
-    return
     metrics = []
     for model in models:
         model_metrics = eval_metrics(config, model,
