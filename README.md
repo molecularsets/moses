@@ -213,6 +213,7 @@ python scripts/train.py <model name> \
 ```
 
 To get a list of supported models run `python scripts/train.py --help`.
+
 For more details of certain model run `python scripts/train.py <model name> --help`.
 
 ### Generation
@@ -227,6 +228,7 @@ python scripts/sample.py <model name> \
 ```
 
 To get a list of supported models run `python scripts/sample.py --help`.
+
 For more details of certain model run `python scripts/sample.py <model name> --help`.
 
 ### Evaluation
