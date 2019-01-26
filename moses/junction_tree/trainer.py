@@ -1,5 +1,7 @@
 import torch.optim as optim
 import tqdm
+from moses.utils import Logger
+import torch
 
 
 class JTreeTrainer:
@@ -11,7 +13,7 @@ class JTreeTrainer:
             return (p for p in model.parameters() if p.requires_grad)
 
         model.train()
-
+        log = Logger()
         n_epoch = self.config.num_epochs
 
         optimizer = optim.Adam(get_params(), lr=self.config.lr)
@@ -44,3 +46,9 @@ class JTreeTrainer:
                                'steo': steo_acc / (it + 1) * 100}
 
                     train_dataloader.set_postfix(postfix)
+            log.append(postfix)
+            log.save(self.config.log_file)
+            if epoch % self.config.save_frequency == 0:
+                model.to('cpu')
+                torch.save(model.state_dict(), self.config.model_save[:-3]+'_{0:03d}.pt'.format(epoch))
+                model.to(device)

@@ -50,7 +50,7 @@ def add_train_args(parser):
                             type=str, default='model.pt',
                             help='Where to save the model')
     common_arg.add_argument('--save_frequency',
-                            type=str, default=20,
+                            type=int, default=20,
                             help='How often to save the model')
     common_arg.add_argument('--log_file',
                             type=str, default='log.txt',
@@ -102,6 +102,7 @@ def read_smiles_csv(path):
 
 def set_seed(seed):
     torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
     random.seed(seed)
     np.random.seed(seed)
     torch.backends.cudnn.deterministic = True

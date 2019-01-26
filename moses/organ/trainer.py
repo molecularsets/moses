@@ -2,11 +2,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import random
-
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 from torch.nn.utils.rnn import pad_sequence
 from moses.utils import SmilesDataset
+from moses.utils import Logger
 
 
 class PolicyGradientLoss(nn.Module):
@@ -43,8 +43,9 @@ class ORGANTrainer:
             postfix['loss'] = (postfix['loss'] * i + loss.item()) / (i + 1)
 
             tqdm_data.set_postfix(postfix)
+        return postfix['loss']
 
-    def _pretrain_generator(self, model, train_data, val_data=None):
+    def _pretrain_generator(self, model, train_data, log, val_data=None):
         def collate(tensors):
             tensors.sort(key=lambda x: len(x), reverse=True)
             prevs = pad_sequence([t[:-1] for t in tensors], batch_first=True, padding_value=model.vocabulary.pad)
@@ -74,11 +75,17 @@ class ORGANTrainer:
 
         for epoch in range(self.config.generator_pretrain_epochs):
             tqdm_data = tqdm(train_loader, desc='Generator training (epoch #{})'.format(epoch))
-            self._pretrain_generator_epoch(model, tqdm_data, criterion, optimizer)
-
+            loss = self._pretrain_generator_epoch(model, tqdm_data, criterion, optimizer)
+            log.append({'generator_loss': loss})
+            log.save(self.config.log_file)
             if val_data is not None:
                 tqdm_data = tqdm(val_loader, desc='Generator validation (epoch #{})'.format(epoch))
                 self._pretrain_generator_epoch(model, tqdm_data, criterion)
+
+            if epoch % self.config.save_frequency == 0:
+                model.to('cpu')
+                torch.save(model.state_dict(), self.config.model_save[:-3]+'_g{0:03d}.pt'.format(epoch))
+                model.to(self.config.device)
 
     def _pretrain_discriminator_epoch(self, model, tqdm_data, criterion, optimizer=None):
         model.generator.eval()
@@ -107,8 +114,9 @@ class ORGANTrainer:
             postfix['loss'] = (postfix['loss'] * i + loss.item()) / (i + 1)
 
             tqdm_data.set_postfix(postfix)
+        return postfix['loss']
 
-    def _pretrain_discriminator(self, model, train_data, val_data=None):
+    def _pretrain_discriminator(self, model, train_data, log, val_data=None):
         def collate(data):
             data.sort(key=lambda x: len(x), reverse=True)
             tensors = data
@@ -127,13 +135,20 @@ class ORGANTrainer:
 
         for epoch in range(self.config.discriminator_pretrain_epochs):
             tqdm_data = tqdm(train_loader, desc='Discriminator training (epoch #{})'.format(epoch))
-            self._pretrain_discriminator_epoch(model, tqdm_data, criterion, optimizer)
-
+            loss = self._pretrain_discriminator_epoch(model, tqdm_data, criterion, optimizer)
+            log.append({'discriminator_loss': loss})
+            log.save(self.config.log_file)
             if val_data is not None:
                 tqdm_data = tqdm(val_loader, desc='Discriminator validation (epoch #{})'.format(epoch))
                 self._pretrain_discriminator_epoch(model, tqdm_data, criterion)
+                
+            if epoch % self.config.save_frequency == 0:
+                model.to('cpu')
+                torch.save(model.state_dict(), self.config.model_save[:-3]+'_d{0:03d}.pt'.format(epoch))
+                model.to(self.config.device)
 
-    def _train_policy_gradient(self, model, train_data):
+
+    def _train_policy_gradient(self, model, train_data, log):
         def collate(data):
             data.sort(key=lambda x: len(x), reverse=True)
             tensors = data
@@ -213,8 +228,19 @@ class ORGANTrainer:
                                 (1 - smooth) + discriminator_loss.item() * smooth
 
             pg_iters.set_postfix(postfix)
+            log.append({'discriminator_loss': postfix['discriminator_loss'],
+                        'generator_loss': postfix['generator_loss']})
+            log.save(self.config.log_file)
+            
+            if i % self.config.save_frequency*100 == 0:
+                model.to('cpu')
+                torch.save(model.state_dict(), self.config.model_save[:-3]+'_pg{0:03d}.pt'.format(i))
+                model.to(self.config.device)
+
+
 
     def fit(self, model, train_data, val_data=None):
-        self._pretrain_generator(model, train_data, val_data)
-        self._pretrain_discriminator(model, train_data, val_data)
-        self._train_policy_gradient(model, train_data)
+        log = Logger()
+        self._pretrain_generator(model, train_data, log, val_data)
+        self._pretrain_discriminator(model, train_data, log, val_data)
+        self._train_policy_gradient(model, train_data, log)

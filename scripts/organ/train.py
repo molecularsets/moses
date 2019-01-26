@@ -27,6 +27,8 @@ def main(config):
 
     train = read_smiles_csv(config.train_load)
     vocab = CharVocab.from_data(train)
+    torch.save(vocab, config.vocab_save)
+    torch.save(config, config.config_save)
     device = torch.device(config.device)
 
     with Pool(config.n_jobs) as pool:
@@ -38,8 +40,6 @@ def main(config):
         trainer.fit(model, train)
 
     torch.save(model.state_dict(), config.model_save)
-    torch.save(config, config.config_save)
-    torch.save(vocab, config.vocab_save)
 
 
 if __name__ == '__main__':
