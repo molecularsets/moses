@@ -3,7 +3,7 @@ import torch
 import numpy as np
 import pandas as pd
 from multiprocessing import Pool
-from collections import UserList, defaultdict, OrderedDict
+from collections import UserList, defaultdict
 from rdkit import rdBase
 
 # https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader
@@ -142,7 +142,7 @@ class Logger(UserList):
                 return ldata
 
     def append(self, step_dict):
-        super().append(OrderedDict(step_dict))
+        super().append(step_dict)
         for k, v in step_dict.items():
             self.sdata[k].append(v)
 

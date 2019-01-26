@@ -65,8 +65,8 @@ class ORGANTrainer(MosesTrainer):
             postfix['running_loss'] += (loss.item() - postfix['running_loss']) / (i + 1)
             tqdm_data.set_postfix(postfix)
 
-        postfix['mode'] = 'Eval generator' if optimizer is None else 'Train generator'
-        return { 'gen_pretrain_' + k: v for k, v in postfix.items() }
+        postfix['mode'] = 'Pretrain: eval generator' if optimizer is None else 'Pretrain: train generator'
+        return postfix
 
     def _pretrain_generator(self, model, train_loader, val_loader=None, logger=None):
         device = model.device
@@ -125,8 +125,8 @@ class ORGANTrainer(MosesTrainer):
             postfix['running_loss'] += (loss.item() - postfix['running_loss']) / (i + 1)
             tqdm_data.set_postfix(postfix)
 
-        postfix['mode'] = 'Eval discriminator' if optimizer is None else 'Train discriminator'
-        return { 'discr_pretrain_' + k: v for k, v in postfix.items() }
+        postfix['mode'] = 'Pretrain: eval discriminator' if optimizer is None else 'Pretrain: train discriminator'
+        return postfix
 
     def discriminator_collate_fn(self, model):
         device = self.get_collate_device(model)
