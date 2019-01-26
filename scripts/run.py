@@ -4,7 +4,7 @@ import pandas as pd
 import importlib.util
 import sys
 
-from models_storage import ModelsStorage
+from moses.models_storage import ModelsStorage
 
 
 def load_module(name, path):

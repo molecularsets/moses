@@ -5,7 +5,7 @@ import rdkit
 import pandas as pd
 from tqdm import tqdm
 
-from models_storage import ModelsStorage
+from moses.models_storage import ModelsStorage
 from moses.script_utils import add_sample_args, set_seed
 
 lg = rdkit.RDLogger.logger()
