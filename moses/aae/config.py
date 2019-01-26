@@ -2,7 +2,7 @@ import argparse
 
 
 def get_parser(parser=None):
-    if parser == None:
+    if parser is None:
         parser = argparse.ArgumentParser()
 
     model_arg = parser.add_argument_group('Model')

@@ -18,7 +18,7 @@ def get_parser(parser=None):
 
         return feats, kernel_size
 
-    if parser == None:
+    if parser is None:
         parser = argparse.ArgumentParser()
 
     model_arg = parser.add_argument_group('Model')
