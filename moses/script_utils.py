@@ -148,6 +148,9 @@ class MetricsReward:
                     m = FCDMetric(n_jobs=self.n_jobs)(ref, rollout)
                 elif metric_name == 'morgan':
                     m = SNN(n_jobs=self.n_jobs)(ref_mols, rollout_mols)
+                # maccs
+                elif metric_name == 'maccs':
+                    m = SNN(n_jobs=self.n_jobs)(ref_mols, rollout_mols)
                 elif metric_name == 'fragments':
                     m = FragMetric(n_jobs=self.n_jobs)(ref_mols, rollout_mols)
                 elif metric_name == 'scaffolds':
