@@ -1,18 +1,55 @@
+
 import numpy as np
 import torch
 import torch.optim as optim
 import tqdm
 from torch.nn.utils import clip_grad_norm_
 
-from moses.vae.misc import CosineAnnealingLRWithRestart, KLAnnealer
-from moses.utils import Logger
+from moses.vae.misc import CosineAnnealingLRWithRestart, KLAnnealer, \
+    Logger
+
+
+import random
+from random import shuffle
+from rdkit import Chem
+from rdkit.Chem import MACCSkeys
+from __future__ import division
+
+
+# check smiles validity
+def isValid(smile_str):
+    try:
+        m = Chem.MolFromSmiles(smile_str)
+        if m:
+            return 1 
+        else:
+            return 0
+    except:
+        return 0
+
+# convert smiles to maccs fingerprints
+def smi_to_maccs(smi):
+    MACCS_SIZE = 167
+    mol = Chem.MolFromSmiles(smi)
+    if mol is not None:
+        return np.array(MACCSkeys.GenMACCSKeys(mol))
+    else:
+        return np.zeros(MACCS_SIZE, dtype=int)
+
+# calculate tanimoto similarity
+def Tanimoto(l1,l2):
+    a = sum(l1)
+    b = sum(l2)
+    c = sum([l1[i]&l2[i] for i in range(len(l1))])
+    return c/(a+b-c)
+
 
 
 class VAETrainer:
     def __init__(self, config):
         self.config = config
 
-    def fit(self, model, data):
+    def fit(self, model, data, conditional):
         def get_params():
             return (p for p in model.vae.parameters() if p.requires_grad)
 
@@ -24,7 +61,6 @@ class VAETrainer:
         optimizer = optim.Adam(get_params(), lr=self.config.lr_start)
         lr_annealer = CosineAnnealingLRWithRestart(optimizer, self.config)
 
-        device = torch.device(self.config.device)
         n_last = self.config.n_last
         elog, ilog = Logger(), Logger()
 
@@ -34,9 +70,19 @@ class VAETrainer:
 
             # Iters
             T = tqdm.tqdm(data)
-            for i, x in enumerate(T):
+
+            for i, t in enumerate(T):
+
+                # x: smiles c: conditions (fingerprints)
+                if conditional:
+                    x = t[0]
+                    c = t[1]
+                else:
+                    x = t
+                    c = None
+
                 # Forward
-                kl_loss, recon_loss = model(x)
+                kl_loss, recon_loss = model(x, c)
                 loss = kl_weight * kl_loss + recon_loss
 
                 # Backward
@@ -77,17 +123,11 @@ class VAETrainer:
             })
 
             # Save model at each epoch
-            if epoch % self.config.save_frequency == 0:
-                model.to('cpu')
-                torch.save(model.state_dict(), self.config.model_save[:-3]+'_{0:03d}.pt'.format(epoch))
-                model.to(device)
-
-            elog.save(self.config.log_file)
+            torch.save(model.state_dict(), self.config.model_save)
 
             # Epoch end
             lr_annealer.step()
 
-        torch.save(model.state_dict(), self.config.model_save)
         return elog, ilog
 
     def _n_epoch(self):

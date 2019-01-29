@@ -1,7 +1,8 @@
 import math
+from collections import UserList, defaultdict
+
 import matplotlib.pyplot as plt
 from torch.optim.lr_scheduler import _LRScheduler
-import pandas as pd
 
 
 class KLAnnealer:
@@ -47,3 +48,52 @@ class CosineAnnealingLRWithRestart(_LRScheduler):
         if self.current_epoch == self.t_end:
             self.current_epoch = 0
             self.t_end = self.n_mult * self.t_end
+
+
+class Logger(UserList):
+    def __init__(self, data=None):
+        super().__init__()
+        self.sdata = defaultdict(list)
+        for step in (data or []):
+            self.append(step)
+
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            return self.data[key]
+        elif isinstance(key, slice):
+            return Logger(self.data[key])
+        else:
+            ldata = self.sdata[key]
+            if isinstance(ldata[0], dict):
+                return Logger(ldata)
+            else:
+                return ldata
+
+    def append(self, step_dict):
+        super().append(step_dict)
+        for k, v in step_dict.items():
+            self.sdata[k].append(v)
+
+
+class LogPlotter:
+    def __init__(self, log):
+        self.log = log
+
+    def line(self, ax, name):
+        if isinstance(self.log[0][name], dict):
+            for k in self.log[0][name]:
+                ax.plot(self.log[name][k], label=k)
+            ax.legend()
+        else:
+            ax.plot(self.log[name])
+
+        ax.set_ylabel('value')
+        ax.set_xlabel('epoch')
+        ax.set_title(name)
+
+    def grid(self, names, size=7):
+        _, axs = plt.subplots(nrows=len(names) // 2, ncols=2,
+                              figsize=(size * 2, size * (len(names) // 2)))
+
+        for ax, name in zip(axs.flatten(), names):
+            self.line(ax, name)

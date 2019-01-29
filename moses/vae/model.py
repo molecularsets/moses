@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 
 class VAE(nn.Module):
-    def __init__(self, x_vocab, config):
+    def __init__(self, x_vocab, fps_len, config):
         super().__init__()
 
         # Special symbols
@@ -18,10 +18,17 @@ class VAE(nn.Module):
         if config.freeze_embeddings:
             self.x_emb.weight.requires_grad = False
 
+        # condition linear layer and output size
+        if config.conditional:
+            output_size = config.output_size
+            self.c_lin = nn.Linear(fps_len, output_size)
+        else:
+            output_size = 0
+
         # Encoder
         if config.q_cell == 'gru':
             self.encoder_rnn = nn.GRU(
-                d_emb,
+                d_emb + output_size,
                 config.q_d_h,
                 num_layers=config.q_n_layers,
                 batch_first=True,
@@ -37,10 +44,13 @@ class VAE(nn.Module):
         self.q_mu = nn.Linear(q_d_last, config.d_z)
         self.q_logvar = nn.Linear(q_d_last, config.d_z)
 
+        # z linear layer
+        self.z_lin = nn.Linear(config.d_z*2, config.d_z)
+
         # Decoder
         if config.d_cell == 'gru':
             self.decoder_rnn = nn.GRU(
-                d_emb + config.d_z,
+                d_emb + config.d_z + output_size,
                 config.d_d_h,
                 num_layers=config.d_n_layers,
                 batch_first=True,
@@ -51,7 +61,7 @@ class VAE(nn.Module):
                 "Invalid d_cell type, should be one of the ('gru',)"
             )
 
-        self.decoder_lat = nn.Linear(config.d_z, config.d_d_h)
+        self.decoder_lat = nn.Linear(config.d_z + output_size, config.d_d_h)
         self.decoder_fc = nn.Linear(config.d_d_h, n_vocab)
 
         # Grouping the model's parameters
@@ -71,7 +81,7 @@ class VAE(nn.Module):
             self.decoder
         ])
 
-    def forward(self, x):
+    def forward(self, x, c):
         """Do the VAE forward step
 
         :param x: list of tensors of longs, input sentence x
@@ -80,14 +90,14 @@ class VAE(nn.Module):
         """
 
         # Encoder: x -> z, kl_loss
-        z, kl_loss = self.forward_encoder(x)
+        z, kl_loss = self.forward_encoder(x, c, config.conditional)
 
         # Decoder: x, z -> recon_loss
-        recon_loss = self.forward_decoder(x, z)
+        recon_loss = self.forward_decoder(x, c, z, config.conditional)
 
         return kl_loss, recon_loss
 
-    def forward_encoder(self, x):
+    def forward_encoder(self, x, c, conditional):
         """Encoder step, emulating z ~ E(x) = q_E(z|x)
 
         :param x: list of tensors of longs, input sentence x
@@ -96,6 +106,13 @@ class VAE(nn.Module):
         """
 
         x = [self.x_emb(i_x) for i_x in x]
+
+        # condition
+        if conditional:
+            c = [self.c_lin(i_c).unsqueeze(0).repeat(i_x.shape[0], 1) for (i_x, i_c) in zip(x, c)]
+            # cat x and c
+            x = [torch.cat((i_x, i_c), 1) for (i_x, i_c) in zip(x, c)]
+        
         x = nn.utils.rnn.pack_sequence(x)
 
         _, h = self.encoder_rnn(x, None)
@@ -111,7 +128,7 @@ class VAE(nn.Module):
 
         return z, kl_loss
 
-    def forward_decoder(self, x, z):
+    def forward_decoder(self, x, c, z, conditional):
         """Decoder step, emulating x ~ G(z)
 
         :param x: list of tensors of longs, input sentence x
@@ -124,6 +141,12 @@ class VAE(nn.Module):
         x = nn.utils.rnn.pad_sequence(x, batch_first=True,
                                       padding_value=self.pad)
         x_emb = self.x_emb(x)
+
+        # condition
+        if conditional:
+            c = self.c_lin(c)
+            # cat z and c
+            z = torch.cat((z, c), 1)
 
         z_0 = z.unsqueeze(1).repeat(1, x_emb.size(1), 1)
         x_input = torch.cat([x_emb, z_0], dim=-1)
@@ -156,7 +179,7 @@ class VAE(nn.Module):
         return torch.randn(n_batch, self.q_mu.out_features,
                            device=self.x_emb.weight.device)
 
-    def sample(self, n_batch=1, n_len=100, z=None, temp=1.0):
+    def sample(self, fps_center, conditional, n_batch=1, n_len=100, z=None, temp=1.0):
         """Generating n_batch samples in eval mode (`z` could be
         not on same device)
 
@@ -174,6 +197,13 @@ class VAE(nn.Module):
             if z is None:
                 z = self.sample_z_prior(n_batch)
             z = z.to(device)
+
+            # condition
+            if conditional:
+                c = self.c_lin(fps_center).unsqueeze(0).repeat(n_batch, 1)
+                # cat z and c
+                z = torch.cat((z, c), 1)
+
             z_0 = z.unsqueeze(1)
 
             # Initial values

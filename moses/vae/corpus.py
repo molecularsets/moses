@@ -24,10 +24,13 @@ class OneHotCorpus:
 
     def transform(self, dataset):
         return DataLoader(dataset, batch_size=self.n_batch,
-                          shuffle=True, collate_fn=self._collate_fn)
+                          shuffle=False, collate_fn=self._collate_fn, drop_last=True)
 
     def _collate_fn(self, l_smiles):
         l_smiles.sort(key=len, reverse=True)
         data = [self.vocab.string2ids(smiles, add_bos=True, add_eos=True) for smiles in l_smiles]
 
         return [torch.tensor(d, dtype=torch.long, device=self.device) for d in data]
+
+    def fps_transform(self, dataset):
+        return DataLoader(dataset, batch_size=self.n_batch, shuffle=False, drop_last=True)
