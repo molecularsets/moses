@@ -234,7 +234,7 @@ class ORGANTrainer:
         # condition data
         if config.conditional:
             fps_loader = DataLoader(fps_data, batch_size=self.config.n_batch, shuffle=False, drop_last=True)
-            train_loader = zip(train_loader, fps_loader)
+            data_loader = zip(train_loader, fps_loader)
         
         pg_iters = tqdm(range(self.config.pg_iters), desc='Policy gradient training')
 
