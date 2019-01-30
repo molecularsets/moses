@@ -8,6 +8,40 @@ from torch.nn.utils.rnn import pad_sequence
 from moses.utils import SmilesDataset
 from moses.utils import Logger
 
+import random
+from random import shuffle
+from rdkit import Chem
+from rdkit.Chem import MACCSkeys
+from __future__ import division
+
+
+# check smiles validity
+def isValid(smile_str):
+    try:
+        m = Chem.MolFromSmiles(smile_str)
+        if m:
+            return 1 
+        else:
+            return 0
+    except:
+        return 0
+
+# convert smiles to maccs fingerprints
+def smi_to_maccs(smi):
+    MACCS_SIZE = 167
+    mol = Chem.MolFromSmiles(smi)
+    if mol is not None:
+        return np.array(MACCSkeys.GenMACCSKeys(mol))
+    else:
+        return np.zeros(MACCS_SIZE, dtype=int)
+
+# calculate tanimoto similarity
+def Tanimoto(l1,l2):
+    a = sum(l1)
+    b = sum(l2)
+    c = sum([l1[i]&l2[i] for i in range(len(l1))])
+    return c/(a+b-c)
+
 
 class PolicyGradientLoss(nn.Module):
     def forward(self, outputs, targets, rewards, lengths):
@@ -30,9 +64,18 @@ class ORGANTrainer:
 
         postfix = {'loss': 0}
 
-        for i, batch in enumerate(tqdm_data):
+        for i, t in enumerate(tqdm_data):
+
+            # condition
+            if config.conditional:
+                batch = t[0]
+                c = t[1].to(model.device)
+            else:
+                batch = t
+                c = None
+
             (prevs, nexts, lens) = [x.to(model.device) for x in batch]
-            outputs, _, _ = model.generator_forward(prevs, lens)
+            outputs, _, _ = model.generator_forward(prevs, lens, c, config.conditional)
             loss = criterion(outputs.view(-1, outputs.shape[-1]), nexts.view(-1))
 
             if optimizer is not None:
@@ -45,7 +88,7 @@ class ORGANTrainer:
             tqdm_data.set_postfix(postfix)
         return postfix['loss']
 
-    def _pretrain_generator(self, model, train_data, log, val_data=None):
+    def _pretrain_generator(self, model, train_data, fps_data, log, val_data=None):
         def collate(tensors):
             tensors.sort(key=lambda x: len(x), reverse=True)
             prevs = pad_sequence([t[:-1] for t in tensors], batch_first=True, padding_value=model.vocabulary.pad)
@@ -60,8 +103,15 @@ class ORGANTrainer:
         train_loader = DataLoader(SmilesDataset(train_data, transform=model.string2tensor),
                                   batch_size=self.config.n_batch,
                                   num_workers=num_workers,
-                                  shuffle=True,
-                                  collate_fn=collate)
+                                  shuffle=False,
+                                  collate_fn=collate, drop_last=True)
+
+        # condition data
+        if config.conditional:
+            fps_loader = DataLoader(fps_data, batch_size=self.config.n_batch, shuffle=False, drop_last=True)
+            train_loader = zip(train_loader, fps_loader)
+            shuffle(train_loader)
+
         if val_data is not None:
             val_loader = DataLoader(SmilesDataset(val_data, transform=model.string2tensor),
                                     batch_size=self.config.n_batch,
@@ -96,14 +146,23 @@ class ORGANTrainer:
 
         postfix = {'loss': 0}
 
-        for i, inputs_from_data in enumerate(tqdm_data):
+        for i, t in enumerate(tqdm_data):
+
+            # condition
+            if config.conditional:
+                inputs_from_data = t[0]
+                c = t[1].to(model.device)
+            else:
+                inputs_from_data = t
+                c = None
+
             inputs_from_data = inputs_from_data.to(model.device)
-            inputs_from_model, _ = model.sample_tensor(self.config.n_batch, self.config.max_length)
+            inputs_from_model, _ = model.sample_tensor(c, config.conditional, self.config.n_batch, self.config.max_length)
             targets = torch.zeros(self.config.n_batch, 1, device=model.device)
-            outputs = model.discriminator_forward(inputs_from_model)
+            outputs = model.discriminator_forward(inputs_from_model, c, config.conditional)
             loss = criterion(outputs, targets) / 2
             targets = torch.ones(inputs_from_data.shape[0], 1, device=model.device)
-            outputs = model.discriminator_forward(inputs_from_data)
+            outputs = model.discriminator_forward(inputs_from_data, c, config.conditional)
             loss += criterion(outputs, targets) / 2
 
             if optimizer is not None:
@@ -116,7 +175,7 @@ class ORGANTrainer:
             tqdm_data.set_postfix(postfix)
         return postfix['loss']
 
-    def _pretrain_discriminator(self, model, train_data, log, val_data=None):
+    def _pretrain_discriminator(self, model, train_data, fps_data, log, val_data=None):
         def collate(data):
             data.sort(key=lambda x: len(x), reverse=True)
             tensors = data
@@ -125,7 +184,14 @@ class ORGANTrainer:
             return inputs
 
         train_loader = DataLoader(SmilesDataset(train_data, transform=model.string2tensor),
-                                  batch_size=self.config.n_batch, shuffle=True, collate_fn=collate)
+                                  batch_size=self.config.n_batch, shuffle=False, collate_fn=collate, drop_last=True)
+        
+        # condition data
+        if config.conditional:
+            fps_loader = DataLoader(fps_data, batch_size=self.config.n_batch, shuffle=False, drop_last=True)
+            train_loader = zip(train_loader, fps_loader)
+            shuffle(train_loader)
+
         if val_data is not None:
             val_loader = DataLoader(SmilesDataset(val_data, transform=model.string2tensor),
                                     batch_size=self.config.n_batch, shuffle=False, collate_fn=collate)
@@ -148,7 +214,7 @@ class ORGANTrainer:
                 model.to(self.config.device)
 
 
-    def _train_policy_gradient(self, model, train_data, log):
+    def _train_policy_gradient(self, model, train_data, fps_data, log):
         def collate(data):
             data.sort(key=lambda x: len(x), reverse=True)
             tensors = data
@@ -163,17 +229,28 @@ class ORGANTrainer:
         discriminator_optimizer = torch.optim.Adam(model.discriminator.parameters(), lr=self.config.lr)
 
         train_loader = DataLoader(SmilesDataset(train_data, transform=model.string2tensor),
-                                  batch_size=self.config.n_batch, shuffle=True, collate_fn=collate)
-
+                                  batch_size=self.config.n_batch, shuffle=False, collate_fn=collate, drop_last=True)
+        
+        # condition data
+        if config.conditional:
+            fps_loader = DataLoader(fps_data, batch_size=self.config.n_batch, shuffle=False, drop_last=True)
+            train_loader = zip(train_loader, fps_loader)
+        
         pg_iters = tqdm(range(self.config.pg_iters), desc='Policy gradient training')
 
         postfix = {}
         smooth = 0.1
 
         for i in pg_iters:
+
+            # condition
+            c = []
+            if config.conditional:
+                c = fps_data[i].unsqueeze(0).to(model.device)
+
             for _ in range(self.config.generator_updates):
                 model.eval()
-                sequences, rewards, lengths = model.rollout(
+                sequences, rewards, lengths = model.rollout(c, config.conditional, 
                     self.config.n_batch, self.config.rollouts, self.config.max_length)
                 model.train()
 
@@ -181,7 +258,12 @@ class ORGANTrainer:
                 sequences = sequences[indices, ...]
                 rewards = rewards[indices, ...]
 
-                generator_outputs, lengths, _ = model.generator_forward(sequences[:, :-1], lengths - 1)
+                # condition
+                c = []
+                if config.conditional:
+                    c = fps_data[i].unsqueeze(0).repeat(self.config.n_batch, 1).to(model.device)
+
+                generator_outputs, lengths, _ = model.generator_forward(sequences[:, :-1], lengths - 1, c, config.conditional)
                 generator_loss = generator_criterion(generator_outputs, sequences[:, 1:], rewards, lengths)
 
                 generator_optimizer.zero_grad()
@@ -201,7 +283,7 @@ class ORGANTrainer:
             for _ in range(self.config.discriminator_updates):
                 model.generator.eval()
                 n_batches = (len(train_loader) + self.config.n_batch - 1) // self.config.n_batch
-                sampled_batches = [model.sample_tensor(self.config.n_batch, self.config.max_length)[0]
+                sampled_batches = [model.sample_tensor(c, config.conditional, self.config.n_batch, self.config.max_length)[0]
                                    for _ in range(n_batches)]
 
                 for _ in range(self.config.discriminator_epochs):
@@ -210,11 +292,11 @@ class ORGANTrainer:
                     for inputs_from_model, inputs_from_data in zip(sampled_batches, train_loader):
                         inputs_from_data = inputs_from_data.to(model.device)
                         discriminator_targets = torch.zeros(self.config.n_batch, 1, device=model.device)
-                        discriminator_outputs = model.discriminator_forward(inputs_from_model)
+                        discriminator_outputs = model.discriminator_forward(inputs_from_model, c, config.conditional)
                         discriminator_loss = discriminator_criterion(discriminator_outputs, discriminator_targets) / 2
 
                         discriminator_targets = torch.ones(self.config.n_batch, 1, device=model.device)
-                        discriminator_outputs = model.discriminator_forward(inputs_from_data)
+                        discriminator_outputs = model.discriminator_forward(inputs_from_data, c, config.conditional)
                         discriminator_loss += discriminator_criterion(discriminator_outputs, discriminator_targets) / 2
 
                         discriminator_optimizer.zero_grad()
@@ -239,8 +321,8 @@ class ORGANTrainer:
 
 
 
-    def fit(self, model, train_data, val_data=None):
+    def fit(self, model, train_data, fps_data, val_data=None):
         log = Logger()
-        self._pretrain_generator(model, train_data, log, val_data)
-        self._pretrain_discriminator(model, train_data, log, val_data)
-        self._train_policy_gradient(model, train_data, log)
+        self._pretrain_generator(model, train_data, fps_data, log, val_data)
+        self._pretrain_discriminator(model, train_data, fps_data, log, val_data)
+        self._train_policy_gradient(model, train_data, fps_data, log)

@@ -19,7 +19,26 @@ def get_parser():
                         choices=MetricsReward.supported_metrics, default=[],
                         help='Adding of addition rewards')
 
+    # conditional generation
+    parser.add_argument('--conditional', type=int, default=0,
+                       help='Conditional generation mode')
+    parser.add_argument('--output_size', type=int, default=10,
+                       help='Output size in the condition linear layer')
+
     return parser
+
+# read fingerrprints
+def read_fps_csv(path):
+    return pd.read_csv(path,
+                       usecols=['fingerprints_center'],
+                       squeeze=True).astype(str).tolist()
+
+# convert fingerprints to list
+def fps_to_list(fps):
+    fps = [list(x) for x in fps]
+    for i in tqdm(range(len(fps))):
+        fps[i] = [int(x) for x in fps[i]]
+    return fps
 
 
 def main(config):
@@ -31,13 +50,24 @@ def main(config):
     torch.save(config, config.config_save)
     device = torch.device(config.device)
 
+    # condition mode
+    if config.conditional:
+        fps = read_fps_csv(config.train_load)
+        fps = fps_to_list(fps)
+        fps = [torch.tensor(f, dtype=torch.float, device=device) for f in fps]
+        # fingerprints length
+        fps_len = len(fps[0])
+    else:
+        fps = None
+        fps_len = 0
+
     with Pool(config.n_jobs) as pool:
         reward_func = MetricsReward(train, config.n_ref_subsample, config.rollouts, pool, config.addition_rewards)
-        model = ORGAN(vocab, config, reward_func)
+        model = ORGAN(vocab, config, fps_len, reward_func)
         model = model.to(device)
 
         trainer = ORGANTrainer(config)
-        trainer.fit(model, train)
+        trainer.fit(model, train, fps)
 
     torch.save(model.state_dict(), config.model_save)
 

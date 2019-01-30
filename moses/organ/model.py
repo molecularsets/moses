@@ -6,7 +6,7 @@ from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
 
 
 class Generator(nn.Module):
-    def __init__(self, embedding_layer, hidden_size, num_layers, dropout):
+    def __init__(self, embedding_layer, hidden_size, num_layers, dropout, fps_len, output_size, conditional):
         super(Generator, self).__init__()
 
         self.embedding_layer = embedding_layer
@@ -14,8 +14,24 @@ class Generator(nn.Module):
                                   batch_first=True, dropout=dropout)
         self.linear_layer = nn.Linear(hidden_size, embedding_layer.num_embeddings)
 
-    def forward(self, x, lengths, states=None):
+        # condition linear layer and output size
+        if conditional:
+            output_size = config.output_size
+            self.c_linear_layer = nn.Linear(fps_len, output_size)
+        else:
+            output_size = 0
+
+    def forward(self, x, lengths, c, conditional, states=None):
         x = self.embedding_layer(x)
+
+        # condition
+        if conditional:
+            print(conditional)
+            c = c.unsqueeze(1).repeat(1, x.shape[1], 1)
+            c = self.c_linear_layer(c)
+            # cat x and c
+            x = torch.cat((x, c), 2)
+
         x = pack_padded_sequence(x, lengths, batch_first=True)
         x, states = self.lstm_layer(x, states)
         x, _ = pad_packed_sequence(x, batch_first=True)
@@ -25,7 +41,7 @@ class Generator(nn.Module):
 
 
 class Discriminator(nn.Module):
-    def __init__(self, embedding_layer, convs, dropout=0):
+    def __init__(self, embedding_layer, convs, fps_len, output_size, conditional, dropout=0):
         super(Discriminator, self).__init__()
 
         self.embedding_layer = embedding_layer
@@ -36,8 +52,23 @@ class Discriminator(nn.Module):
         self.dropout_layer = nn.Dropout(p=dropout)
         self.output_layer = nn.Linear(sum_filters, 1)
 
-    def forward(self, x):
+        # condition linear layer and output size
+        if conditional:
+            output_size = config.output_size
+            self.c_linear_layer = nn.Linear(fps_len, output_size)
+        else:
+            output_size = 0
+
+    def forward(self, x, c, conditional):
         x = self.embedding_layer(x)
+
+        # condition
+        if conditional:
+            c = c.unsqueeze(1).repeat(1, x.shape[1], 1)
+            c = self.c_linear_layer(c)
+            # cat x and c
+            x = torch.cat((x, c), 2)
+
         x = x.unsqueeze(1)
 
         convs = [F.elu(conv_layer(x)).squeeze(3) for conv_layer in self.conv_layers]
@@ -54,7 +85,7 @@ class Discriminator(nn.Module):
 
 
 class ORGAN(nn.Module):
-    def __init__(self, vocabulary, config, reward_fn=None):
+    def __init__(self, vocabulary, config, fps_len, reward_fn=None):
         super(ORGAN, self).__init__()
 
         self.reward_fn = reward_fn
@@ -62,12 +93,18 @@ class ORGAN(nn.Module):
 
         self.vocabulary = vocabulary
 
+        # output size
+        self.output_size = config.output_size
+        # conditional mode
+        self.conditional = config.conditional
+
         self.generator_embeddings = nn.Embedding(len(vocabulary), config.embedding_size, padding_idx=vocabulary.pad)
         self.discriminator_embeddings = nn.Embedding(
             len(vocabulary), config.embedding_size, padding_idx=vocabulary.pad)
-        self.generator = Generator(self.generator_embeddings, config.hidden_size, config.num_layers, config.dropout)
-        self.discriminator = Discriminator(self.discriminator_embeddings,
-                                           config.discriminator_layers, config.discriminator_dropout)
+        self.generator = Generator(self.generator_embeddings, config.hidden_size, config.num_layers, config.dropout, 
+            fps_len, self.output_size, self.conditional)
+        self.discriminator = Discriminator(self.discriminator_embeddings, config.discriminator_layers, 
+            fps_len, self.output_size, self.conditional, config.discriminator_dropout)
 
     @property
     def device(self):
@@ -93,7 +130,7 @@ class ORGAN(nn.Module):
 
         return string
 
-    def _proceed_sequences(self, prevs, states, max_len):
+    def _proceed_sequences(self, prevs, c, conditional, states, max_len):
         with torch.no_grad():
             n_sequences = prevs.shape[0]
 
@@ -104,7 +141,7 @@ class ORGAN(nn.Module):
             is_end = prevs.eq(self.vocabulary.eos).view(-1)
 
             for _ in range(max_len):
-                outputs, _, states = self.generator(prevs, one_lens, states)
+                outputs, _, states = self.generator(prevs, one_lens, c, conditional, states)
                 probs = F.softmax(outputs, dim=-1).view(n_sequences, -1)
                 currents = torch.multinomial(probs, 1)
 
@@ -122,7 +159,7 @@ class ORGAN(nn.Module):
 
         return sequences, lengths
 
-    def rollout(self, n_samples, n_rollouts, max_len=100):
+    def rollout(self, c, conditional, n_samples, n_rollouts, max_len=100):
         with torch.no_grad():
             sequences = []
             rewards = []
@@ -137,7 +174,13 @@ class ORGAN(nn.Module):
             lengths += 1
 
             for current_len in range(max_len):
-                outputs, _, states = self.generator(prevs, one_lens, states)
+
+                # condition
+                sample_c = []
+                if conditional:
+                    sample_c = c.repeat(n_samples, 1)
+
+                outputs, _, states = self.generator(prevs, one_lens, sample_c, conditional, states)
                 probs = F.softmax(outputs, dim=-1).view(n_samples, -1)
                 currents = torch.multinomial(probs, 1)
 
@@ -148,14 +191,20 @@ class ORGAN(nn.Module):
                 rollout_prevs = currents[~is_end, :].repeat(n_rollouts, 1)
                 rollout_states = (states[0][:, ~is_end, :].repeat(1, n_rollouts, 1),
                                   states[1][:, ~is_end, :].repeat(1, n_rollouts, 1))
+                # condition
+                sample_c = []
+                if conditional:
+                    condition_size = int(rollout_prevs.shape[0] / n_rollouts)
+                    sample_c = c.repeat(n_rollouts * condition_size, 1)
+
                 rollout_sequences, rollout_lengths = self._proceed_sequences(
-                    rollout_prevs, rollout_states, max_len - current_len)
+                    rollout_prevs, sample_c, conditional, rollout_states, max_len - current_len)
 
                 rollout_sequences = torch.cat([s[~is_end, :].repeat(n_rollouts, 1)
                                                for s in sequences] + [rollout_sequences], dim=-1)
                 rollout_lengths += lengths[~is_end].repeat(n_rollouts)
 
-                rollout_rewards = torch.sigmoid(self.discriminator(rollout_sequences).detach())
+                rollout_rewards = torch.sigmoid(self.discriminator(rollout_sequences, sample_c, conditional).detach())
 
                 if self.reward_fn is not None and self.reward_weight > 0:
                     strings = [self.tensor2string(t[:l]) for t, l in zip(rollout_sequences, rollout_lengths)]
@@ -178,17 +227,20 @@ class ORGAN(nn.Module):
 
         return sequences, rewards, lengths
 
-    def sample_tensor(self, n, max_len=100):
+    def sample_tensor(self, c, conditional, n, max_len=100):
         prevs = torch.empty(n, 1, dtype=torch.long, device=self.device).fill_(self.vocabulary.bos)
-        samples, lengths = self._proceed_sequences(prevs, None, max_len)
+        samples, lengths = self._proceed_sequences(prevs, c, conditional, None, max_len)
 
         samples = torch.cat([prevs, samples], dim=-1)
         lengths += 1
 
         return samples, lengths
 
-    def sample(self, n, max_len=100):
-        samples, lengths = self.sample_tensor(n, max_len)
+    def sample(self, c, conditional, n, max_len=100):
+        # condition
+        if conditional:
+            c = c.repeat(n, 1)
+        samples, lengths = self.sample_tensor(c, conditional, n, max_len)
         samples = [t[:l] for t, l in zip(samples, lengths)]
         samples = [self.tensor2string(t) for t in samples]
 
