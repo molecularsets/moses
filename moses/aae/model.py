@@ -71,15 +71,22 @@ class Discriminator(nn.Module):
 class AAE(nn.Module):
     def __init__(self, vocabulary, config):
         super(AAE, self).__init__()
-
+        self.config = config
+        if not config.conditional_model:
+            config.labels_size, config.labels_embedding_size = 0, 0
         self.vocabulary = vocabulary
         self.latent_size = config.latent_size
+        self.labels_size = config.labels_size
+        self.labels_embedding_size = config.labels_embedding_size
+        if self.config.conditional_model:
+            self.Linear1 = nn.Linear(self.labels_size,self.labels_embedding_size)
+            self.Linear = nn.Linear(self.latent_size+self.labels_embedding_size,self.latent_size+self.labels_embedding_size)
 
         self.embeddings = nn.Embedding(len(vocabulary), config.embedding_size, padding_idx=vocabulary.pad)
         self.encoder = Encoder(self.embeddings, config.encoder_hidden_size, config.encoder_num_layers,
                                config.encoder_bidirectional, config.encoder_dropout, config.latent_size)
         self.decoder = Decoder(self.embeddings, config.decoder_hidden_size, config.decoder_num_layers,
-                               config.decoder_dropout, config.latent_size)
+                               config.decoder_dropout, config.latent_size+self.labels_embedding_size)
         self.discriminator = Discriminator(config.latent_size, config.discriminator_layers)
 
     @property
@@ -113,12 +120,16 @@ class AAE(nn.Module):
     def sample_latent(self, n):
         return torch.randn(n, self.latent_size, device=self.device)
 
-    def sample(self, n, max_len=100):
+    def sample(self, n, max_len=100, labels=None):
         with torch.no_grad():
             samples = []
             lengths = torch.zeros(n, dtype=torch.long, device=self.device)
-
             states = self.sample_latent(n)
+            if self.config.conditional_model:
+                labels = self.Linear1(labels)
+                states = torch.cat((states, labels), dim=1)
+                states = self.Linear(states)
+
             prevs = torch.empty(n, 1, dtype=torch.long, device=self.device).fill_(self.vocabulary.bos)
             one_lens = torch.ones(n, dtype=torch.long, device=self.device)
             is_end = torch.zeros(n, dtype=torch.uint8, device=self.device)

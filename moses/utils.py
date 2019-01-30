@@ -74,8 +74,10 @@ class CharVocab:
         if len(ids) == 0:
             return ''
         if rem_bos and ids[0] == self.bos:
+            if len(ids) == 1: return ''
             ids = ids[1:]
         if rem_eos and ids[-1] == self.eos:
+            if len(ids) == 1: return ''
             ids = ids[:-1]
 
         string = ''.join([self.id2char(id) for id in ids])

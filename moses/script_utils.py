@@ -44,7 +44,7 @@ def add_train_args(parser):
     common_arg = parser.add_argument_group('Common')
     add_common_arg(common_arg)
     common_arg.add_argument('--train_load',
-                            type=str, required=True,
+                            type=str, default='../../data/data.csv',
                             help='Input data in csv format to train')
     common_arg.add_argument('--model_save',
                             type=str, default='model.pt',
@@ -79,8 +79,8 @@ def add_sample_args(parser):
                             type=str, default='vocab.pt',
                             help='Where to load the vocab')
     common_arg.add_argument('--n_samples',
-                            type=int, required=True,
-                            help='Number of samples to sample')
+                            type=int, default=1000,
+                            help='Number of samples to sample (for each condition)')
     common_arg.add_argument('--gen_save',
                             type=str, default='gen.csv',
                             help='Where to save the gen molecules')
@@ -90,6 +90,12 @@ def add_sample_args(parser):
     common_arg.add_argument("--max_len",
                             type=int, default=100,
                             help="Max of length of SMILES")
+    common_arg.add_argument('--n_labels',
+                            type=int, default=100,
+                            help='Number of labels for sampling')
+    common_arg.add_argument('--label_load',
+                            type=str, default='../../data/molhack_test_1.csv',
+                            help='Where to load the conditions for sampling')
 
     return parser
 
@@ -99,6 +105,8 @@ def read_smiles_csv(path):
                        usecols=['SMILES'],
                        squeeze=True).astype(str).tolist()
 
+def read_label_csv(path):
+    return pd.read_csv(path, usecols=['fingerprints_org'], squeeze=True).astype(str).tolist()
 
 def set_seed(seed):
     torch.manual_seed(seed)
