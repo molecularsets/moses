@@ -26,7 +26,6 @@ class Generator(nn.Module):
 
         # condition
         if conditional:
-            print(conditional)
             c = c.unsqueeze(1).repeat(1, x.shape[1], 1)
             c = self.c_linear_layer(c)
             # cat x and c
