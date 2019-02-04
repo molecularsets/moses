@@ -1,9 +1,16 @@
-from torch.utils.data import Dataset
+import random
+import torch
+import numpy as np
+import pandas as pd
 from multiprocessing import Pool
 from collections import UserList, defaultdict
-import pandas as pd
 from rdkit import rdBase
 
+# https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader
+def set_torch_seed_to_all_gens(worker_id):
+    seed = torch.initial_seed() % (2**32 - 1)
+    random.seed(seed)
+    np.random.seed(seed)
 
 class SS:
     bos = '<bos>'
@@ -84,18 +91,10 @@ class CharVocab:
 
         return string
 
-
-class SmilesDataset(Dataset):
-    def __init__(self, data, transform):
-        self.data = data
-        self.transform = transform
-
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, i):
-        return self.transform(self.data[i])
-
+class OneHotVocab(CharVocab):
+    def __init__(self, *args, **kwargs):
+        super(OneHotVocab, self).__init__(*args, **kwargs)
+        self.vectors = torch.eye(len(self.c2i))
 
 def mapper(n_jobs):
     '''
@@ -122,7 +121,6 @@ def mapper(n_jobs):
         return _mapper
     else:
         return n_jobs.map
-
 
 class Logger(UserList):
     def __init__(self, data=None):
@@ -176,6 +174,25 @@ class LogPlotter:
         for ax, name in zip(axs.flatten(), names):
             self.line(ax, name)
 
+class CircularBuffer:
+    def __init__(self, size):
+        self.max_size = size
+        self.data = np.zeros(self.max_size)
+        self.size = 0
+        self.pointer = -1
+
+    def add(self, element):
+        self.size = min(self.size + 1, self.max_size)
+        self.pointer = (self.pointer + 1) % self.max_size
+        self.data[self.pointer] = element
+        return element
+
+    def last(self):
+        assert self.pointer != -1, "Can't get an element from the empty buffer!"
+        return self.data[self.pointer]
+
+    def mean(self):
+        return self.data.mean()
 
 def disable_rdkit_log():
     rdBase.DisableLog('rdApp.*')

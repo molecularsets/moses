@@ -24,33 +24,41 @@ def set_batch_node_id(mol_batch, vocab):
 
 class JTNNVAE(nn.Module):
 
-    @staticmethod
-    def _device(model):
-        return next(model.parameters()).device
-
-    def __init__(self, vocab, hidden_size, latent_size, depth):
+    def __init__(self, vocab, config):
         super(JTNNVAE, self).__init__()
         self.vocab = vocab
-        self.hidden_size = hidden_size
-        self.latent_size = latent_size
-        self.depth = depth
+        self.hidden_size = config.hidden
+        self.latent_size = config.latent
+        self.depth = config.depth
 
-        self.embedding = nn.Embedding(vocab.size(), hidden_size)
-        self.jtnn = JTNNEncoder(vocab, hidden_size, self.embedding)
-        self.jtmpn = JTMPN(hidden_size, depth)
-        self.mpn = MPN(hidden_size, depth)
-        self.decoder = JTNNDecoder(vocab, hidden_size, latent_size // 2, self.embedding)
+        self.embedding = nn.Embedding(vocab.size(), self.hidden_size)
+        self.jtnn = JTNNEncoder(vocab, self.hidden_size, self.embedding)
+        self.jtmpn = JTMPN(self.hidden_size, self.depth)
+        self.mpn = MPN(self.hidden_size, self.depth)
+        self.decoder = JTNNDecoder(vocab, self.hidden_size,
+                                   self.latent_size // 2, self.embedding)
 
-        self.T_mean = nn.Linear(hidden_size, latent_size // 2)
-        self.T_var = nn.Linear(hidden_size, latent_size // 2)
-        self.G_mean = nn.Linear(hidden_size, latent_size // 2)
-        self.G_var = nn.Linear(hidden_size, latent_size // 2)
+        self.T_mean = nn.Linear(self.hidden_size, self.latent_size // 2)
+        self.T_var = nn.Linear(self.hidden_size, self.latent_size // 2)
+        self.G_mean = nn.Linear(self.hidden_size, self.latent_size // 2)
+        self.G_var = nn.Linear(self.hidden_size, self.latent_size // 2)
 
         self.assm_loss = nn.CrossEntropyLoss(reduction='sum')
         self.stereo_loss = nn.CrossEntropyLoss(reduction='sum')
 
+        # Xavier parameters initialization.
+        for param in self.parameters():
+            if param.dim() == 1:
+                nn.init.constant_(param, 0)
+            else:
+                nn.init.xavier_normal_(param)
+
+    @property
+    def device(self):
+        return next(self.parameters()).device
+
     def encode(self, mol_batch):
-        device = JTNNVAE._device(self)
+        device = self.device
 
         set_batch_node_id(mol_batch, self.vocab)
         root_batch = [mol_tree.nodes[0] for mol_tree in mol_batch]
@@ -61,7 +69,7 @@ class JTNNVAE(nn.Module):
         return tree_mess, tree_vec, mol_vec
 
     def forward(self, mol_batch, beta=0):
-        device = JTNNVAE._device(self)
+        device = self.device
 
         batch_size = len(mol_batch)
 
@@ -90,7 +98,7 @@ class JTNNVAE(nn.Module):
         return loss, kl_loss.item(), word_acc, topo_acc, assm_acc, stereo_acc
 
     def assm(self, mol_batch, mol_vec, tree_mess):
-        device = JTNNVAE._device(self)
+        device = self.device
 
         cands = []
         batch_idx = []
@@ -133,7 +141,7 @@ class JTNNVAE(nn.Module):
         return all_loss, acc * 1.0 / cnt
 
     def stereo(self, mol_batch, mol_vec):
-        device = JTNNVAE._device(self)
+        device = self.device
         stereo_cands, batch_idx = [], []
         labels = []
         for i, mol_tree in enumerate(mol_batch):
@@ -169,7 +177,7 @@ class JTNNVAE(nn.Module):
         return all_loss, acc * 1.0 / len(labels)
 
     def reconstruct(self, smiles, prob_decode=False):
-        device = JTNNVAE._device(self)
+        device = self.device
         mol_tree = MolTree(smiles)
         mol_tree.recover()
         _, tree_vec, mol_vec = self.encode([mol_tree])
@@ -185,8 +193,16 @@ class JTNNVAE(nn.Module):
         mol_vec = mol_mean + torch.exp(mol_log_var / 2) * epsilon
         return self.decode(tree_vec, mol_vec, prob_decode)
 
+    def sample(self, n_batch, max_len=100):
+        samples = []
+        while len(samples) < n_batch:
+            sample = self.sample_prior(prob_decode=True)
+            if len(sample) <= max_len:
+                samples.append(sample)
+        return samples
+
     def sample_prior(self, prob_decode=False):
-        device = JTNNVAE._device(self)
+        device = self.device
         tree_vec = torch.randn(1, self.latent_size // 2, device=device)
         mol_vec = torch.randn(1, self.latent_size // 2, device=device)
         mol = self.decode(tree_vec, mol_vec, prob_decode)
@@ -196,7 +212,7 @@ class JTNNVAE(nn.Module):
             return mol
 
     def decode(self, tree_vec, mol_vec, prob_decode):
-        device = JTNNVAE._device(self)
+        device = self.device
         pred_root, pred_nodes = self.decoder.decode(tree_vec, prob_decode)
 
         for i, node in enumerate(pred_nodes):
@@ -249,8 +265,10 @@ class JTNNVAE(nn.Module):
             return None
         cand_smiles, cand_mols, cand_amap = list(zip(*cands))
 
-        cands = [(candmol, all_nodes, cur_node) for candmol in cand_mols]
-
+        cands = [(candmol, all_nodes, cur_node)
+                 for candmol in cand_mols if len(candmol.GetBonds()) > 0]
+        if len(cands) == 0:
+            return None
         cand_vecs = self.jtmpn(cands, tree_mess)
         cand_vecs = self.G_mean(cand_vecs)
         mol_vec = mol_vec.squeeze()
@@ -265,7 +283,7 @@ class JTNNVAE(nn.Module):
         backup_mol = Chem.RWMol(cur_mol)
         for i in range(cand_idx.numel()):
             cur_mol = Chem.RWMol(backup_mol)
-            pred_amap = cand_amap[cand_idx[i].item()]
+            pred_amap = cand_amap[cand_idx[i].item() if cand_idx.numel() > 1 else cand_idx.item()]
             new_global_amap = copy.deepcopy(global_amap)
 
             for nei_id, ctr_atom, nei_atom in pred_amap:

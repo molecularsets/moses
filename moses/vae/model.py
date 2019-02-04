@@ -4,17 +4,18 @@ import torch.nn.functional as F
 
 
 class VAE(nn.Module):
-    def __init__(self, x_vocab, config):
+    def __init__(self, vocab, config):
         super().__init__()
 
+        self.vocabulary = vocab
         # Special symbols
         for ss in ('bos', 'eos', 'unk', 'pad'):
-            setattr(self, ss, getattr(x_vocab, ss))
+            setattr(self, ss, getattr(vocab, ss))
 
         # Word embeddings layer
-        n_vocab, d_emb = len(x_vocab), x_vocab.vectors.size(1)
+        n_vocab, d_emb = len(vocab), vocab.vectors.size(1)
         self.x_emb = nn.Embedding(n_vocab, d_emb, self.pad)
-        self.x_emb.weight.data.copy_(x_vocab.vectors)
+        self.x_emb.weight.data.copy_(vocab.vectors)
         if config.freeze_embeddings:
             self.x_emb.weight.requires_grad = False
 
@@ -70,6 +71,23 @@ class VAE(nn.Module):
             self.encoder,
             self.decoder
         ])
+
+    @property
+    def device(self):
+        return next(self.parameters()).device
+
+    def string2tensor(self, string, device='model'):
+        ids = self.vocabulary.string2ids(string, add_bos=True, add_eos=True)
+        tensor = torch.tensor(ids, dtype=torch.long,
+                              device=self.device if device == 'model' else device)
+
+        return tensor
+
+    def tensor2string(self, tensor):
+        ids = tensor.tolist()
+        string = self.vocabulary.ids2string(ids, rem_bos=True, rem_eos=True)
+
+        return string
 
     def forward(self, x):
         """Do the VAE forward step
@@ -156,37 +174,33 @@ class VAE(nn.Module):
         return torch.randn(n_batch, self.q_mu.out_features,
                            device=self.x_emb.weight.device)
 
-    def sample(self, n_batch=1, n_len=100, z=None, temp=1.0):
+    def sample(self, n_batch, max_len=100, z=None, temp=1.0):
         """Generating n_batch samples in eval mode (`z` could be
         not on same device)
 
         :param n_batch: number of sentences to generate
-        :param n_len: max len of samples
+        :param max_len: max len of samples
         :param z: (n_batch, d_z) of floats, latent vector z or None
         :param temp: temperature of softmax
-        :return: tuple of two:
-            1. (n_batch, d_z) of floats, latent vector z
-            2. list of tensors of longs, samples sequence x
+        :return: list of tensors of strings, samples sequence x
         """
         with torch.no_grad():
-            # `z`
-            device = self.x_emb.weight.device
             if z is None:
                 z = self.sample_z_prior(n_batch)
-            z = z.to(device)
+            z = z.to(self.device)
             z_0 = z.unsqueeze(1)
 
             # Initial values
             h = self.decoder_lat(z)
             h = h.unsqueeze(0).repeat(self.decoder_rnn.num_layers, 1, 1)
-            w = torch.tensor(self.bos, device=device).repeat(n_batch)
-            x = torch.tensor([self.pad], device=device).repeat(n_batch, n_len)
+            w = torch.tensor(self.bos, device=self.device).repeat(n_batch)
+            x = torch.tensor([self.pad], device=self.device).repeat(n_batch, max_len)
             x[:, 0] = self.bos
-            end_pads = torch.tensor([n_len], device=device).repeat(n_batch)
-            eos_mask = torch.zeros(n_batch, dtype=torch.uint8, device=device)
+            end_pads = torch.tensor([max_len], device=self.device).repeat(n_batch)
+            eos_mask = torch.zeros(n_batch, dtype=torch.uint8, device=self.device)
 
             # Generating cycle
-            for i in range(1, n_len):
+            for i in range(1, max_len):
                 x_emb = self.x_emb(w).unsqueeze(1)
                 x_input = torch.cat([x_emb, z_0], dim=-1)
 
@@ -204,6 +218,5 @@ class VAE(nn.Module):
             new_x = []
             for i in range(x.size(0)):
                 new_x.append(x[i, :end_pads[i]])
-            x = new_x
-
-            return z, x
+                
+            return [self.tensor2string(i_x) for i_x in new_x]

@@ -1,7 +1,8 @@
 import argparse
 
+from moses.organ.metrics_reward import MetricsReward
 
-def get_parser():
+def get_parser(parser=None):
     def restricted_float(arg):
         if float(arg) < 0 or float(arg) > 1:
             raise argparse.ArgumentTypeError('{} not in range [0, 1]'.format(arg))
@@ -17,7 +18,8 @@ def get_parser():
 
         return feats, kernel_size
 
-    parser = argparse.ArgumentParser()
+    if parser is None:
+        parser = argparse.ArgumentParser()
 
     model_arg = parser.add_argument_group('Model')
     model_arg.add_argument('--embedding_size', type=int, default=32,
@@ -48,9 +50,15 @@ def get_parser():
                            help='Size of batch')
     train_arg.add_argument('--lr', type=float, default=1e-4,
                            help='Learning rate')
-    train_arg.add_argument('--n_jobs', type=int, default=8, help='Number of threads')
+    train_arg.add_argument('--n_jobs', type=int, default=8,
+                           help='Number of threads')
+
+    train_arg.add_argument('--n_workers', type=int, default=1,
+                           help='Number of workers for DataLoaders')
     train_arg.add_argument('--max_length', type=int, default=100,
                            help='Maximum length for sequence')
+    train_arg.add_argument('--clip_grad', type=float, default=5,
+                           help='Clip PG generator gradients to this value')
     train_arg.add_argument('--rollouts', type=int, default=16,
                            help='Number of rollouts')
     train_arg.add_argument('--generator_updates', type=int, default=1,
@@ -59,7 +67,14 @@ def get_parser():
                            help='Number of updates of discriminator per iteration')
     train_arg.add_argument('--discriminator_epochs', type=int, default=10,
                            help='Number of epochs of discriminator per iteration')
+    train_arg.add_argument('--pg_smooth_const', type=float, default=0.1,
+                           help='Smoothing factor for Policy Gradient logs')
 
+    parser.add_argument('--n_ref_subsample', type=int, default=500,
+                        help='Number of reference molecules (sampling from training data)')
+    parser.add_argument('--addition_rewards', nargs='+', type=str,
+                        choices=MetricsReward.supported_metrics, default=[],
+                        help='Adding of addition rewards')
     return parser
 
 
