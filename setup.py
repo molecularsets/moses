@@ -14,6 +14,7 @@ setup(name='moses',
           'pandas>=0.23',
           'scipy>=1.1.0',
           'torch>=0.4.1',
+          'fcd_torch'
       ],
       description='MOSES: A benchmarking platform for molecular generation models',
       author='Neuromation & Insilico Medicine Teams',

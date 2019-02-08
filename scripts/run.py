@@ -108,7 +108,7 @@ def eval_metrics(config, model, test_path, test_scaffolds_path, ptest_path, ptes
                                           '--ptest_scaffolds_path', ptest_scaffolds_path,
                                           '--gen_path', get_generation_path(config, model),
                                           '--n_jobs', str(config.n_jobs),
-                                          '--gpu', str(config.gpu)])
+                                          '--device', get_device(config)])
     metrics = eval_script.main(eval_config, print_metrics=False)
 
     return metrics
@@ -133,7 +133,9 @@ def main(config):
             not os.path.exists(test_path) or \
             not os.path.exists(test_scaffolds_path):
         splitting_config = split_dataset.get_parser()
-        conf = ['--dir', config.data_dir]
+        conf = ['--dir', config.data_dir,
+                '--device', get_device(config),
+                '--n_jobs', str(config.n_jobs)]
         if config.train_size is not None:
             conf.extend(['--train_size', str(config.train_size)])
         if config.test_size is not None:

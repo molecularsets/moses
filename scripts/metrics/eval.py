@@ -31,7 +31,7 @@ def main(config, print_metrics=True):
             ptest_scaffolds = np.load(config.ptest_scaffolds_path)['stats'].item()
     gen = read_smiles_csv(config.gen_path)
     metrics = get_all_metrics(test, gen, k=config.ks, n_jobs=config.n_jobs,
-                              gpu=config.gpu, test_scaffolds=test_scaffolds,
+                              device=config.device, test_scaffolds=test_scaffolds,
                               ptest=ptest, ptest_scaffolds=ptest_scaffolds)
     
     if print_metrics:
@@ -56,7 +56,6 @@ def get_parser():
     parser.add_argument('--ptest_scaffolds_path',
                         type=str, required=False,
                         help='Path to precalculated scaffold test molecules npz')
-
     parser.add_argument('--gen_path',
                         type=str, required=True,
                         help='Path to generated molecules csv')
@@ -66,9 +65,9 @@ def get_parser():
     parser.add_argument('--n_jobs',
                         type=int, default=1,
                         help='Number of processes to run metrics')
-    parser.add_argument('--gpu',
-                        type=int, default=-1,
-                        help='GPU index (-1 for cpu)')
+    parser.add_argument('--device',
+                        type=str, default='cpu',
+                        help='GPU device id (`cpu` or `cuda:n`)')
 
     return parser
 
