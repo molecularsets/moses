@@ -165,7 +165,7 @@ nvidia-docker image build --tag molecularsets/moses moses/
 
 3. Create a container:
 ```
-nvidia-docker run -it --name moses --network="host" --shm-size 1G molecularsets/moses
+nvidia-docker run -it --name moses --network="host" --shm-size 10G molecularsets/moses
 ```
 
 4. The dataset and source code are available inside the docker container at /moses:
