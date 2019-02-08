@@ -1,7 +1,8 @@
 #
 # calculation of natural product-likeness as described in:
 #
-# Natural Product-likeness Score and Its Application for Prioritization of Compound Libraries
+# Natural Product-likeness Score and Its Application for Prioritization of
+# Compound Libraries
 # Peter Ertl, Silvio Roggo, and Ansgar Schuffenhauer
 # Journal of Chemical Information and Modeling, 48, 68-74 (2008)
 # http://pubs.acs.org/doi/abs/10.1021/ci700286x
@@ -98,7 +99,9 @@ def processMols(fscore, suppl):
 if __name__ == '__main__':
     fscore = readNPModel()  # fills fscore
 
-    suppl = Chem.SmilesMolSupplier(sys.argv[1], smilesColumn=0, nameColumn=1, titleLine=False)
+    suppl = Chem.SmilesMolSupplier(
+        sys.argv[1], smilesColumn=0, nameColumn=1, titleLine=False
+    )
     processMols(fscore, suppl)
 
 #
@@ -117,7 +120,8 @@ if __name__ == '__main__':
 #       with the distribution.
 #     * Neither the name of Novartis Institutes for BioMedical Research Inc.
 #       nor the names of its contributors may be used to endorse or promote
-#       products derived from this software without specific prior written permission.
+#       products derived from this software without specific prior written
+#       permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT

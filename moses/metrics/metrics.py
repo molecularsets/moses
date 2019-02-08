@@ -1,37 +1,39 @@
 import warnings
-
 import numpy as np
 from scipy.spatial.distance import cosine
-
 from .utils import compute_fragments, average_agg_tanimoto, \
     compute_scaffolds, fingerprints, \
     get_mol, canonic_smiles, mol_passes_filters, \
     logP, QED, SA, NP, weight
 from moses.utils import mapper
-from .utils_fcd import get_predictions, calculate_frechet_distance
 from multiprocessing import Pool
 from moses.utils import disable_rdkit_log, enable_rdkit_log
+from fcd_torch import FCD as FCDMetric
+from fcd_torch.fcd import calculate_frechet_distance
 
 
-def get_all_metrics(test, gen, k=[1000, 10000], n_jobs=1, gpu=-1,
+def get_all_metrics(test, gen, k=None, n_jobs=1, device='cpu',
                     batch_size=512, test_scaffolds=None,
-                    ptest=None, ptest_scaffolds=None):
-    '''
-    Computes all available metrics between test (scaffold test) and generated sets of SMILES.
+                    ptest=None, ptest_scaffolds=None,
+                    gpu=None):
+    """
+    Computes all available metrics between test (scaffold test)
+    and generated sets of SMILES.
     Parameters:
         test: list of test SMILES
         gen: list of generated SMILES
-        k: list with values for unique@k.
-            Will calculate number of unique molecules in the first k molecules.
+        k: list with values for unique@k. Will calculate number of
+            unique molecules in the first k molecules. Default [1000, 10000]
         n_jobs: number of workers for parallel processing
-        gpu: index of GPU for FCD metric and internal diversity, -1 means use CPU
+        device: 'cpu' or 'cuda:n', where n is GPU device number
         batch_size: batch size for FCD metric
         test_scaffolds: list of scaffold test SMILES
             Will compute only on the general test set if not specified
         ptest: dict with precalculated statistics of the test set
-        ptest_scaffolds: dict with precalculated statistics of the scaffold test set
-        
-    
+        ptest_scaffolds: dict with precalculated statistics
+            of the scaffold test set
+        gpu: deprecated, use `device`
+
     Available metrics:
         * %valid
         * %unique@k
@@ -40,73 +42,99 @@ def get_all_metrics(test, gen, k=[1000, 10000], n_jobs=1, gpu=-1,
         * Scaffold similarity (Scaf)
         * Similarity to nearest neighbour (SNN)
         * Internal diversity (IntDiv)
-        * Internal diversity 2: using square root of mean squared Tanimoto similarity (IntDiv2)
+        * Internal diversity 2: using square root of mean squared
+            Tanimoto similarity (IntDiv2)
         * %passes filters (Filters)
         * Distribution difference for logP, SA, QED, NP, weight
-    '''
+    """
+    if k is None:
+        k = [1000, 10000]
     disable_rdkit_log()
     metrics = {}
-    if n_jobs != 1:
-        pool = Pool(n_jobs)
-    else:
-        pool = 1
+    if gpu is not None:
+        warnings.warn(
+            "parameter `gpu` is deprecated. Use `device`",
+            DeprecationWarning
+        )
+        if gpu == -1:
+            device = 'cpu'
+        else:
+            device = 'cuda:{}'.format(gpu)
     metrics['valid'] = fraction_valid(gen, n_jobs=n_jobs)
     gen = remove_invalid(gen, canonize=True)
     if not isinstance(k, (list, tuple)):
         k = [k]
     for _k in k:
-        metrics['unique@{}'.format(_k)] = fraction_unique(gen, _k, pool)
+        metrics['unique@{}'.format(_k)] = fraction_unique(gen, _k, n_jobs)
 
     if ptest is None:
-        ptest = compute_intermediate_statistics(test, n_jobs=n_jobs, gpu=gpu, batch_size=batch_size)
+        ptest = compute_intermediate_statistics(test, n_jobs=n_jobs,
+                                                device=device,
+                                                batch_size=batch_size)
     if test_scaffolds is not None and ptest_scaffolds is None:
-        ptest_scaffolds = compute_intermediate_statistics(test_scaffolds, n_jobs=n_jobs,
-                                                                 gpu=gpu, batch_size=batch_size)
+        ptest_scaffolds = compute_intermediate_statistics(
+            test_scaffolds, n_jobs=n_jobs,
+            device=device, batch_size=batch_size
+        )
+    if n_jobs != 1:
+        pool = Pool(n_jobs)
+    else:
+        pool = 1
     mols = mapper(pool)(get_mol, gen)
-    kwargs = {'n_jobs': pool, 'gpu': gpu, 'batch_size': batch_size}
-    metrics['FCD/Test'] = FCDMetric(**kwargs)(gen=gen, ptest=ptest['FCD'])
-    metrics['SNN/Test'] = SNNMetric(**kwargs)(gen=mols, ptest=ptest['SNN'])
-    metrics['Frag/Test'] = FragMetric(**kwargs)(gen=mols, ptest=ptest['Frag'])
-    metrics['Scaf/Test'] = ScafMetric(**kwargs)(gen=mols, ptest=ptest['Scaf'])
+    kwargs = {'n_jobs': pool, 'device': device, 'batch_size': batch_size}
+    kwargs_fcd = {'n_jobs': n_jobs, 'device': device, 'batch_size': batch_size}
+    metrics['FCD/Test'] = FCDMetric(**kwargs_fcd)(gen=gen, pref=ptest['FCD'])
+    metrics['SNN/Test'] = SNNMetric(**kwargs)(gen=mols, pref=ptest['SNN'])
+    metrics['Frag/Test'] = FragMetric(**kwargs)(gen=mols, pref=ptest['Frag'])
+    metrics['Scaf/Test'] = ScafMetric(**kwargs)(gen=mols, pref=ptest['Scaf'])
     if ptest_scaffolds is not None:
-        metrics['FCD/TestSF'] = FCDMetric(**kwargs)(gen=gen, ptest=ptest_scaffolds['FCD'])
-        metrics['SNN/TestSF'] = SNNMetric(**kwargs)(gen=mols, ptest=ptest_scaffolds['SNN'])
-        metrics['Frag/TestSF'] = FragMetric(**kwargs)(gen=mols, ptest=ptest_scaffolds['Frag'])
-        metrics['Scaf/TestSF'] = ScafMetric(**kwargs)(gen=mols, ptest=ptest_scaffolds['Scaf'])
+        metrics['FCD/TestSF'] = FCDMetric(**kwargs_fcd)(
+            gen=gen, pref=ptest_scaffolds['FCD']
+        )
+        metrics['SNN/TestSF'] = SNNMetric(**kwargs)(
+            gen=mols, pref=ptest_scaffolds['SNN']
+        )
+        metrics['Frag/TestSF'] = FragMetric(**kwargs)(
+            gen=mols, pref=ptest_scaffolds['Frag']
+        )
+        metrics['Scaf/TestSF'] = ScafMetric(**kwargs)(
+            gen=mols, pref=ptest_scaffolds['Scaf']
+        )
 
-    metrics['IntDiv'] = internal_diversity(mols, pool, gpu=gpu)
-    metrics['IntDiv2'] = internal_diversity(mols, pool, gpu=gpu, p=2)
+    metrics['IntDiv'] = internal_diversity(mols, pool, device=device)
+    metrics['IntDiv2'] = internal_diversity(mols, pool, device=device, p=2)
     metrics['Filters'] = fraction_passes_filters(mols, pool)
 
     # Properties
     for name, func in [('logP', logP), ('SA', SA),
                        ('QED', QED), ('NP', NP),
                        ('weight', weight)]:
-        metrics[name] = FrechetMetric(func, **kwargs)(gen=mols, ptest=ptest[name])
+        metrics[name] = FrechetMetric(func, **kwargs)(gen=mols,
+                                                      pref=ptest[name])
     enable_rdkit_log()
     if n_jobs != 1:
         pool.terminate()
     return metrics
 
 
-
-def compute_intermediate_statistics(smiles, n_jobs=1, gpu=-1, batch_size=512):
-    '''
+def compute_intermediate_statistics(smiles, n_jobs=1, device='cpu',
+                                    batch_size=512):
+    """
     The function precomputes statistics such as mean and variance for FCD, etc.
     It is useful to compute the statistics for test and scaffold test sets to
         speedup metrics calculation.
-    '''
-
+    """
     if n_jobs != 1:
         pool = Pool(n_jobs)
     else:
         pool = 1
     statistics = {}
     mols = mapper(pool)(get_mol, smiles)
-    kwargs = {'n_jobs': n_jobs, 'gpu': gpu, 'batch_size': batch_size}
-    statistics['FCD'] = FCDMetric(**kwargs).precalc(smiles)
+    kwargs = {'n_jobs': pool, 'device': device, 'batch_size': batch_size}
+    kwargs_fcd = {'n_jobs': n_jobs, 'device': device, 'batch_size': batch_size}
+    statistics['FCD'] = FCDMetric(**kwargs_fcd).precalc(smiles)
     statistics['SNN'] = SNNMetric(**kwargs).precalc(mols)
-    statistics['Frag'] = FragMetric(**kwargs).precalc(mols)
+    statistics['Frag'] = FragMetric(**kwargs_fcd).precalc(mols)
     statistics['Scaf'] = ScafMetric(**kwargs).precalc(mols)
     for name, func in [('logP', logP), ('SA', SA),
                        ('QED', QED), ('NP', NP),
@@ -118,40 +146,44 @@ def compute_intermediate_statistics(smiles, n_jobs=1, gpu=-1, batch_size=512):
 
 
 def fraction_passes_filters(gen, n_jobs=1):
-    '''
+    """
     Computes the fraction of molecules that pass filters:
     * MCF
     * PAINS
     * Only allowed atoms ('C','N','S','O','F','Cl','Br','H')
     * No charges
-    '''
+    """
     passes = mapper(n_jobs)(mol_passes_filters, gen)
     return np.mean(passes)
 
 
-def internal_diversity(gen, n_jobs=1, gpu=-1, fp_type='morgan', gen_fps=None, p=1):
-    '''
+def internal_diversity(gen, n_jobs=1, device='cpu', fp_type='morgan',
+                       gen_fps=None, p=1):
+    """
     Computes internal diversity as:
     1/|A|^2 sum_{x, y in AxA} (1-tanimoto(x, y))
-    '''
+    """
     if gen_fps is None:
         gen_fps = fingerprints(gen, fp_type=fp_type, n_jobs=n_jobs)
     return 1 - (average_agg_tanimoto(gen_fps, gen_fps,
-                                     agg='mean', gpu=gpu, p=p)).mean()
+                                     agg='mean', device=device, p=p)).mean()
 
 
 def fraction_unique(gen, k=None, n_jobs=1, check_validity=True):
-    '''
+    """
     Computes a number of unique molecules
-    :param gen: list of SMILES
-    :param k: compute unique@k
-    :param check_validity: raises ValueError if invalid molecules are present
-    '''
+    Parameters:
+        gen: list of SMILES
+        k: compute unique@k
+        n_jobs: number of threads for calculation
+        check_validity: raises ValueError if invalid molecules are present
+    """
     if k is not None:
         if len(gen) < k:
             warnings.warn(
-                "Can't compute unique@{}. gen contains only {} molecules".format(
-                    k, len(gen)))
+                "Can't compute unique@{}.".format(k) +
+                "gen contains only {} molecules".format(len(gen))
+            )
         gen = gen[:k]
     canonic = set(mapper(n_jobs)(canonic_smiles, gen))
     if None in canonic and check_validity:
@@ -160,18 +192,20 @@ def fraction_unique(gen, k=None, n_jobs=1, check_validity=True):
 
 
 def fraction_valid(gen, n_jobs=1):
-    '''
+    """
     Computes a number of valid molecules
-    :param gen: list of SMILES
-    '''
+    Parameters:
+        gen: list of SMILES
+        n_jobs: number of threads for calculation
+    """
     gen = mapper(n_jobs)(get_mol, gen)
     return 1 - gen.count(None) / len(gen)
 
 
 def remove_invalid(gen, canonize=True, n_jobs=1):
-    '''
+    """
     Removes invalid molecules from the dataset
-    '''
+    """
     if canonize:
         mols = mapper(n_jobs)(get_mol, gen)
         return [gen_ for gen_, mol in zip(gen, mols) if mol is not None]
@@ -181,107 +215,90 @@ def remove_invalid(gen, canonize=True, n_jobs=1):
 
 
 class Metric:
-    def __init__(self, n_jobs=1, gpu=-1, batch_size=512, **kwargs):
+    def __init__(self, n_jobs=1, device=-1, batch_size=512, **kwargs):
         self.n_jobs = n_jobs
-        self.gpu = gpu
+        self.device = device
         self.batch_size = batch_size
         for k, v in kwargs.values():
             setattr(self, k, v)
 
-    def __call__(self, test=None, gen=None, ptest=None, pgen=None):
-        assert (test is None) != (ptest is None), "specify test xor ptest"
+    def __call__(self, ref=None, gen=None, pref=None, pgen=None):
+        assert (ref is None) != (pref is None), "specify ref xor pref"
         assert (gen is None) != (pgen is None), "specify gen xor pgen"
-        if ptest is None:
-            ptest = self.precalc(test)
+        if pref is None:
+            pref = self.precalc(ref)
         if pgen is None:
             pgen = self.precalc(gen)
-        return self.metric(ptest, pgen)
+        return self.metric(pref, pgen)
 
     def precalc(self, moleclues):
         raise NotImplementedError
 
-    def metric(self, ptest, pgen):
+    def metric(self, pref, pgen):
         raise NotImplementedError
 
 
-class FCDMetric(Metric):
-    '''
-    Computes Frechet ChemNet Distance
-    '''        
-    def precalc(self, smiles):
-        if len(smiles) < 2:
-            warnings.warn("Can't compute FCD for less than 2 molecules")
-            return np.nan
-
-        chemnet_activations = get_predictions(smiles, gpu=self.gpu,
-                                              batch_size=self.batch_size)
-        mu = chemnet_activations.mean(0)
-        sigma = np.cov(chemnet_activations.T)
-        return {'mu': mu, 'sigma': sigma}
-    
-    def metric(self, ptest, pgen):
-        return calculate_frechet_distance(ptest['mu'], ptest['sigma'],
-                                          pgen['mu'], pgen['sigma'])
-
-
-
 class SNNMetric(Metric):
-    '''
-    Computes average max similarities of gen SMILES to test SMILES
-    '''
+    """
+    Computes average max similarities of gen SMILES to ref SMILES
+    """
+
     def __init__(self, fp_type='morgan', **kwargs):
         self.fp_type = fp_type
         super().__init__(**kwargs)
 
     def precalc(self, mols):
-        return {'fps': fingerprints(mols, n_jobs=self.n_jobs, fp_type=self.fp_type)}
-    
-    def metric(self, ptest, pgen):
-        return average_agg_tanimoto(ptest['fps'], pgen['fps'], gpu=self.gpu)
+        return {'fps': fingerprints(mols, n_jobs=self.n_jobs,
+                                    fp_type=self.fp_type)}
+
+    def metric(self, pref, pgen):
+        return average_agg_tanimoto(pref['fps'], pgen['fps'],
+                                    device=self.device)
 
 
-def cos_distance(test_counts, gen_counts):
-    '''
+def cos_distance(ref_counts, gen_counts):
+    """
     Computes 1 - cosine similarity between
      dictionaries of form {name: count}. Non-present
      elements are considered zero
-    '''
-    if len(test_counts) == 0 or len(gen_counts) == 0:
+    """
+    if len(ref_counts) == 0 or len(gen_counts) == 0:
         return np.nan
-    keys = np.unique(list(test_counts.keys()) + list(gen_counts.keys()))
-    test_vec = np.array([test_counts.get(k, 0) for k in keys])
+    keys = np.unique(list(ref_counts.keys()) + list(gen_counts.keys()))
+    ref_vec = np.array([ref_counts.get(k, 0) for k in keys])
     gen_vec = np.array([gen_counts.get(k, 0) for k in keys])
-    return 1 - cosine(test_vec, gen_vec)
+    return 1 - cosine(ref_vec, gen_vec)
 
 
 class FragMetric(Metric):
     def precalc(self, mols):
         return {'frag': compute_fragments(mols, n_jobs=self.n_jobs)}
 
-    def metric(self, ptest, pgen):
-        return cos_distance(ptest['frag'], pgen['frag'])
+    def metric(self, pref, pgen):
+        return cos_distance(pref['frag'], pgen['frag'])
 
 
 class ScafMetric(Metric):
     def precalc(self, mols):
         return {'scaf': compute_scaffolds(mols, n_jobs=self.n_jobs)}
 
-    def metric(self, ptest, pgen):
-        return cos_distance(ptest['scaf'], pgen['scaf'])
+    def metric(self, pref, pgen):
+        return cos_distance(pref['scaf'], pgen['scaf'])
 
 
 class FrechetMetric(Metric):
     def __init__(self, func=None, **kwargs):
         self.func = func
         super().__init__(**kwargs)
-        
+
     def precalc(self, mols):
         if self.func is not None:
             values = mapper(self.n_jobs)(self.func, mols)
         else:
             values = mols
         return {'mu': np.mean(values), 'var': np.var(values)}
-    
-    def metric(self, ptest, pgen):
-        return calculate_frechet_distance(ptest['mu'], ptest['var'],
-                                          pgen['mu'], pgen['var'])
+
+    def metric(self, pref, pgen):
+        return calculate_frechet_distance(
+            pref['mu'], pref['var'], pgen['mu'], pgen['var']
+        )

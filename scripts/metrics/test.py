@@ -3,6 +3,7 @@ import numpy as np
 import warnings
 from rdkit import Chem
 from moses.metrics import get_all_metrics, fraction_valid, fraction_unique
+from moses.utils import disable_rdkit_log, enable_rdkit_log
 
 
 class test_metrics(unittest.TestCase):
@@ -56,9 +57,9 @@ class test_metrics(unittest.TestCase):
         
     def test_get_all_metrics_scaffold(self):
         metrics = get_all_metrics(self.test, self.gen, test_scaffolds=self.test_sf, k=3, n_jobs=2)
-        print(metrics)
 
     def test_valid_unique(self):
+        disable_rdkit_log() 
         mols = ['CCNC', 'CCC', 'INVALID', 'CCC']
         assert np.allclose(fraction_valid(mols), 3 / 4), "Failed valid"
         assert np.allclose(fraction_unique(mols, check_validity=False),
@@ -69,6 +70,7 @@ class test_metrics(unittest.TestCase):
         assert np.allclose(fraction_unique(mols, check_validity=False),
                            3 / 4), "Failed unique"
         assert np.allclose(fraction_unique(mols, k=2), 1), "Failed unique"
+        enable_rdkit_log()
 
 
 if __name__ == '__main__':
