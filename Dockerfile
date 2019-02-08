@@ -31,7 +31,7 @@ RUN set -ex \
 ENV PATH /opt/miniconda/bin:$PATH
 RUN conda install -yq numpy=1.15.0 scipy=1.1.0 matplotlib=3.0.1 pandas=0.23.3 scikit-learn=0.19.1 tqdm \
     && conda install -yq -c rdkit rdkit=2018.09.1.0 \
-    && conda install -yq -c pytorch pytorch=0.4.1 torchvision=0.2.1 \
+    && conda install -yq -c pytorch pytorch=1.0.1 torchvision=0.2.1 \
     && conda clean -yq -a
 
 WORKDIR /moses

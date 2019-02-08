@@ -13,7 +13,7 @@ setup(name='moses',
           'numpy>=1.15',
           'pandas>=0.23',
           'scipy>=1.1.0',
-          'torch>=0.4.1',
+          'torch>=1.0.1',
           'fcd_torch'
       ],
       description='MOSES: A benchmarking platform for molecular generation models',
