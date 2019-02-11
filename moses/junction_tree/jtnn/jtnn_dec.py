@@ -218,7 +218,10 @@ class JTNNDecoder(nn.Module):
 
                 if prob_decode:
                     b = pred_score.data.squeeze().cpu()  # TODO
-                    sort_wid = torch.multinomial(b, 5)
+                    to_sample = 5
+                    nonzero = (b != 0).long().sum()
+                    to_sample = min(to_sample, nonzero)
+                    sort_wid = torch.multinomial(b, to_sample)
                 else:
                     _, sort_wid = torch.sort(pred_score, dim=1, descending=True)
                     sort_wid = sort_wid.data.squeeze()

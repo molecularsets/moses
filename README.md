@@ -165,7 +165,7 @@ nvidia-docker image build --tag molecularsets/moses moses/
 
 3. Create a container:
 ```
-nvidia-docker run -it --name moses --network="host" --shm-size 1G molecularsets/moses
+nvidia-docker run -it --name moses --network="host" --shm-size 10G molecularsets/moses
 ```
 
 4. The dataset and source code are available inside the docker container at /moses:
@@ -250,9 +250,9 @@ python scripts/run.py
 ```
 This will **split** the dataset, **train** the models, **generate** new molecules, and **calculate** the metrics. Evaluation results will be saved in `metrics.csv`.
 
-You can specify the GPU index (-1 for CPU) and/or model by running:
+You can specify the GPU device index as `cuda:n` (or `cpu` for CPU) and/or model by running:
 ```
-python scripts/run.py --gpu 1 --model aae
+python scripts/run.py --device cuda:1 --model aae
 ```
 
 For more details run `python scripts/run.py --help`.
