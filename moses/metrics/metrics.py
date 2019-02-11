@@ -134,7 +134,7 @@ def compute_intermediate_statistics(smiles, n_jobs=1, device='cpu',
     kwargs_fcd = {'n_jobs': n_jobs, 'device': device, 'batch_size': batch_size}
     statistics['FCD'] = FCDMetric(**kwargs_fcd).precalc(smiles)
     statistics['SNN'] = SNNMetric(**kwargs).precalc(mols)
-    statistics['Frag'] = FragMetric(**kwargs_fcd).precalc(mols)
+    statistics['Frag'] = FragMetric(**kwargs).precalc(mols)
     statistics['Scaf'] = ScafMetric(**kwargs).precalc(mols)
     for name, func in [('logP', logP), ('SA', SA),
                        ('QED', QED), ('NP', NP),
@@ -215,7 +215,7 @@ def remove_invalid(gen, canonize=True, n_jobs=1):
 
 
 class Metric:
-    def __init__(self, n_jobs=1, device=-1, batch_size=512, **kwargs):
+    def __init__(self, n_jobs=1, device='cpu', batch_size=512, **kwargs):
         self.n_jobs = n_jobs
         self.device = device
         self.batch_size = batch_size
