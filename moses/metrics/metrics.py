@@ -61,14 +61,13 @@ def get_all_metrics(test, gen, k=None, n_jobs=1, device='cpu',
             device = 'cpu'
         else:
             device = 'cuda:{}'.format(gpu)
+    close_pool = False
     if pool is None:
         if n_jobs != 1:
             pool = Pool(n_jobs)
+            close_pool = True
         else:
             pool = 1
-        close_pool = True
-    else:
-        close_pool = False
     metrics['valid'] = fraction_valid(gen, n_jobs=pool)
     gen = remove_invalid(gen, canonize=True)
     if not isinstance(k, (list, tuple)):
@@ -119,7 +118,7 @@ def get_all_metrics(test, gen, k=None, n_jobs=1, device='cpu',
         metrics[name] = FrechetMetric(func, **kwargs)(gen=mols,
                                                       pref=ptest[name])
     enable_rdkit_log()
-    if close_pool and not isinstance(pool, int):
+    if close_pool:
         pool.terminate()
     return metrics
 
@@ -131,14 +130,13 @@ def compute_intermediate_statistics(smiles, n_jobs=1, device='cpu',
     It is useful to compute the statistics for test and scaffold test sets to
         speedup metrics calculation.
     """
+    close_pool = False
     if pool is None:
         if n_jobs != 1:
             pool = Pool(n_jobs)
+            close_pool = True
         else:
             pool = 1
-        close_pool = True
-    else:
-        close_pool = False
     statistics = {}
     mols = mapper(pool)(get_mol, smiles)
     kwargs = {'n_jobs': pool, 'device': device, 'batch_size': batch_size}
@@ -151,7 +149,7 @@ def compute_intermediate_statistics(smiles, n_jobs=1, device='cpu',
                        ('QED', QED), ('NP', NP),
                        ('weight', weight)]:
         statistics[name] = FrechetMetric(func, **kwargs).precalc(mols)
-    if close_pool and not isinstance(pool, int):
+    if close_pool:
         pool.terminate()
     return statistics
 
