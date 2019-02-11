@@ -9,13 +9,13 @@ from moses.utils import mapper
 from multiprocessing import Pool
 from moses.utils import disable_rdkit_log, enable_rdkit_log
 from fcd_torch import FCD as FCDMetric
-from fcd_torch.fcd import calculate_frechet_distance
+from fcd_torch import calculate_frechet_distance
 
 
 def get_all_metrics(test, gen, k=None, n_jobs=1, device='cpu',
                     batch_size=512, test_scaffolds=None,
                     ptest=None, ptest_scaffolds=None,
-                    gpu=None):
+                    pool=None, gpu=None):
     """
     Computes all available metrics between test (scaffold test)
     and generated sets of SMILES.
@@ -32,6 +32,7 @@ def get_all_metrics(test, gen, k=None, n_jobs=1, device='cpu',
         ptest: dict with precalculated statistics of the test set
         ptest_scaffolds: dict with precalculated statistics
             of the scaffold test set
+        pool: optional multiprocessing pool to use for parallelization
         gpu: deprecated, use `device`
 
     Available metrics:
@@ -60,10 +61,14 @@ def get_all_metrics(test, gen, k=None, n_jobs=1, device='cpu',
             device = 'cpu'
         else:
             device = 'cuda:{}'.format(gpu)
-    if n_jobs != 1:
-        pool = Pool(n_jobs)
+    if pool is None:
+        if n_jobs != 1:
+            pool = Pool(n_jobs)
+        else:
+            pool = 1
+        close_pool = True
     else:
-        pool = 1
+        close_pool = False
     metrics['valid'] = fraction_valid(gen, n_jobs=pool)
     gen = remove_invalid(gen, canonize=True)
     if not isinstance(k, (list, tuple)):
@@ -114,7 +119,7 @@ def get_all_metrics(test, gen, k=None, n_jobs=1, device='cpu',
         metrics[name] = FrechetMetric(func, **kwargs)(gen=mols,
                                                       pref=ptest[name])
     enable_rdkit_log()
-    if n_jobs != 1:
+    if close_pool and not isinstance(pool, int):
         pool.terminate()
     return metrics
 
@@ -146,7 +151,7 @@ def compute_intermediate_statistics(smiles, n_jobs=1, device='cpu',
                        ('QED', QED), ('NP', NP),
                        ('weight', weight)]:
         statistics[name] = FrechetMetric(func, **kwargs).precalc(mols)
-    if n_jobs != 1 and close_pool:
+    if close_pool and not isinstance(pool, int):
         pool.terminate()
     return statistics
 
