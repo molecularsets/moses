@@ -60,26 +60,28 @@ def get_all_metrics(test, gen, k=None, n_jobs=1, device='cpu',
             device = 'cpu'
         else:
             device = 'cuda:{}'.format(gpu)
-    metrics['valid'] = fraction_valid(gen, n_jobs=n_jobs)
-    gen = remove_invalid(gen, canonize=True)
-    if not isinstance(k, (list, tuple)):
-        k = [k]
-    for _k in k:
-        metrics['unique@{}'.format(_k)] = fraction_unique(gen, _k, n_jobs)
-
-    if ptest is None:
-        ptest = compute_intermediate_statistics(test, n_jobs=n_jobs,
-                                                device=device,
-                                                batch_size=batch_size)
-    if test_scaffolds is not None and ptest_scaffolds is None:
-        ptest_scaffolds = compute_intermediate_statistics(
-            test_scaffolds, n_jobs=n_jobs,
-            device=device, batch_size=batch_size
-        )
     if n_jobs != 1:
         pool = Pool(n_jobs)
     else:
         pool = 1
+    metrics['valid'] = fraction_valid(gen, n_jobs=pool)
+    gen = remove_invalid(gen, canonize=True)
+    if not isinstance(k, (list, tuple)):
+        k = [k]
+    for _k in k:
+        metrics['unique@{}'.format(_k)] = fraction_unique(gen, _k, pool)
+
+    if ptest is None:
+        ptest = compute_intermediate_statistics(test, n_jobs=n_jobs,
+                                                device=device,
+                                                batch_size=batch_size,
+                                                pool=pool)
+    if test_scaffolds is not None and ptest_scaffolds is None:
+        ptest_scaffolds = compute_intermediate_statistics(
+            test_scaffolds, n_jobs=n_jobs,
+            device=device, batch_size=batch_size,
+            pool=pool
+        )
     mols = mapper(pool)(get_mol, gen)
     kwargs = {'n_jobs': pool, 'device': device, 'batch_size': batch_size}
     kwargs_fcd = {'n_jobs': n_jobs, 'device': device, 'batch_size': batch_size}
@@ -118,16 +120,20 @@ def get_all_metrics(test, gen, k=None, n_jobs=1, device='cpu',
 
 
 def compute_intermediate_statistics(smiles, n_jobs=1, device='cpu',
-                                    batch_size=512):
+                                    batch_size=512, pool=None):
     """
     The function precomputes statistics such as mean and variance for FCD, etc.
     It is useful to compute the statistics for test and scaffold test sets to
         speedup metrics calculation.
     """
-    if n_jobs != 1:
-        pool = Pool(n_jobs)
+    if pool is None:
+        if n_jobs != 1:
+            pool = Pool(n_jobs)
+        else:
+            pool = 1
+        close_pool = True
     else:
-        pool = 1
+        close_pool = False
     statistics = {}
     mols = mapper(pool)(get_mol, smiles)
     kwargs = {'n_jobs': pool, 'device': device, 'batch_size': batch_size}
@@ -140,7 +146,7 @@ def compute_intermediate_statistics(smiles, n_jobs=1, device='cpu',
                        ('QED', QED), ('NP', NP),
                        ('weight', weight)]:
         statistics[name] = FrechetMetric(func, **kwargs).precalc(mols)
-    if n_jobs != 1:
+    if n_jobs != 1 and close_pool:
         pool.terminate()
     return statistics
 
