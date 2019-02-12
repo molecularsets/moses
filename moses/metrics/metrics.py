@@ -1,6 +1,6 @@
 import warnings
 import numpy as np
-from scipy.spatial.distance import cos_distance
+from scipy.spatial.distance import cosine as cos_distance
 from .utils import compute_fragments, average_agg_tanimoto, \
     compute_scaffolds, fingerprints, \
     get_mol, canonic_smiles, mol_passes_filters, \
