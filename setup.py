@@ -16,7 +16,8 @@ setup(name='moses',
           'torch>=1.0.1',
           'fcd_torch'
       ],
-      description='MOSES: A benchmarking platform for molecular generation models',
+      description=('Molecular Sets (MOSES): '
+                   'A benchmarking platform for molecular generation models'),
       author='Neuromation & Insilico Medicine Teams',
       author_email='developers@neuromation.io, zhebrak@insilico.com',
       license='MIT',

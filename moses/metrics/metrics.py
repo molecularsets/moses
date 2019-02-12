@@ -267,9 +267,11 @@ class SNNMetric(Metric):
 
 def cos_similarity(ref_counts, gen_counts):
     """
-    Computes 1 - cosine distance between
+    Computes cosine similarity between
      dictionaries of form {name: count}. Non-present
-     elements are considered zero
+     elements are considered zero:
+
+     sim = <r, g> / ||r|| / ||g||
     """
     if len(ref_counts) == 0 or len(gen_counts) == 0:
         return np.nan
