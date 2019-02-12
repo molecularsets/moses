@@ -1,6 +1,6 @@
 import warnings
 import numpy as np
-from scipy.spatial.distance import cosine
+from scipy.spatial.distance import cos_distance
 from .utils import compute_fragments, average_agg_tanimoto, \
     compute_scaffolds, fingerprints, \
     get_mol, canonic_smiles, mol_passes_filters, \
@@ -265,18 +265,20 @@ class SNNMetric(Metric):
                                     device=self.device)
 
 
-def cos_distance(ref_counts, gen_counts):
+def cos_similarity(ref_counts, gen_counts):
     """
-    Computes 1 - cosine similarity between
+    Computes cosine similarity between
      dictionaries of form {name: count}. Non-present
-     elements are considered zero
+     elements are considered zero:
+
+     sim = <r, g> / ||r|| / ||g||
     """
     if len(ref_counts) == 0 or len(gen_counts) == 0:
         return np.nan
     keys = np.unique(list(ref_counts.keys()) + list(gen_counts.keys()))
     ref_vec = np.array([ref_counts.get(k, 0) for k in keys])
     gen_vec = np.array([gen_counts.get(k, 0) for k in keys])
-    return 1 - cosine(ref_vec, gen_vec)
+    return 1 - cos_distance(ref_vec, gen_vec)
 
 
 class FragMetric(Metric):
@@ -284,7 +286,7 @@ class FragMetric(Metric):
         return {'frag': compute_fragments(mols, n_jobs=self.n_jobs)}
 
     def metric(self, pref, pgen):
-        return cos_distance(pref['frag'], pgen['frag'])
+        return cos_similarity(pref['frag'], pgen['frag'])
 
 
 class ScafMetric(Metric):
@@ -292,7 +294,7 @@ class ScafMetric(Metric):
         return {'scaf': compute_scaffolds(mols, n_jobs=self.n_jobs)}
 
     def metric(self, pref, pgen):
-        return cos_distance(pref['scaf'], pgen['scaf'])
+        return cos_similarity(pref['scaf'], pgen['scaf'])
 
 
 class FrechetMetric(Metric):
