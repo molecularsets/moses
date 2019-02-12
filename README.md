@@ -56,19 +56,20 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
     <tbody>
         <tr>
             <th><i>Train</i></th>
-            <td><i>1</i></td>
-            <td><i>1</i></td>
-            <td><i>1</i></td>
-            <td><i>0.132</i></td>
+            <td><i>1.0000</i></td>
+            <td><i>1.0</i></td>
+            <td><i>1.0000</i></td>
+            <td><i>0.1320</i></td>
             <td><i>0.5994</i></td>
             <td><i>0.4833</i></td>
             <td><i>0.4635</i></td>
             <td><i>0.9997</i></td>
             <td><i>0.9981</i></td>
             <td><i>0.8756</i></td>
-            <td><i>0</i></td>
+            <td><i>0.0000</i></td>
+            <td><i>0.8567</i></td>
             <td><i>0.8508</i></td>
-            <td><i>1</i></td>
+            <td><i>1.0000</i></td>
         </tr>
         <tr>
             <th>CharRNN</th>
