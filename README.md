@@ -21,10 +21,8 @@ The dataset contains 1,936,962 molecular structures. For experiments, we also pr
 * [Adversarial Autoencoder (AAE)](./moses/aae/README.md)
 * [Objective-Reinforced Generative Adversarial Network (ORGAN)](./moses/organ/README.md)
 * [Junction Tree Variational Autoencoder (JTN-VAE)](https://github.com/wengong-jin/icml18-jtnn/tree/master/molvae)
-<<<<<<< HEAD
 * [Accelerated Training of Junction Tree VAE (Fast JTN-VAE)](https://github.com/wengong-jin/icml18-jtnn/tree/master/fast_molvae)
-=======
->>>>>>> cd1e36aad357536cdba2e44396a60b3811941d57
+
 
 ## Metrics
 Besides standard uniqueness and validity metrics, MOSES provides other metrics to access the overall quality of generated molecules. Fragment similarity (Frag) and Scaffold similarity (Scaff) are cosine distances between vectors of fragment or scaffold frequencies correspondingly of the generated and test sets. Nearest neighbor similarity (SNN) is the average similarity of generated molecules to the nearest molecule from the test set. Internal diversity (IntDiv) is an average pairwise similarity of generated molecules. Fréchet ChemNet Distance (FCD) measures the difference in distributions of last layer activations of ChemNet.
