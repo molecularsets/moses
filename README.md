@@ -54,29 +54,29 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
         <tr>
             <th>CharRNN</th>
             <td>0.9959</td>
-            <td>1.0</td>
+            <td><b>1.0</b></td>
             <td>0.9961</td>
-            <td>0.1807</td>
-            <td>0.6423</td>
+            <td><b>0.1807</b></td>
+            <td><b>0.6423</b></td>
             <td>0.4809</td>
             <td>0.4634</td>
-            <td>0.9994</td>
-            <td>0.9979</td>
+            <td><b>0.9994</b></td>
+            <td><b>0.9979</b></td>
             <td>0.8291</td>
             <td>0.0632</td>
             <td>0.8568</td>
-            <td>0.9988</td>
+            <td><b>0.9988</b></td>
         </tr>
         <tr>
             <th>VAE</th>
             <td>0.9556</td>
-            <td>1.0</td>
+            <td><b>1.0</b></td>
             <td>0.9885</td>
             <td>0.2120</td>
             <td>0.6830</td>
             <td>0.4782</td>
             <td>0.4610</td>
-            <td>0.9994</td>
+            <td><b>0.9994</b></td>
             <td>0.9974</td>
             <td>0.8356</td>
             <td>0.0405</td>
@@ -86,8 +86,8 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
         <tr>
             <th>AAE</th>
             <td>0.9318</td>
-            <td>1.0</td>
-            <td>0.9997</td>
+            <td><b>1.0</b></td>
+            <td><b>0.9997</b></td>
             <td>0.6593</td>
             <td>1.2302</td>
             <td>0.4267</td>
@@ -95,8 +95,8 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
             <td>0.9916</td>
             <td>0.9898</td>
             <td>0.7192</td>
-            <td>0.1363</td>
-            <td>0.8604</td>
+            <td><b>0.1363</b></td>
+            <td><b>0.8604</b></td>
             <td>0.9857</td>
         </tr>
         <tr>
@@ -106,27 +106,27 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
             <td>0.9260</td>
             <td>1.5748</td>
             <td>2.4306</td>
-            <td><b>0.4745</b></td>
-            <td><b>0.4593</b></td>
+            <td>0.4745</td>
+            <td>0.4593</td>
             <td>0.9897</td>
             <td>0.9883</td>
             <td>0.7843</td>
             <td>0.0632</td>
             <td>0.8526</td>
-            <td><b>0.9934</b></td>
+            <td>0.9934</td>
         </tr>
         <tr>
             <th>JTN-VAE</th>
-            <td>0.9991</td>
-            <td>1.0</td>
-            <td>0.9997</td>
+            <td><b>0.9991</b></td>
+            <td><b>1.0</b></td>
+            <td><b>0.9997</b></td>
             <td>0.9770</td>
             <td>1.5980</td>
-            <td>0.5223</td>
-            <td>0.4996</td>
+            <td><b>0.5223</b></td>
+            <td><b>0.4996</b></td>
             <td>0.9951</td>
             <td>0.9927</td>
-            <td>0.8655</td>
+            <td><b>0.8655</b></td>
             <td>0.1174</td>
             <td>0.8562</td>
             <td>0.9744</td>
