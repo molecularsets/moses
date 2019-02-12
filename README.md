@@ -55,6 +55,7 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
     </thead>
     <tbody>
         <tr>
+            <th><i>Train</i></th>
             <td><i>1</i></td>
             <td><i>1</i></td>
             <td><i>1</i></td>
