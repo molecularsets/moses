@@ -20,7 +20,7 @@ The dataset contains 1,936,962 molecular structures. For experiments, we also pr
 * [Variational Autoencoder (VAE)](./moses/vae/README.md)
 * [Adversarial Autoencoder (AAE)](./moses/aae/README.md)
 * [Objective-Reinforced Generative Adversarial Network (ORGAN)](./moses/organ/README.md)
-* [Junction Tree Variational Autoencoder (JTN-VAE)](./moses/junction_tree/README.md)
+* [Junction Tree Variational Autoencoder (JTN-VAE)](https://github.com/wengong-jin/icml18-jtnn/tree/master/molvae)
 
 ## Metrics
 Besides standard uniqueness and validity metrics, MOSES provides other metrics to access the overall quality of generated molecules. Fragment similarity (Frag) and Scaffold similarity (Scaff) are cosine distances between vectors of fragment or scaffold frequencies correspondingly of the generated and test sets. Nearest neighbor similarity (SNN) is the average similarity of generated molecules to the nearest molecule from the test set. Internal diversity (IntDiv) is an average pairwise similarity of generated molecules. Fréchet ChemNet Distance (FCD) measures the difference in distributions of last layer activations of ChemNet.
@@ -33,7 +33,7 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
             <th rowspan="2">Unique@1k (↑)</th>
             <th rowspan="2">Unique@10k (↑)</th>
             <th colspan="2">FCD (↓)</th>
-            <th colspan="2">SNN (↓)</th>
+            <th colspan="2">SNN (↑)</th>
             <th colspan="2">Frag (↑)</th>
             <th colspan="2">Scaff (↑)</th>
             <th rowspan="2">IntDiv (↑)</th>
@@ -53,51 +53,51 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
     <tbody>
         <tr>
             <th>CharRNN</th>
-            <td>0.9598</td>
-            <td><b>1.0000</b></td>
-            <td>0.9993</td>
-            <td>0.3233</td>
-            <td>0.8355</td>
-            <td>0.4606</td>
-            <td>0.4492</td>
-            <td>0.9977</td>
-            <td>0.9962</td>
-            <td>0.7964</td>
-            <td>0.1281</td>
-            <td><b>0.8561</b></td>
-            <td>0.9920</td>
+            <td>0.9959</td>
+            <td>1.0</td>
+            <td>0.9961</td>
+            <td>0.1807</td>
+            <td>0.6423</td>
+            <td>0.4809</td>
+            <td>0.4634</td>
+            <td>0.9994</td>
+            <td>0.9979</td>
+            <td>0.8291</td>
+            <td>0.0632</td>
+            <td>0.8568</td>
+            <td>0.9988</td>
         </tr>
         <tr>
             <th>VAE</th>
-            <td>0.9528</td>
-            <td><b>1.0000</b></td>
-            <td>0.9992</td>
-            <td><b>0.2540</b></td>
-            <td><b>0.6959</b></td>
-            <td>0.4684</td>
-            <td>0.4547</td>
-            <td><b>0.9978</b></td>
-            <td><b>0.9963</b></td>
-            <td><b>0.8277</b></td>
-            <td>0.0925</td>
-            <td>0.8548</td>
-            <td>0.9925</td>
+            <td>0.9556</td>
+            <td>1.0</td>
+            <td>0.9885</td>
+            <td>0.2120</td>
+            <td>0.6830</td>
+            <td>0.4782</td>
+            <td>0.4610</td>
+            <td>0.9994</td>
+            <td>0.9974</td>
+            <td>0.8356</td>
+            <td>0.0405</td>
+            <td>0.8549</td>
+            <td>0.9968</td>
         </tr>
         <tr>
             <th>AAE</th>
-            <td>0.9341</td>
-            <td><b>1.0000</b></td>
-            <td><b>1.0000</b></td>
-            <td>1.3511</td>
-            <td>1.8587</td>
-            <td>0.4191</td>
-            <td>0.4113</td>
-            <td>0.9865</td>
-            <td>0.9852</td>
-            <td>0.6637</td>
-            <td><b>0.1538</b></td>
-            <td>0.8531</td>
-            <td>0.9759</td>
+            <td>0.9318</td>
+            <td>1.0</td>
+            <td>0.9997</td>
+            <td>0.6593</td>
+            <td>1.2302</td>
+            <td>0.4267</td>
+            <td>0.4178</td>
+            <td>0.9916</td>
+            <td>0.9898</td>
+            <td>0.7192</td>
+            <td>0.1363</td>
+            <td>0.8604</td>
+            <td>0.9857</td>
         </tr>
         <tr>
             <th>ORGAN</th>
@@ -106,8 +106,8 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
             <td>0.9260</td>
             <td>1.5748</td>
             <td>2.4306</td>
-            <td>0.4745</td>
-            <td>0.4593</td>
+            <td><b>0.4745</b></td>
+            <td><b>0.4593</b></td>
             <td>0.9897</td>
             <td>0.9883</td>
             <td>0.7843</td>
@@ -117,19 +117,19 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
         </tr>
         <tr>
             <th>JTN-VAE</th>
-            <td><b>1.0000</b></td>
-            <td>0.9980</td>
-            <td>0.9972</td>
-            <td>4.3769</td>
-            <td>4.6299</td>
-            <td><b>0.3909</b></td>
-            <td><b>0.3902</b></td>
-            <td>0.9679</td>
-            <td>0.9699</td>
-            <td>0.3868</td>
-            <td>0.1163</td>
-            <td>0.8495</td>
-            <td>0.9566</td>
+            <td>0.9991</td>
+            <td>1.0</td>
+            <td>0.9997</td>
+            <td>0.9770</td>
+            <td>1.5980</td>
+            <td>0.5223</td>
+            <td>0.4996</td>
+            <td>0.9951</td>
+            <td>0.9927</td>
+            <td>0.8655</td>
+            <td>0.1174</td>
+            <td>0.8562</td>
+            <td>0.9744</td>
         </tr>
     </tbody>
 </table>
