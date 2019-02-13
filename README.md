@@ -140,17 +140,17 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
         </tr>
         <tr>
             <th>JTN-VAE</th>
-            <td><b>1.0000</b></td>
-            <td><b>1.0000</b></td>
+            <td>1.0000</td>
+            <td>1.0000</td>
             <td>0.9992</td>
-            <td>0.4224</td>
-            <td>0.9962</td>
-            <td><b>0.5561</b></td>
-            <td><b>0.5273</b></td>
-            <td>0.9962</td>
+            <td>0.5370</td>
+            <td>1.1328</td>
+            <td>0.4441</td>
+            <td>0.4345</td>
+            <td>0.9960</td>
             <td>0.9948</td>
-            <td><b>0.8925</b></td>
-            <td>0.1005</td>
+            <td>0.7908</td>
+            <td>0.0978</td>
             <td>0.8512</td>
             <td>0.8453</td>
             <td>0.9778</td>
