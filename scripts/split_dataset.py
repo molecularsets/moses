@@ -40,7 +40,8 @@ def get_parser():
 
 def main(config):
     dataset_path = os.path.join(config.dir, 'dataset_v1.csv')
-    download_url = 'https://media.githubusercontent.com/media/molecularsets/moses/master/data/dataset_v1.csv'
+    repo_url = 'https://media.githubusercontent.com/media/molecularsets/moses/'
+    download_url = repo_url+'master/data/dataset_v1.csv'
     if not os.path.exists(dataset_path):
         raise ValueError(
             "Missing dataset_v1.csv in {}; ".format(config.dir) +

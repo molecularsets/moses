@@ -20,8 +20,7 @@ The dataset contains 1,936,962 molecular structures. For experiments, we also pr
 * [Variational Autoencoder (VAE)](./moses/vae/README.md)
 * [Adversarial Autoencoder (AAE)](./moses/aae/README.md)
 * [Objective-Reinforced Generative Adversarial Network (ORGAN)](./moses/organ/README.md)
-* [Junction Tree Variational Autoencoder (JTN-VAE)](https://github.com/wengong-jin/icml18-jtnn/tree/master/molvae)
-* [Accelerated Training of Junction Tree VAE (Fast JTN-VAE)](https://github.com/wengong-jin/icml18-jtnn/tree/master/fast_molvae)
+* [Junction Tree Variational Autoencoder (JTN-VAE)](https://github.com/wengong-jin/icml18-jtnn/tree/master/fast_molvae)
 
 
 ## Metrics
@@ -141,23 +140,6 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
         </tr>
         <tr>
             <th>JTN-VAE</th>
-            <td>0.9991</td>
-            <td><b>1.0000</b></td>
-            <td><b>0.9997</b></td>
-            <td>0.977</td>
-            <td>1.5980</td>
-            <td>0.5223</td>
-            <td>0.4996</td>
-            <td>0.9951</td>
-            <td>0.9927</td>
-            <td>0.8655</td>
-            <td>0.1174</td>
-            <td>0.8562</td>
-            <td>0.8503</td>
-            <td>0.9744</td>
-        </tr>
-        <tr>
-            <th>Fast JTN-VAE</th>
             <td><b>1.0000</b></td>
             <td><b>1.0000</b></td>
             <td>0.9992</td>

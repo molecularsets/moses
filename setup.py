@@ -14,7 +14,8 @@ setup(name='moses',
           'pandas>=0.23',
           'scipy>=1.1.0',
           'torch>=1.0.1',
-          'fcd_torch'
+          'fcd_torch>=1.0.5',
+          'seaborn'
       ],
       description=('Molecular Sets (MOSES): '
                    'A benchmarking platform for molecular generation models'),

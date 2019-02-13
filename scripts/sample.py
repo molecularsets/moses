@@ -4,7 +4,6 @@ import torch
 import rdkit
 import pandas as pd
 from tqdm import tqdm
-
 from moses.models_storage import ModelsStorage
 from moses.script_utils import add_sample_args, set_seed
 
@@ -13,9 +12,11 @@ lg.setLevel(rdkit.RDLogger.CRITICAL)
 
 MODELS = ModelsStorage()
 
+
 def get_parser():
     parser = argparse.ArgumentParser()
-    subparsers = parser.add_subparsers(title='Models sampler script', description='available models')
+    subparsers = parser.add_subparsers(
+        title='Models sampler script', description='available models')
     for model in MODELS.get_model_names():
         add_sample_args(subparsers.add_parser(model))
     return parser
@@ -42,7 +43,9 @@ def main(model, config):
     n = config.n_samples
     with tqdm(total=config.n_samples, desc='Generating samples') as T:
         while n > 0:
-            current_samples = model.sample(min(n, config.n_batch), config.max_len)
+            current_samples = model.sample(
+                min(n, config.n_batch), config.max_len
+            )
             samples.extend(current_samples)
 
             n -= len(current_samples)
@@ -50,6 +53,7 @@ def main(model, config):
 
     samples = pd.DataFrame(samples, columns=['SMILES'])
     samples.to_csv(config.gen_save, index=False)
+
 
 if __name__ == '__main__':
     parser = get_parser()
