@@ -9,7 +9,6 @@ before_install:
   - export PATH="$HOME/conda/bin:$PATH"
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
-
   - conda create -n test_env python=$TRAVIS_PYTHON_VERSION pip cmake
   - source activate test_env
 
@@ -22,4 +21,5 @@ script:
   - flake8 moses/metrics/
   - flake8 setup.py
   - flake8 scripts/
+  - flake8 moses/*.py
   - python scripts/metrics/test.py

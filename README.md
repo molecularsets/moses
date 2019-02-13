@@ -20,7 +20,12 @@ The dataset contains 1,936,962 molecular structures. For experiments, we also pr
 * [Variational Autoencoder (VAE)](./moses/vae/README.md)
 * [Adversarial Autoencoder (AAE)](./moses/aae/README.md)
 * [Objective-Reinforced Generative Adversarial Network (ORGAN)](./moses/organ/README.md)
+<<<<<<< HEAD
 * [Junction Tree Variational Autoencoder (JTN-VAE)](https://github.com/wengong-jin/icml18-jtnn/tree/master/fast_molvae)
+=======
+* [Junction Tree Variational Autoencoder (JTN-VAE)](https://github.com/wengong-jin/icml18-jtnn/tree/master/molvae)
+* [Accelerated Training of Junction Tree VAE (Fast JTN-VAE)](https://github.com/wengong-jin/icml18-jtnn/tree/master/fast_molvae)
+>>>>>>> b6763388e03cfef9e8a30d06d797fbc181996815
 
 
 ## Metrics
@@ -236,10 +241,10 @@ python scripts/metrics/eval.py --ref_path <reference dataset> --gen_path <genera
 
 ```bash
 python scripts/train.py <model name> \
---train_load <train dataset> \
---model_save <path to model> \
---config_save <path to config> \
---vocab_save <path to vocabulary>
+    --train_load <train dataset> \
+    --model_save <path to model> \
+    --config_save <path to config> \
+    --vocab_save <path to vocabulary>
 ```
 
 To get a list of supported models run `python scripts/train.py --help`.
@@ -250,11 +255,11 @@ For more details of certain model run `python scripts/train.py <model name> --he
 
 ```bash
 python scripts/sample.py <model name> \
---model_load <path to model> \
---vocab_load <path to vocabulary> \
---config_load <path to config> \
---n_samples <number of samples> \
---gen_save <path to generated dataset>
+    --model_load <path to model> \
+    --vocab_load <path to vocabulary> \
+    --config_load <path to config> \
+    --n_samples <number of samples> \
+    --gen_save <path to generated dataset>
 ```
 
 To get a list of supported models run `python scripts/sample.py --help`.
@@ -265,8 +270,8 @@ For more details of certain model run `python scripts/sample.py <model name> --h
 
 ```bash
 python scripts/metrics/eval.py \
---ref_path <reference dataset> \
---gen_path <generated dataset>
+    --ref_path <reference dataset> \
+    --gen_path <generated dataset>
 ```
 
 For more details run `python scripts/metrics/eval.py --help`.

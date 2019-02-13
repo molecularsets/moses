@@ -14,9 +14,9 @@ class ModelsStorage():
         self.add_model('organ', ORGAN, ORGANTrainer, organ_parser)
 
     def add_model(self, name, class_, trainer_, parser_):
-        self._models[name] = { 'class' : class_,
-                               'trainer' : trainer_,
-                               'parser' : parser_ }
+        self._models[name] = {'class': class_,
+                              'trainer': trainer_,
+                              'parser': parser_}
 
     def get_model_names(self):
         return list(self._models.keys())
@@ -29,4 +29,3 @@ class ModelsStorage():
 
     def get_model_train_parser(self, name):
         return self._models[name]['parser']
-
