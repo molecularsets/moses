@@ -77,7 +77,7 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
             <td>0.9961</td>
             <td><b>0.1807</b></td>
             <td><b>0.6423</b></td>
-            <td>0.4809</td>
+            <td><b>0.4809</b></td>
             <td>0.4634</td>
             <td><b>0.9994</b></td>
             <td><b>0.9979</b></td>
@@ -98,7 +98,7 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
             <td>0.4610</td>
             <td><b>0.9994</b></td>
             <td>0.9974</td>
-            <td>0.8356</td>
+            <td><b>0.8356</b></td>
             <td>0.0405</td>
             <td>0.8549</td>
             <td>0.8490</td>
@@ -140,8 +140,8 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
         </tr>
         <tr>
             <th>JTN-VAE</th>
-            <td>1.0000</td>
-            <td>1.0000</td>
+            <td><b>1.0000</b></td>
+            <td><b>1.0000</b></td>
             <td>0.9992</td>
             <td>0.5370</td>
             <td>1.1328</td>
@@ -222,7 +222,7 @@ python setup.py install
 ```bash
 python scripts/split_dataset.py --dir data/
 ```
-This will create `train.csv`, `test.csv`, `test_scaffolds.csv`, on which you should train and test your models. It will also create some `.npz` files for faster calculation of metrics.
+This will create `train.csv`, `test.csv`, `test_scaffolds.csv`, on which you should train and test your models. It will also create some `.npz` files for faster calculation of metrics. <b>Note that the training set size is 250k molecules, and test sets are 10k molecules each.</b>
 
 * Calculate metrics for the trained model:
 
