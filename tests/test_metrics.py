@@ -9,7 +9,7 @@ from moses.utils import disable_rdkit_log, enable_rdkit_log
 class test_metrics(unittest.TestCase):
     def setUp(self):
         self.test = ['Oc1ccccc1-c1cccc2cnccc12',
-                    'COc1cccc(NC(=O)Cc2coc3ccc(OC)cc23)c1']
+                     'COc1cccc(NC(=O)Cc2coc3ccc(OC)cc23)c1']
         self.test_sf = ['COCc1nnc(NC(=O)COc2ccc(C(C)(C)C)cc2)s1',
                         'O=C(C1CC2C=CC1C2)N1CCOc2ccccc21',
                         'Nc1c(Br)cccc1C(=O)Nc1ccncn1']
@@ -36,10 +36,12 @@ class test_metrics(unittest.TestCase):
         fail = set()
         for metric in self.target:
             if not np.allclose(metrics[metric], self.target[metric]):
-                warnings.warn("Metric `{}` value does not match expected "
-                      "value. Got {}, expected {}".format(metric,
-                                                          metrics[metric],
-                                                          self.target[metric]))
+                warnings.warn(
+                    "Metric `{}` value does not match expected "
+                    "value. Got {}, expected {}".format(metric,
+                                                        metrics[metric],
+                                                        self.target[metric])
+                )
                 fail.add(metric)
         assert len(fail) == 0, f"Some metrics didn't pass tests: {fail}"
 
@@ -48,18 +50,22 @@ class test_metrics(unittest.TestCase):
         fail = set()
         for metric in self.target:
             if not np.allclose(metrics[metric], self.target[metric]):
-                warnings.warn("Metric `{}` value does not match expected "
-                      "value. Got {}, expected {}".format(metric,
-                                                          metrics[metric],
-                                                          self.target[metric]))
+                warnings.warn(
+                    "Metric `{}` value does not match expected "
+                    "value. Got {}, expected {}".format(metric,
+                                                        metrics[metric],
+                                                        self.target[metric])
+                )
                 fail.add(metric)
         assert len(fail) == 0, f"Some metrics didn't pass tests: {fail}"
-        
+
     def test_get_all_metrics_scaffold(self):
-        metrics = get_all_metrics(self.test, self.gen, test_scaffolds=self.test_sf, k=3, n_jobs=2)
+        get_all_metrics(self.test, self.gen,
+                        test_scaffolds=self.test_sf,
+                        k=3, n_jobs=2)
 
     def test_valid_unique(self):
-        disable_rdkit_log() 
+        disable_rdkit_log()
         mols = ['CCNC', 'CCC', 'INVALID', 'CCC']
         assert np.allclose(fraction_valid(mols), 3 / 4), "Failed valid"
         assert np.allclose(fraction_unique(mols, check_validity=False),

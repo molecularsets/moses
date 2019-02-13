@@ -5,17 +5,23 @@ import numpy as np
 import pandas as pd
 import torch
 
+
 def add_common_arg(parser):
     def torch_device(arg):
         if re.match('^(cuda(:[0-9]+)?|cpu)$', arg) is None:
-            raise argparse.ArgumentTypeError('Wrong device format: {}'.format(arg))
+            raise argparse.ArgumentTypeError(
+                'Wrong device format: {}'.format(arg)
+            )
 
         if arg != 'cpu':
             splited_device = arg.split(':')
 
             if (not torch.cuda.is_available()) or \
-                    (len(splited_device) > 1 and int(splited_device[1]) > torch.cuda.device_count()):
-                raise argparse.ArgumentTypeError('Wrong device: {} is not available'.format(arg))
+                    (len(splited_device) > 1 and
+                     int(splited_device[1]) > torch.cuda.device_count()):
+                raise argparse.ArgumentTypeError(
+                    'Wrong device: {} is not available'.format(arg)
+                )
 
         return arg
 
@@ -37,7 +43,7 @@ def add_train_args(parser):
     common_arg.add_argument('--train_load',
                             type=str, required=True,
                             help='Input data in csv format to train')
-    common_arg.add_argument('--val_load', type=str, 
+    common_arg.add_argument('--val_load', type=str,
                             help="Input data in csv format to validation")
     common_arg.add_argument('--model_save',
                             type=str, required=True, default='model.pt',
@@ -56,7 +62,8 @@ def add_train_args(parser):
                             help='Where to save the vocab')
     common_arg.add_argument('--vocab_load',
                             type=str,
-                            help='Where to load the vocab; otherwise it will be evaluated')
+                            help='Where to load the vocab; '
+                                 'otherwise it will be evaluated')
 
     return parser
 
@@ -94,6 +101,7 @@ def read_smiles_csv(path):
     return pd.read_csv(path,
                        usecols=['SMILES'],
                        squeeze=True).astype(str).tolist()
+
 
 def set_seed(seed):
     torch.manual_seed(seed)

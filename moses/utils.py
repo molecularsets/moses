@@ -5,12 +5,15 @@ import pandas as pd
 from multiprocessing import Pool
 from collections import UserList, defaultdict
 from rdkit import rdBase
+from matplotlib import pyplot as plt
+
 
 # https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader
-def set_torch_seed_to_all_gens(worker_id):
+def set_torch_seed_to_all_gens(_):
     seed = torch.initial_seed() % (2**32 - 1)
     random.seed(seed)
     np.random.seed(seed)
+
 
 class SS:
     bos = '<bos>'
@@ -29,7 +32,8 @@ class CharVocab:
         return cls(chars, *args, **kwargs)
 
     def __init__(self, chars, ss=SS):
-        if (ss.bos in chars) or (ss.eos in chars) or (ss.pad in chars) or (ss.unk in chars):
+        if (ss.bos in chars) or (ss.eos in chars) or \
+                (ss.pad in chars) or (ss.unk in chars):
             raise ValueError('SS in chars')
 
         all_syms = sorted(list(chars)) + [ss.bos, ss.eos, ss.pad, ss.unk]
@@ -91,10 +95,12 @@ class CharVocab:
 
         return string
 
+
 class OneHotVocab(CharVocab):
     def __init__(self, *args, **kwargs):
         super(OneHotVocab, self).__init__(*args, **kwargs)
         self.vectors = torch.eye(len(self.c2i))
+
 
 def mapper(n_jobs):
     '''
@@ -121,6 +127,7 @@ def mapper(n_jobs):
         return _mapper
     else:
         return n_jobs.map
+
 
 class Logger(UserList):
     def __init__(self, data=None):
@@ -174,6 +181,7 @@ class LogPlotter:
         for ax, name in zip(axs.flatten(), names):
             self.line(ax, name)
 
+
 class CircularBuffer:
     def __init__(self, size):
         self.max_size = size
@@ -188,11 +196,12 @@ class CircularBuffer:
         return element
 
     def last(self):
-        assert self.pointer != -1, "Can't get an element from the empty buffer!"
+        assert self.pointer != -1, "Can't get an element from an empty buffer!"
         return self.data[self.pointer]
 
     def mean(self):
         return self.data.mean()
+
 
 def disable_rdkit_log():
     rdBase.DisableLog('rdApp.*')

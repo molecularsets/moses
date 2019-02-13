@@ -18,20 +18,31 @@ logger = logging.getLogger("prepare dataset")
 def get_parser():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--output', '-o', type=str, default='dataset_v1.csv',
-                        help='Path for constructed dataset')
-    parser.add_argument('--seed', type=int, default=0,
-                        help='Random state')
-    parser.add_argument('--url', type=str,
-                        default='http://zinc.docking.org/db/bysubset/11/11_p0.smi.gz',
-                        help='url to .smi.gz file with smiles')
-    parser.add_argument('--n_jobs', type=int,
-                        default=1,
-                        help='number of processes to use')
-    parser.add_argument('--keep_ids', action='store_true', default=False,
-                        help='Keep ZINC ids in the final csv file')
-    parser.add_argument('--isomeric', action='store_true', default=False,
-                        help='Save non-isomeric SMILES')
+    parser.add_argument(
+        '--output', '-o',
+        type=str, default='dataset_v1.csv',
+        help='Path for constructed dataset'
+    )
+    parser.add_argument(
+        '--seed', type=int, default=0, help='Random state'
+    )
+    parser.add_argument(
+        '--url', type=str,
+        default='http://zinc.docking.org/db/bysubset/11/11_p0.smi.gz',
+        help='url to .smi.gz file with smiles'
+    )
+    parser.add_argument(
+        '--n_jobs', type=int, default=1,
+        help='number of processes to use'
+    )
+    parser.add_argument(
+        '--keep_ids', action='store_true', default=False,
+        help='Keep ZINC ids in the final csv file'
+    )
+    parser.add_argument(
+        '--isomeric', action='store_true', default=False,
+        help='Save non-isomeric SMILES'
+    )
     return parser
 
 
@@ -61,15 +72,18 @@ def filter_lines(lines, n_jobs, isomeric):
             x for x in tqdm.tqdm(
                 pool.imap_unordered(process_molecule_p, lines),
                 total=len(lines),
-                miniters=1000) if x is not None
+                miniters=1000
+            )
+            if x is not None
         ]
         dataset = pd.DataFrame(dataset, columns=['ID', 'SMILES'])
         dataset = dataset.sort_values(by=['ID', 'SMILES'])
         dataset = dataset.drop_duplicates('ID')
         dataset = dataset.sort_values(by='ID')
         dataset = dataset.drop_duplicates('SMILES')
-        dataset['scaffold'] = pool.map(compute_scaffold, 
-                                       dataset['SMILES'].values)
+        dataset['scaffold'] = pool.map(
+            compute_scaffold, dataset['SMILES'].values
+        )
     return dataset
 
 
@@ -81,8 +95,9 @@ def split_dataset(dataset, seed):
     dataset['SPLIT'] = 'train'
     test_scaf_idx = [x in test_scaffolds for x in dataset['scaffold']]
     dataset.loc[test_scaf_idx, 'SPLIT'] = 'test_scaffolds'
-    test_idx = dataset.loc[dataset['SPLIT'] == 'train'].sample(frac=0.1,
-                                                               random_state=seed).index
+    test_idx = dataset.loc[dataset['SPLIT'] == 'train'].sample(
+        frac=0.1, random_state=seed
+    ).index
     dataset.loc[test_idx, 'SPLIT'] = 'test'
     dataset.drop('scaffold', axis=1, inplace=True)
     return dataset

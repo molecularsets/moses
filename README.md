@@ -20,8 +20,7 @@ The dataset contains 1,936,962 molecular structures. For experiments, we also pr
 * [Variational Autoencoder (VAE)](./moses/vae/README.md)
 * [Adversarial Autoencoder (AAE)](./moses/aae/README.md)
 * [Objective-Reinforced Generative Adversarial Network (ORGAN)](./moses/organ/README.md)
-* [Junction Tree Variational Autoencoder (JTN-VAE)](https://github.com/wengong-jin/icml18-jtnn/tree/master/molvae)
-* [Accelerated Training of Junction Tree VAE (Fast JTN-VAE)](https://github.com/wengong-jin/icml18-jtnn/tree/master/fast_molvae)
+* [Junction Tree Variational Autoencoder (JTN-VAE)](https://github.com/wengong-jin/icml18-jtnn/tree/master/fast_molvae)
 
 
 ## Metrics
@@ -76,10 +75,10 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
             <td>0.9959</td>
             <td><b>1.0000</b></td>
             <td>0.9961</td>
-            <td><b>0.1807</b></td>
-            <td><b>0.6423</b></td>
-            <td>0.4809</td>
-            <td>0.4634</td>
+            <td><b>0.1806</b></td>
+            <td><b>0.6428</b></td>
+            <td><b>0.4809</b></td>
+            <td><b>0.4634</b></td>
             <td><b>0.9994</b></td>
             <td><b>0.9979</b></td>
             <td>0.8291</td>
@@ -93,13 +92,13 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
             <td>0.9556</td>
             <td><b>1.0000</b></td>
             <td>0.9885</td>
-            <td>0.2120</td>
-            <td>0.6830</td>
+            <td>0.2115</td>
+            <td>0.6837</td>
             <td>0.4782</td>
             <td>0.4610</td>
             <td><b>0.9994</b></td>
             <td>0.9974</td>
-            <td>0.8356</td>
+            <td><b>0.8356</b></td>
             <td>0.0405</td>
             <td>0.8549</td>
             <td>0.8490</td>
@@ -110,8 +109,8 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
             <td>0.9318</td>
             <td><b>1.0000</b></td>
             <td><b>0.9997</b></td>
-            <td>0.6593</td>
-            <td>1.2302</td>
+            <td>0.6645</td>
+            <td>1.2380</td>
             <td>0.4267</td>
             <td>0.4178</td>
             <td>0.9916</td>
@@ -127,8 +126,8 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
             <td>0.8731</td>
             <td>0.9910</td>
             <td>0.9260</td>
-            <td>1.5748</td>
-            <td>2.4306</td>
+            <td>1.5721</td>
+            <td>2.4292</td>
             <td>0.4745</td>
             <td>0.4593</td>
             <td>0.9897</td>
@@ -141,34 +140,17 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
         </tr>
         <tr>
             <th>JTN-VAE</th>
-            <td>0.9991</td>
-            <td><b>1.0000</b></td>
-            <td><b>0.9997</b></td>
-            <td>0.977</td>
-            <td>1.5980</td>
-            <td>0.5223</td>
-            <td>0.4996</td>
-            <td>0.9951</td>
-            <td>0.9927</td>
-            <td>0.8655</td>
-            <td>0.1174</td>
-            <td>0.8562</td>
-            <td>0.8503</td>
-            <td>0.9744</td>
-        </tr>
-        <tr>
-            <th>Fast JTN-VAE</th>
             <td><b>1.0000</b></td>
             <td><b>1.0000</b></td>
             <td>0.9992</td>
-            <td>0.4224</td>
-            <td>0.9962</td>
-            <td><b>0.5561</b></td>
-            <td><b>0.5273</b></td>
-            <td>0.9962</td>
+            <td>0.5370</td>
+            <td>1.1328</td>
+            <td>0.4441</td>
+            <td>0.4345</td>
+            <td>0.9960</td>
             <td>0.9948</td>
-            <td><b>0.8925</b></td>
-            <td>0.1005</td>
+            <td>0.7908</td>
+            <td>0.0978</td>
             <td>0.8512</td>
             <td>0.8453</td>
             <td>0.9778</td>
@@ -194,24 +176,24 @@ For comparison of molecular properties, we computed the Frèchet distance betwee
 
 2. Pull an existing image (4.1Gb to download) from DockerHub:
 
-```
+```bash
 docker pull molecularsets/moses
 ```
 
 or clone the repository and build it manually:
 
-```
+```bash
 git clone https://github.com/molecularsets/moses.git
 nvidia-docker image build --tag molecularsets/moses moses/
 ```
 
 3. Create a container:
-```
+```bash
 nvidia-docker run -it --name moses --network="host" --shm-size 10G molecularsets/moses
 ```
 
 4. The dataset and source code are available inside the docker container at /moses:
-```
+```bash
 docker exec -it molecularsets/moses bash
 ```
 
@@ -219,7 +201,7 @@ docker exec -it molecularsets/moses bash
 Alternatively, install dependencies and MOSES manually.
 
 1. Clone the repository:
-```
+```bash
 git lfs install
 git clone https://github.com/molecularsets/moses.git
 ```
@@ -227,7 +209,7 @@ git clone https://github.com/molecularsets/moses.git
 2. [Install RDKit](https://www.rdkit.org/docs/Install.html) for metrics calculation.
 
 3. Install MOSES:
-```
+```bash
 python setup.py install
 ```
 
@@ -236,22 +218,30 @@ python setup.py install
 
 * Install MOSES as described in the previous section.
 
+* Split the dataset (automatically done with `run.py`):
+```bash
+python scripts/split_dataset.py --dir data/
+```
+This will create `train.csv`, `test.csv`, `test_scaffolds.csv`, on which you should train and test your models. It will also create some `.npz` files for faster calculation of metrics. <b>Note that the training set size is 250k molecules, and test sets are 10k molecules each.</b>
+
 * Calculate metrics for the trained model:
 
+```bash
+python scripts/eval.py --ref_path <reference dataset> --gen_path <generated dataset>
 ```
-python scripts/metrics/eval.py --ref_path <reference dataset> --gen_path <generated dataset>
-```
+
+* Add both generated samples and metrics to your repository
 
 # Platform usage
 
 ### Training
 
-```
+```bash
 python scripts/train.py <model name> \
---train_load <train dataset> \
---model_save <path to model> \
---config_save <path to config> \
---vocab_save <path to vocabulary>
+       --train_load <train dataset> \
+       --model_save <path to model> \
+       --config_save <path to config> \
+       --vocab_save <path to vocabulary>
 ```
 
 To get a list of supported models run `python scripts/train.py --help`.
@@ -260,13 +250,13 @@ For more details of certain model run `python scripts/train.py <model name> --he
 
 ### Generation
 
-```
+```bash
 python scripts/sample.py <model name> \
---model_load <path to model> \
---vocab_load <path to vocabulary> \
---config_load <path to config> \
---n_samples <number of samples> \
---gen_save <path to generated dataset>
+       --model_load <path to model> \
+       --vocab_load <path to vocabulary> \
+       --config_load <path to config> \
+       --n_samples <number of samples> \
+       --gen_save <path to generated dataset>
 ```
 
 To get a list of supported models run `python scripts/sample.py --help`.
@@ -275,25 +265,25 @@ For more details of certain model run `python scripts/sample.py <model name> --h
 
 ### Evaluation
 
-```
-python scripts/metrics/eval.py \
---ref_path <reference dataset> \
---gen_path <generated dataset>
+```bash
+python scripts/eval.py \
+       --ref_path <reference dataset> \
+       --gen_path <generated dataset>
 ```
 
-For more details run `python scripts/metrics/eval.py --help`.
+For more details run `python scripts/eval.py --help`.
 
 
 ### End-to-End launch
 
 You can run pretty much everything with:
-```
+```bash
 python scripts/run.py
 ```
 This will **split** the dataset, **train** the models, **generate** new molecules, and **calculate** the metrics. Evaluation results will be saved in `metrics.csv`.
 
 You can specify the GPU device index as `cuda:n` (or `cpu` for CPU) and/or model by running:
-```
+```bash
 python scripts/run.py --device cuda:1 --model aae
 ```
 
