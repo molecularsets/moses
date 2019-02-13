@@ -230,6 +230,8 @@ This will create `train.csv`, `test.csv`, `test_scaffolds.csv`, on which you sho
 python scripts/eval.py --ref_path <reference dataset> --gen_path <generated dataset>
 ```
 
+* Add both generated samples and metrics to your repository
+
 # Platform usage
 
 ### Training
