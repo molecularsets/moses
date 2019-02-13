@@ -16,7 +16,7 @@ def load_module(name, path):
 
 MODELS = ModelsStorage()
 split_dataset = load_module('split_dataset', 'split_dataset.py')
-eval_script = load_module('eval', 'metrics/eval.py')
+eval_script = load_module('eval', 'eval.py')
 trainer_script = load_module('train', 'train.py')
 sampler_script = load_module('sample', 'sample.py')
 

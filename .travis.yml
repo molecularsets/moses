@@ -22,4 +22,4 @@ script:
   - flake8 setup.py
   - flake8 scripts/
   - flake8 moses/*.py
-  - python scripts/metrics/test.py
+  - python tests/test_metrics.py

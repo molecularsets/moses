@@ -227,7 +227,7 @@ This will create `train.csv`, `test.csv`, `test_scaffolds.csv`, on which you sho
 * Calculate metrics for the trained model:
 
 ```bash
-python scripts/metrics/eval.py --ref_path <reference dataset> --gen_path <generated dataset>
+python scripts/eval.py --ref_path <reference dataset> --gen_path <generated dataset>
 ```
 
 # Platform usage
@@ -264,12 +264,12 @@ For more details of certain model run `python scripts/sample.py <model name> --h
 ### Evaluation
 
 ```bash
-python scripts/metrics/eval.py \
+python scripts/eval.py \
        --ref_path <reference dataset> \
        --gen_path <generated dataset>
 ```
 
-For more details run `python scripts/metrics/eval.py --help`.
+For more details run `python scripts/eval.py --help`.
 
 
 ### End-to-End launch
