@@ -218,9 +218,15 @@ python setup.py install
 
 * Install MOSES as described in the previous section.
 
+* Split the dataset (automatically done with `run.py`):
+```python
+python scripts/split_dataset.py --dir data/
+```
+This will create `train.csv`, `test.csv`, `test_scaffolds.csv`, on which you should train and test your models. It will also create some `.npz` files for faster calculation of metrics.
+
 * Calculate metrics for the trained model:
 
-```
+```python
 python scripts/metrics/eval.py --ref_path <reference dataset> --gen_path <generated dataset>
 ```
 
@@ -228,7 +234,7 @@ python scripts/metrics/eval.py --ref_path <reference dataset> --gen_path <genera
 
 ### Training
 
-```
+```python
 python scripts/train.py <model name> \
 --train_load <train dataset> \
 --model_save <path to model> \
