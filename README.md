@@ -176,24 +176,24 @@ For comparison of molecular properties, we computed the Frèchet distance betwee
 
 2. Pull an existing image (4.1Gb to download) from DockerHub:
 
-```
+```bash
 docker pull molecularsets/moses
 ```
 
 or clone the repository and build it manually:
 
-```
+```bash
 git clone https://github.com/molecularsets/moses.git
 nvidia-docker image build --tag molecularsets/moses moses/
 ```
 
 3. Create a container:
-```
+```bash
 nvidia-docker run -it --name moses --network="host" --shm-size 10G molecularsets/moses
 ```
 
 4. The dataset and source code are available inside the docker container at /moses:
-```
+```bash
 docker exec -it molecularsets/moses bash
 ```
 
@@ -201,7 +201,7 @@ docker exec -it molecularsets/moses bash
 Alternatively, install dependencies and MOSES manually.
 
 1. Clone the repository:
-```
+```bash
 git lfs install
 git clone https://github.com/molecularsets/moses.git
 ```
@@ -209,7 +209,7 @@ git clone https://github.com/molecularsets/moses.git
 2. [Install RDKit](https://www.rdkit.org/docs/Install.html) for metrics calculation.
 
 3. Install MOSES:
-```
+```bash
 python setup.py install
 ```
 
@@ -219,14 +219,14 @@ python setup.py install
 * Install MOSES as described in the previous section.
 
 * Split the dataset (automatically done with `run.py`):
-```python
+```bash
 python scripts/split_dataset.py --dir data/
 ```
 This will create `train.csv`, `test.csv`, `test_scaffolds.csv`, on which you should train and test your models. It will also create some `.npz` files for faster calculation of metrics.
 
 * Calculate metrics for the trained model:
 
-```python
+```bash
 python scripts/metrics/eval.py --ref_path <reference dataset> --gen_path <generated dataset>
 ```
 
@@ -234,7 +234,7 @@ python scripts/metrics/eval.py --ref_path <reference dataset> --gen_path <genera
 
 ### Training
 
-```python
+```bash
 python scripts/train.py <model name> \
 --train_load <train dataset> \
 --model_save <path to model> \
@@ -248,7 +248,7 @@ For more details of certain model run `python scripts/train.py <model name> --he
 
 ### Generation
 
-```
+```bash
 python scripts/sample.py <model name> \
 --model_load <path to model> \
 --vocab_load <path to vocabulary> \
@@ -263,7 +263,7 @@ For more details of certain model run `python scripts/sample.py <model name> --h
 
 ### Evaluation
 
-```
+```bash
 python scripts/metrics/eval.py \
 --ref_path <reference dataset> \
 --gen_path <generated dataset>
@@ -275,13 +275,13 @@ For more details run `python scripts/metrics/eval.py --help`.
 ### End-to-End launch
 
 You can run pretty much everything with:
-```
+```bash
 python scripts/run.py
 ```
 This will **split** the dataset, **train** the models, **generate** new molecules, and **calculate** the metrics. Evaluation results will be saved in `metrics.csv`.
 
 You can specify the GPU device index as `cuda:n` (or `cpu` for CPU) and/or model by running:
-```
+```bash
 python scripts/run.py --device cuda:1 --model aae
 ```
 
