@@ -1,7 +1,6 @@
 import random
 import numpy as np
 
-from multiprocessing import Pool
 from collections import Counter
 from moses.metrics import get_mol, remove_invalid, \
                           fraction_passes_filters, internal_diversity, \
@@ -11,8 +10,9 @@ from moses.utils import mapper
 
 
 class MetricsReward:
-    supported_metrics = ['fcd', 'snn', 'fragments', 'scaffolds', 'internal_diversity',
-                         'filters', 'logp', 'sa', 'qed', 'np', 'weight']
+    supported_metrics = ['fcd', 'snn', 'fragments', 'scaffolds',
+                         'internal_diversity', 'filters',
+                         'logp', 'sa', 'qed', 'np', 'weight']
 
     @staticmethod
     def _nan2zero(value):
@@ -26,7 +26,9 @@ class MetricsReward:
 
         self.n_ref_subsample = n_ref_subsample
         self.n_rollouts = n_rollouts
-        self.n_jobs = 1 # TODO: profile this. Pool works over-slow.
+        # TODO: profile this. Pool works over-slow.
+        n_jobs = n_jobs if False else 1
+        self.n_jobs = n_jobs
         self.metrics = metrics
 
     def get_reference_data(self, data):
@@ -50,7 +52,7 @@ class MetricsReward:
                 if metric_name == 'fcd':
                     m = FCDMetric(n_jobs=self.n_jobs)(ref, rollout)
                 elif metric_name == 'morgan':
-                    m = SNN(n_jobs=self.n_jobs)(ref_mols, rollout_mols)
+                    m = SNNMetric(n_jobs=self.n_jobs)(ref_mols, rollout_mols)
                 elif metric_name == 'fragments':
                     m = FragMetric(n_jobs=self.n_jobs)(ref_mols, rollout_mols)
                 elif metric_name == 'scaffolds':
@@ -58,17 +60,29 @@ class MetricsReward:
                 elif metric_name == 'internal_diversity':
                     m = internal_diversity(rollout_mols, n_jobs=self.n_jobs)
                 elif metric_name == 'filters':
-                    m = fraction_passes_filters(rollout_mols, n_jobs=self.n_jobs)
+                    m = fraction_passes_filters(
+                        rollout_mols, n_jobs=self.n_jobs
+                    )
                 elif metric_name == 'logp':
-                    m = FrechetMetric(func=logP,  n_jobs=self.n_jobs)(ref_mols, rollout_mols)
+                    m = FrechetMetric(func=logP,  n_jobs=self.n_jobs)(
+                        ref_mols, rollout_mols
+                    )
                 elif metric_name == 'sa':
-                    m = FrechetMetric(func=SA, n_jobs=self.n_jobs)(ref_mols, rollout_mols)
+                    m = FrechetMetric(func=SA, n_jobs=self.n_jobs)(
+                        ref_mols, rollout_mols
+                    )
                 elif metric_name == 'qed':
-                    m = FrechetMetric(func=QED, n_jobs=self.n_jobs)(ref_mols, rollout_mols)
+                    m = FrechetMetric(func=QED, n_jobs=self.n_jobs)(
+                        ref_mols, rollout_mols
+                    )
                 elif metric_name == 'np':
-                    m = FrechetMetric(func=NP, n_jobs=self.n_jobs)(ref_mols, rollout_mols)
+                    m = FrechetMetric(func=NP, n_jobs=self.n_jobs)(
+                        ref_mols, rollout_mols
+                    )
                 elif metric_name == 'weight':
-                    m = FrechetMetric(func=weight, n_jobs=self.n_jobs)(ref_mols, rollout_mols)
+                    m = FrechetMetric(func=weight, n_jobs=self.n_jobs)(
+                        ref_mols, rollout_mols
+                    )
 
                 m = MetricsReward._nan2zero(m)
                 for i in range(len(rollout)):
@@ -88,10 +102,15 @@ class MetricsReward:
         n = len(gen) // self.n_rollouts
         rollouts = [gen[i::n] for i in range(n)]
 
-        metrics_values = [self._get_metrics(ref_subsample, ref_mols_subsample, rollout) for rollout in rollouts]
-        metrics_values = map(lambda rollout_metrics: [sum(r, 0) / len(r) for r in rollout_metrics], metrics_values)
+        metrics_values = [self._get_metrics(
+            ref_subsample, ref_mols_subsample, rollout
+        ) for rollout in rollouts]
+        metrics_values = map(
+            lambda rm: [
+                sum(r, 0) / len(r)
+                for r in rm
+            ], metrics_values)
         reward_values = sum(zip(*metrics_values), ())
         reward_values = [v / c for v, c in zip(reward_values, gen_counts)]
 
         return reward_values
-

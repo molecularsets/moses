@@ -41,7 +41,7 @@ def get_parser(parser=None):
                            help='Number of epochs for autoencoder training')
     train_arg.add_argument('--n_batch', type=int, default=128,
                            help='Size of batch')
-    train_arg.add_argument('--lr', type=float, default=1e-3,
+    train_arg.add_argument('--lr', type=float, default=0.001,
                            help='Learning rate')
     train_arg.add_argument('--step_size', type=float, default=50,
                            help='Period of learning rate decay')

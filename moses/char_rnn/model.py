@@ -15,8 +15,10 @@ class CharRNN(nn.Module):
         self.dropout = config.dropout
         self.vocab_size = self.input_size = self.output_size = len(vocabulary)
 
-        self.embedding_layer = nn.Embedding(self.vocab_size, self.vocab_size, padding_idx=vocabulary.pad)
-        self.lstm_layer = nn.LSTM(self.input_size, self.hidden_size, self.num_layers, dropout=self.dropout,
+        self.embedding_layer = nn.Embedding(self.vocab_size, self.vocab_size,
+                                            padding_idx=vocabulary.pad)
+        self.lstm_layer = nn.LSTM(self.input_size, self.hidden_size,
+                                  self.num_layers, dropout=self.dropout,
                                   batch_first=True)
         self.linear_layer = nn.Linear(self.hidden_size, self.output_size)
 
@@ -36,7 +38,8 @@ class CharRNN(nn.Module):
     def string2tensor(self, string, device='model'):
         ids = self.vocabulary.string2ids(string, add_bos=True, add_eos=True)
         tensor = torch.tensor(ids, dtype=torch.long,
-                              device=self.device if device == 'model' else device)
+                              device=self.device
+                              if device == 'model' else device)
 
         return tensor
 
@@ -48,20 +51,25 @@ class CharRNN(nn.Module):
 
     def sample(self, n_batch, max_length=100):
         with torch.no_grad():
-            starts = [torch.tensor([self.vocabulary.bos], dtype=torch.long, device=self.device)
+            starts = [torch.tensor([self.vocabulary.bos],
+                                   dtype=torch.long,
+                                   device=self.device)
                       for _ in range(n_batch)]
 
-            starts = torch.tensor(starts, dtype=torch.long, device=self.device).unsqueeze(1)
+            starts = torch.tensor(starts, dtype=torch.long,
+                                  device=self.device).unsqueeze(1)
 
             new_smiles_list = [
-                torch.tensor(self.vocabulary.pad, dtype=torch.long, device=self.device).repeat(max_length + 2)
+                torch.tensor(self.vocabulary.pad, dtype=torch.long,
+                             device=self.device).repeat(max_length + 2)
                 for _ in range(n_batch)]
 
             for i in range(n_batch):
                 new_smiles_list[i][0] = self.vocabulary.bos
 
             len_smiles_list = [1 for _ in range(n_batch)]
-            lens = torch.tensor([1 for _ in range(n_batch)], dtype=torch.long, device=self.device)
+            lens = torch.tensor([1 for _ in range(n_batch)],
+                                dtype=torch.long, device=self.device)
             end_smiles_list = [False for _ in range(n_batch)]
 
             hiddens = None
@@ -83,7 +91,9 @@ class CharRNN(nn.Module):
                         new_smiles_list[j][i] = top_elem
                         len_smiles_list[j] = len_smiles_list[j] + 1
 
-                starts = torch.tensor(ind_tops, dtype=torch.long, device=self.device).unsqueeze(1)
+                starts = torch.tensor(ind_tops, dtype=torch.long,
+                                      device=self.device).unsqueeze(1)
 
-            new_smiles_list = [new_smiles_list[i][:l] for i, l in enumerate(len_smiles_list)]
+            new_smiles_list = [new_smiles_list[i][:l]
+                               for i, l in enumerate(len_smiles_list)]
             return [self.tensor2string(t) for t in new_smiles_list]
