@@ -26,7 +26,7 @@ class MetricsReward:
 
         self.n_ref_subsample = n_ref_subsample
         self.n_rollouts = n_rollouts
-        # TODO: profile this. Pool works over-slow.
+        # TODO: profile this. Pool works too slow.
         n_jobs = n_jobs if False else 1
         self.n_jobs = n_jobs
         self.metrics = metrics
@@ -44,6 +44,7 @@ class MetricsReward:
             return result
 
         rollout = remove_invalid(rollout, canonize=True, n_jobs=self.n_jobs)
+        rollout_mols = mapper(self.n_jobs)(get_mol, rollout)
         if len(rollout) < 2:
             return result
 
@@ -64,23 +65,23 @@ class MetricsReward:
                         rollout_mols, n_jobs=self.n_jobs
                     )
                 elif metric_name == 'logp':
-                    m = FrechetMetric(func=logP,  n_jobs=self.n_jobs)(
+                    m = -FrechetMetric(func=logP, n_jobs=self.n_jobs)(
                         ref_mols, rollout_mols
                     )
                 elif metric_name == 'sa':
-                    m = FrechetMetric(func=SA, n_jobs=self.n_jobs)(
+                    m = -FrechetMetric(func=SA, n_jobs=self.n_jobs)(
                         ref_mols, rollout_mols
                     )
                 elif metric_name == 'qed':
-                    m = FrechetMetric(func=QED, n_jobs=self.n_jobs)(
+                    m = -FrechetMetric(func=QED, n_jobs=self.n_jobs)(
                         ref_mols, rollout_mols
                     )
                 elif metric_name == 'np':
-                    m = FrechetMetric(func=NP, n_jobs=self.n_jobs)(
+                    m = -FrechetMetric(func=NP, n_jobs=self.n_jobs)(
                         ref_mols, rollout_mols
                     )
                 elif metric_name == 'weight':
-                    m = FrechetMetric(func=weight, n_jobs=self.n_jobs)(
+                    m = -FrechetMetric(func=weight, n_jobs=self.n_jobs)(
                         ref_mols, rollout_mols
                     )
 

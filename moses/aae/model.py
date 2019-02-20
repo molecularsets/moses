@@ -120,7 +120,7 @@ class AAE(nn.Module):
     def string2tensor(self, string, device='model'):
         ids = self.vocabulary.string2ids(string, add_bos=True, add_eos=True)
         tensor = torch.tensor(
-            ids, type=torch.long,
+            ids, dtype=torch.long,
             device=self.device if device == 'model' else device
         )
 

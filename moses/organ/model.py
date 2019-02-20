@@ -64,11 +64,9 @@ class ORGAN(nn.Module):
     def __init__(self, vocabulary, config):
         super(ORGAN, self).__init__()
 
-        self.metrics_reward = None
-        if len(config.addition_rewards) > 0:
-            self.metrics_reward = MetricsReward(
-                config.n_ref_subsample, config.rollouts,
-                config.n_jobs, config.addition_rewards)
+        self.metrics_reward = MetricsReward(
+            config.n_ref_subsample, config.rollouts,
+            config.n_jobs, config.additional_rewards)
         self.reward_weight = config.reward_weight
 
         self.vocabulary = vocabulary
