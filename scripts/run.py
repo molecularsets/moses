@@ -73,14 +73,15 @@ def get_parser():
 
 
 def train_model(config, model, train_path):
+    print('Training...')
     model_path = get_model_path(config, model)
     config_path = get_config_path(config, model)
     vocab_path = get_vocab_path(config, model)
 
-    if os.path.exists(model_path) and \
-            os.path.exists(config_path) and \
-            os.path.exists(vocab_path):
-        return
+#     if os.path.exists(model_path) and \
+#             os.path.exists(config_path) and \
+#             os.path.exists(vocab_path):
+#         return
 
     trainer_parser = trainer_script.get_parser()
     trainer_config = trainer_parser.parse_known_args(
@@ -96,6 +97,7 @@ def train_model(config, model, train_path):
 
 
 def sample_from_model(config, model):
+    print('Sampling...')
     model_path = get_model_path(config, model)
     config_path = get_config_path(config, model)
     vocab_path = get_vocab_path(config, model)
@@ -125,6 +127,7 @@ def sample_from_model(config, model):
 
 def eval_metrics(config, model, test_path, test_scaffolds_path,
                  ptest_path, ptest_scaffolds_path):
+    print('Computing metrics...')
     eval_parser = eval_script.get_parser()
     eval_config = eval_parser.parse_args(
         ['--test_path', test_path,

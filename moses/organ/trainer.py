@@ -366,8 +366,8 @@ class ORGANTrainer(MosesTrainer):
         gen_val_loader = None if val_data is None else self.get_dataloader(
             model, val_data, gen_collate_fn, shuffle=False
         )
-        self._pretrain_generator(model, gen_train_loader,
-                                 gen_val_loader, logger)
+#         self._pretrain_generator(model, gen_train_loader,
+#                                  gen_val_loader, logger)
 
         # Discriminator
         dsc_collate_fn = self.discriminator_collate_fn(model)
@@ -375,10 +375,20 @@ class ORGANTrainer(MosesTrainer):
                                                dsc_collate_fn, shuffle=True)
         dsc_val_loader = None if val_data is None else self.get_dataloader(
             model, val_data, dsc_collate_fn, shuffle=False)
-        self._pretrain_discriminator(model, dsc_train_loader,
-                                     dsc_val_loader, logger)
+#         self._pretrain_discriminator(model, dsc_train_loader,
+#                                      dsc_val_loader, logger)
 
         # Policy gradient
+
+        device = self.get_collate_device(model)
+        model.load_state_dict(
+           torch.load(
+               self.config.model_save[:-3] + '_pg000.pt'.format(0)
+           )
+        )
+        model.to(device)
+
+    
         self.ref_smiles, self.ref_mols = None, None
         if model.metrics_reward is not None:
             (
