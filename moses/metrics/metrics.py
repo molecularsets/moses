@@ -215,7 +215,7 @@ def remove_invalid(gen, canonize=True, n_jobs=1):
     """
     Removes invalid molecules from the dataset
     """
-    if canonize:
+    if not canonize:
         mols = mapper(n_jobs)(get_mol, gen)
         return [gen_ for gen_, mol in zip(gen, mols) if mol is not None]
     else:
