@@ -49,10 +49,10 @@ def get_parser(parser=None):
 
     train_arg = parser.add_argument_group('Training')
     train_arg.add_argument('--generator_pretrain_epochs', type=int,
-                           default=300,
+                           default=50,
                            help='Number of epochs for generator pretraining')
     train_arg.add_argument('--discriminator_pretrain_epochs', type=int,
-                           default=300,
+                           default=50,
                            help='Number of epochs for '
                                 'discriminator pretraining')
     train_arg.add_argument('--pg_iters', type=int, default=1000,

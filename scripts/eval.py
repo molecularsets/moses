@@ -37,9 +37,8 @@ def main(config, print_metrics=True):
                               ptest=ptest, ptest_scaffolds=ptest_scaffolds)
 
     if print_metrics:
-        print('Metrics:')
         for name, value in metrics.items():
-            print('\t' + name + ' = {}'.format(value))
+            print('{},{}'.format(name, value))
     else:
         return metrics
 
