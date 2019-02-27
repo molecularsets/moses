@@ -4,6 +4,16 @@ Deep generative models such as generative adversarial networks, variational auto
 
 __For more details, please refer to the [paper](https://arxiv.org/abs/1811.12823).__
 
+If you are using MOSES in your research paper, please cite us as
+```
+@article{polykovskiy2018molecular,
+  title={Molecular Sets (MOSES): A Benchmarking Platform for Molecular Generation Models},
+  author={Polykovskiy, Daniil and Zhebrak, Alexander and Sanchez-Lengeling, Benjamin and Golovanov, Sergey and Tatanov, Oktai and Belyaev, Stanislav and Kurbanov, Rauf and Artamonov, Aleksey and Aladinskiy, Vladimir and Veselov, Mark and others},
+  journal={arXiv preprint arXiv:1811.12823},
+  year={2018}
+}
+```
+
 ![pipeline](images/pipeline.png)
 
 ## Dataset
