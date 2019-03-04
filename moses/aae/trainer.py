@@ -119,7 +119,8 @@ class AAETrainer(MosesTrainer):
         postfix = {'autoencoder_loss': 0,
                    'generator_loss': 0,
                    'discriminator_loss': 0}
-
+        total_generator_batches = 0
+        total_discriminator_batches = 0
         for i, (encoder_inputs,
                 decoder_inputs,
                 decoder_targets) in enumerate(tqdm_data):
@@ -155,52 +156,56 @@ class AAETrainer(MosesTrainer):
                 ], dim=0
             )
 
-            autoencoder_loss = criterions['autoencoder'](
-                decoder_outputs, decoder_targets
-            )
-            generator_loss = criterions['generator'](discriminator_outputs)
 
-            if i % 2 == 0:
+            if i % (self.config.generator_updates +
+                    self.config.discriminator_updates
+                   ) < self.config.generator_updates:
+                autoencoder_loss = criterions['autoencoder'](
+                    decoder_outputs, decoder_targets
+                )
+                generator_loss = criterions['generator'](discriminator_outputs)
+                total_generator_batches += 1
+                postfix['autoencoder_loss'] += (
+                    autoencoder_loss.item() - postfix['autoencoder_loss']
+                ) / total_generator_batches
+                postfix['generator_loss'] += (
+                    generator_loss.item() - postfix['generator_loss']
+                ) / total_generator_batches
+
+                if optimizers is not None:
+                    optimizers['autoencoder'].zero_grad()
+                    optimizers['generator'].zero_grad()
+                    (autoencoder_loss+generator_loss).backward()
+                    optimizers['autoencoder'].step()
+                    optimizers['generator'].step()
+
+            else:
                 discriminator_inputs = model.sample_latent(
                     latent_codes.shape[0]
                 )
-                discriminator_outputs = model.discriminator(
-                    discriminator_inputs
-                )
-                discriminator_targets = torch.ones(
+                discriminator_outputs = torch.cat((
+                    discriminator_outputs,
+                    model.discriminator(discriminator_inputs)
+                ), 1)
+                ones = torch.ones(
                     latent_codes.shape[0], 1, device=model.device
                 )
-            else:
-                discriminator_targets = torch.zeros(
+                zeros = torch.zeros(
                     latent_codes.shape[0], 1, device=model.device
                 )
+                discriminator_targets = torch.cat((zeros, ones), 1)
+                discriminator_loss = criterions['discriminator'](
+                    discriminator_outputs, discriminator_targets
+                )
+                total_discriminator_batches += 1
+                postfix['discriminator_loss'] += (
+                    discriminator_loss.item() - postfix['discriminator_loss']
+                ) / total_discriminator_batches
 
-            discriminator_loss = criterions['discriminator'](
-                discriminator_outputs, discriminator_targets
-            )
-
-            if optimizers is not None:
-                optimizers['autoencoder'].zero_grad()
-                autoencoder_loss.backward(retain_graph=True)
-                optimizers['autoencoder'].step()
-
-                optimizers['generator'].zero_grad()
-                generator_loss.backward(retain_graph=True)
-                optimizers['generator'].step()
-
-                optimizers['discriminator'].zero_grad()
-                discriminator_loss.backward()
-                optimizers['discriminator'].step()
-
-            postfix['autoencoder_loss'] += (
-                autoencoder_loss.item() - postfix['autoencoder_loss']
-            ) / (i + 1)
-            postfix['generator_loss'] += (
-                generator_loss.item() - postfix['generator_loss']
-            ) / (i + 1)
-            postfix['discriminator_loss'] += (
-                discriminator_loss.item() - postfix['discriminator_loss']
-            ) / (i + 1)
+                if optimizers is not None:
+                    optimizers['discriminator'].zero_grad()
+                    discriminator_loss.backward()
+                    optimizers['discriminator'].step()
 
             tqdm_data.set_postfix(postfix)
 
@@ -217,13 +222,19 @@ class AAETrainer(MosesTrainer):
         optimizers = {
             'autoencoder': torch.optim.Adam(
                 list(model.encoder.parameters()) +
-                list(model.decoder.parameters()), lr=self.config.lr
+                list(model.decoder.parameters()),
+                lr=self.config.lr,
+                weight_decay=self.config.weight_decay
             ),
             'generator': torch.optim.Adam(
-                model.encoder.parameters(), lr=self.config.lr
+                model.encoder.parameters(),
+                lr=self.config.lr,
+                weight_decay=self.config.weight_decay
             ),
             'discriminator': torch.optim.Adam(
-                model.discriminator.parameters(), lr=self.config.lr
+                model.discriminator.parameters(),
+                lr=self.config.lr,
+                weight_decay=self.config.weight_decay
             )
         }
         schedulers = {
