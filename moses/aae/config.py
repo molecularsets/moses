@@ -37,18 +37,12 @@ def get_parser(parser=None):
     train_arg = parser.add_argument_group('Training')
     train_arg.add_argument('--pretrain_epochs', type=int, default=0,
                            help='Number of epochs for autoencoder pretraining')
-    train_arg.add_argument('--weight_decay', type=int, default=1e-5,
-                           help='Weight decay for all model parts')
     train_arg.add_argument('--train_epochs', type=int, default=50,
                            help='Number of epochs for autoencoder training')
     train_arg.add_argument('--n_batch', type=int, default=128,
                            help='Size of batch')
-    train_arg.add_argument('--lr', type=float, default=0.001,
+    train_arg.add_argument('--lr', type=float, default=1e-3,
                            help='Learning rate')
-    train_arg.add_argument('--discriminator_updates', type=int, default=1,
-                           help='Number of discriminator updates in a cycle')
-    train_arg.add_argument('--generator_updates', type=int, default=1,
-                           help='Number of generator updates in a cycle')
     train_arg.add_argument('--step_size', type=float, default=10,
                            help='Period of learning rate decay')
     train_arg.add_argument('--gamma', type=float, default=0.5,
