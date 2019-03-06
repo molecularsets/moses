@@ -78,10 +78,10 @@ def train_model(config, model, train_path):
     config_path = get_config_path(config, model)
     vocab_path = get_vocab_path(config, model)
 
-#     if os.path.exists(model_path) and \
-#             os.path.exists(config_path) and \
-#             os.path.exists(vocab_path):
-#         return
+     if os.path.exists(model_path) and \
+             os.path.exists(config_path) and \
+             os.path.exists(vocab_path):
+         return
 
     trainer_parser = trainer_script.get_parser()
     trainer_config = trainer_parser.parse_known_args(
