@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 import argparse
-from moses.metrics import FrechetMetric, NP, weight, logP, SA, QED, mapper
-from moses.metrics.utils import get_mol
+from moses.metrics import FrechetMetric, NP, weight, logP, SA, QED
+from moses.metrics.utils import get_mol, mapper
 from moses.utils import disable_rdkit_log
 
 
