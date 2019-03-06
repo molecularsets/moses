@@ -1,5 +1,7 @@
 # Molecular Sets (MOSES): A benchmarking platform for molecular generation models
 
+[![Build Status](https://travis-ci.com/molecularsets/moses.svg?branch=master)](https://travis-ci.com/molecularsets/moses) [![PyPI version](https://badge.fury.io/py/molsets.svg)](https://badge.fury.io/py/molsets)
+
 Deep generative models such as generative adversarial networks, variational autoencoders, and autoregressive models are rapidly growing in popularity for the discovery of new molecules and materials. In this work, we introduce MOlecular SEtS (MOSES), a benchmarking platform to support research on machine learning for drug discovery. MOSES implements several popular molecular generation models and includes a set of metrics that evaluate the diversity and quality of generated molecules. MOSES is meant to standardize the research on molecular generation and facilitate the sharing and comparison of new models. Additionally, we provide a large-scale comparison of existing state of the art models and elaborate on current challenges for generative models that might prove fertile ground for new research. Our platform and source code are freely available here.
 
 __For more details, please refer to the [paper](https://arxiv.org/abs/1811.12823).__
@@ -7,8 +9,8 @@ __For more details, please refer to the [paper](https://arxiv.org/abs/1811.12823
 If you are using MOSES in your research paper, please cite us as
 ```
 @article{polykovskiy2018molecular,
-  title={Molecular Sets (MOSES): A Benchmarking Platform for Molecular Generation Models},
-  author={Polykovskiy, Daniil and Zhebrak, Alexander and Sanchez-Lengeling, Benjamin and Golovanov, Sergey and Tatanov, Oktai and Belyaev, Stanislav and Kurbanov, Rauf and Artamonov, Aleksey and Aladinskiy, Vladimir and Veselov, Mark and others},
+  title={{M}olecular {S}ets ({MOSES}): {A} {B}enchmarking {P}latform for {M}olecular {G}eneration {M}odels},
+  author={Polykovskiy, Daniil and Zhebrak, Alexander and Sanchez-Lengeling, Benjamin and Golovanov, Sergey and Tatanov, Oktai and Belyaev, Stanislav and Kurbanov, Rauf and Artamonov, Aleksey and Aladinskiy, Vladimir and Veselov, Mark and Kadurin, Artur and Nikolenko, Sergey and Aspuru-Guzik, Alan and Zhavoronkov, Alex},
   journal={arXiv preprint arXiv:1811.12823},
   year={2018}
 }
@@ -22,7 +24,7 @@ We propose [a benchmarking dataset](https://media.githubusercontent.com/media/mo
 
 The set is based on the ZINC Clean Leads collection. It contains 4,591,276 molecules in total, filtered by molecular weight in the range from 250 to 350 Daltons, a number of rotatable bonds not greater than 7, and XlogP less than or equal to 3.5. We removed molecules containing charged atoms or atoms besides C, N, S, O, F, Cl, Br, H or cycles longer than 8 atoms. The molecules were filtered via medicinal chemistry filters (MCFs) and PAINS filters.
 
-The dataset contains 1,936,962 molecular structures. For experiments, we also provide a training, test and scaffold test sets containing 250k, 10k, and 10k molecules respectively. The scaffold test set contains unique Bemis-Murcko scaffolds that were not present in the training and test sets. We use this set to assess how well the model can generate previously unobserved scaffolds.
+The dataset contains 1,936,962 molecular structures. For experiments, we split the dataset into a training, test and scaffold test sets containing around 1.6M, 176k, and 176k molecules respectively. The scaffold test set contains unique Bemis-Murcko scaffolds that were not present in the training and test sets. We use this set to assess how well the model can generate previously unobserved scaffolds.
 
 ## Models
 
@@ -37,135 +39,118 @@ The dataset contains 1,936,962 molecular structures. For experiments, we also pr
 Besides standard uniqueness and validity metrics, MOSES provides other metrics to access the overall quality of generated molecules. Fragment similarity (Frag) and Scaffold similarity (Scaff) are cosine distances between vectors of fragment or scaffold frequencies correspondingly of the generated and test sets. Nearest neighbor similarity (SNN) is the average similarity of generated molecules to the nearest molecule from the test set. Internal diversity (IntDiv) is an average pairwise similarity of generated molecules. Fréchet ChemNet Distance (FCD) measures the difference in distributions of last layer activations of ChemNet.
 
 <table border="1" class="dataframe">
-    <thead>
-        <tr style="text-align: right;">
-            <th rowspan="2">Model</th>
-            <th rowspan="2">Valid (↑)</th>
-            <th rowspan="2">Unique@1k (↑)</th>
-            <th rowspan="2">Unique@10k (↑)</th>
-            <th colspan="2">FCD (↓)</th>
-            <th colspan="2">SNN (↑)</th>
-            <th colspan="2">Frag (↑)</th>
-            <th colspan="2">Scaff (↑)</th>
-            <th rowspan="2">IntDiv (↑)</th>
-            <th rowspan="2">IntDiv2 (↑)</th>
-            <th rowspan="2">Filters (↑)</th>
-        </tr>
-        <tr>
-            <th>Test</th>
-            <th>TestSF</th>
-            <th>Test</th>
-            <th>TestSF</th>
-            <th>Test</th>
-            <th>TestSF</th>
-            <th>Test</th>
-            <th>TestSF</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <th><i>Train</i></th>
-            <td><i>1.0000</i></td>
-            <td><i>1.0000</i></td>
-            <td><i>1.0000</i></td>
-            <td><i>0.1320</i></td>
-            <td><i>0.5994</i></td>
-            <td><i>0.4833</i></td>
-            <td><i>0.4635</i></td>
-            <td><i>0.9997</i></td>
-            <td><i>0.9981</i></td>
-            <td><i>0.8756</i></td>
-            <td><i>0.0000</i></td>
-            <td><i>0.8567</i></td>
-            <td><i>0.8508</i></td>
-            <td><i>1.0000</i></td>
-        </tr>
-        <tr>
-            <th>CharRNN</th>
-            <td>0.9959</td>
-            <td><b>1.0000</b></td>
-            <td>0.9961</td>
-            <td><b>0.1806</b></td>
-            <td><b>0.6428</b></td>
-            <td><b>0.4809</b></td>
-            <td><b>0.4634</b></td>
-            <td><b>0.9994</b></td>
-            <td><b>0.9979</b></td>
-            <td>0.8291</td>
-            <td>0.0632</td>
-            <td>0.8568</td>
-            <td>0.8508</td>
-            <td><b>0.9988</b></td>
-        </tr>
-        <tr>
-            <th>VAE</th>
-            <td>0.9556</td>
-            <td><b>1.0000</b></td>
-            <td>0.9885</td>
-            <td>0.2115</td>
-            <td>0.6837</td>
-            <td>0.4782</td>
-            <td>0.4610</td>
-            <td><b>0.9994</b></td>
-            <td>0.9974</td>
-            <td><b>0.8356</b></td>
-            <td>0.0405</td>
-            <td>0.8549</td>
-            <td>0.8490</td>
-            <td>0.9968</td>
-        </tr>
-        <tr>
-            <th>AAE</th>
-            <td>0.9318</td>
-            <td><b>1.0000</b></td>
-            <td><b>0.9997</b></td>
-            <td>0.6645</td>
-            <td>1.2380</td>
-            <td>0.4267</td>
-            <td>0.4178</td>
-            <td>0.9916</td>
-            <td>0.9898</td>
-            <td>0.7192</td>
-            <td><b>0.1363</b></td>
-            <td><b>0.8604</b></td>
-            <td><b>0.8549</b></td>
-            <td>0.9857</td>
-        </tr>
-        <tr>
-            <th>ORGAN</th>
-            <td>0.8731</td>
-            <td>0.9910</td>
-            <td>0.9260</td>
-            <td>1.5721</td>
-            <td>2.4292</td>
-            <td>0.4745</td>
-            <td>0.4593</td>
-            <td>0.9897</td>
-            <td>0.9883</td>
-            <td>0.7843</td>
-            <td>0.0632</td>
-            <td>0.8526</td>
-            <td>0.8457</td>
-            <td>0.9934</td>
-        </tr>
-        <tr>
-            <th>JTN-VAE</th>
-            <td><b>1.0000</b></td>
-            <td><b>1.0000</b></td>
-            <td>0.9992</td>
-            <td>0.5370</td>
-            <td>1.1328</td>
-            <td>0.4441</td>
-            <td>0.4345</td>
-            <td>0.9960</td>
-            <td>0.9948</td>
-            <td>0.7908</td>
-            <td>0.0978</td>
-            <td>0.8512</td>
-            <td>0.8453</td>
-            <td>0.9778</td>
-        </tr>
-    </tbody>
+  <thead>
+    <tr style="text-align: right;">
+      <th rowspan="2">Model</th>
+      <th rowspan="2">Valid (↑)</th>
+      <th rowspan="2">Unique@1k (↑)</th>
+      <th rowspan="2">Unique@10k (↑)</th>
+      <th colspan="2">FCD (↓)</th>
+      <th colspan="2">SNN (↓)</th>
+      <th colspan="2">Frag (↑)</th>
+      <th colspan="2">Scaf (↑)</th>
+      <th rowspan="2">IntDiv (↑)</th>
+      <th rowspan="2">IntDiv2 (↑)</th>
+      <th rowspan="2">Filters (↑)</th>
+    </tr>
+    <tr>
+      <th>Test</th>
+      <th>TestSF</th>
+      <th>Test</th>
+      <th>TestSF</th>
+      <th>Test</th>
+      <th>TestSF</th>
+      <th>Test</th>
+      <th>TestSF</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><i>Train</i></td>
+      <td><i>1.0</i></td>
+      <td><i>1.0</i></td>
+      <td><i>1.0</i></td>
+      <td><i>0.008</i></td>
+      <td><i>0.4755</i></td>
+      <td><i>0.6419</i></td>
+      <td><i>0.5859</i></td>
+      <td><i>1.0</i></td>
+      <td><i>0.9986</i></td>
+      <td><i>0.9907</i></td>
+      <td><i>0.0</i></td>
+      <td><i>0.8567</i></td>
+      <td><i>0.8508</i></td>
+      <td><i>1.0</i></td>
+    </tr>
+    <tr>
+      <td>CharRNN</td>
+      <td>0.8088</td>
+      <td><b>1.0</b></td>
+      <td><b>0.9996</b></td>
+      <td>0.355</td>
+      <td>0.8995</td>
+      <td>0.5362</td>
+      <td>0.5137</td>
+      <td>0.9988</td>
+      <td>0.9963</td>
+      <td>0.8817</td>
+      <td><b>0.1398</b></td>
+      <td>0.8547</td>
+      <td>0.8488</td>
+      <td>0.9751</td>
+    </tr>
+    <tr>
+      <td>AAE</td>
+      <td>0.9965</td>
+      <td><b>1.0</b></td>
+      <td>0.995</td>
+      <td>0.3945</td>
+      <td>1.0003</td>
+      <td>0.6197</td>
+      <td>0.5747</td>
+      <td>0.9952</td>
+      <td>0.9939</td>
+      <td>0.8655</td>
+      <td>0.1001</td>
+      <td><b>0.8565</b></td>
+      <td>0.8503</td>
+      <td><b>0.9974</b></td>
+    </tr>
+    <tr>
+      <td>VAE</td>
+      <td>0.9691</td>
+      <td><b>1.0</b></td>
+      <td>0.9989</td>
+      <td><b>0.0844</b></td>
+      <td><b>0.5412</b></td>
+      <td><b>0.6226</b></td>
+      <td><b>0.5766</b></td>
+      <td><b>0.9996</b></td>
+      <td><b>0.9982</b></td>
+      <td><b>0.9331</b></td>
+      <td>0.0616</td>
+      <td><b>0.8565</b></td>
+      <td><b>0.8505</b></td>
+      <td>0.9963</td>
+    </tr>
+    <tr>
+      <td>JTN-VAE</td>
+      <td><b>1.0</b></td>
+      <td><b>1.0</b></td>
+      <td>0.9992</td>
+      <td>0.4224</td>
+      <td>0.9962</td>
+      <td>0.5561</td>
+      <td>0.5273</td>
+      <td>0.9962</td>
+      <td>0.9948</td>
+      <td>0.8925</td>
+      <td>0.1005</td>
+      <td>0.8512</td>
+      <td>0.8453</td>
+      <td>0.9778</td>
+    </tr>
+  </tbody>
 </table>
 
 For comparison of molecular properties, we computed the Frèchet distance between distributions of molecules in the generated and test sets. Below, we provide plots for lipophilicity (logP), Synthetic Accessibility (SA), Quantitative Estimation of Drug-likeness (QED), Natural Product-likeness (NP) and molecular weight.
@@ -179,6 +164,11 @@ For comparison of molecular properties, we computed the Frèchet distance betwee
 |![weight](images/weight.png)|
 
 # Installation
+
+### PyPi
+The simplest way to install MOSES (models and metrics) is to install [RDKit](https://www.rdkit.org/docs/Install.html): `conda install -yq -c rdkit rdkit` and then install MOSES (`molsets`) from pip (`pip install molsets`).
+
+If you are using Ubuntu, you should also install `sudo apt-get install libxrender1 libxext6` for RDKit.
 
 ### Docker
 
@@ -232,7 +222,7 @@ python setup.py install
 ```bash
 python scripts/split_dataset.py --dir data/
 ```
-This will create `train.csv`, `test.csv`, `test_scaffolds.csv`, on which you should train and test your models. It will also create some `.npz` files for faster calculation of metrics. <b>Note that the training set size is 250k molecules, and test sets are 10k molecules each.</b>
+This will create `train.csv`, `test.csv`, `test_scaffolds.csv`, on which you should train and test your models. It will also create some `.npz` files for faster calculation of metrics.
 
 * Calculate metrics for the trained model:
 

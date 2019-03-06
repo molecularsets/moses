@@ -1,5 +1,6 @@
 import argparse
 
+
 def get_parser(parser=None):
     if parser is None:
         parser = argparse.ArgumentParser()
@@ -61,7 +62,7 @@ def get_parser(parser=None):
                            type=float, default=3 * 1e-4,
                            help='Initial lr value')
     train_arg.add_argument('--lr_n_period',
-                           type=int, default=50,
+                           type=int, default=10,
                            help='Epochs before first restart in SGDR')
     train_arg.add_argument('--lr_n_restarts',
                            type=int, default=6,

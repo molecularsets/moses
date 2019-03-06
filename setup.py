@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 import moses
 
 
-setup(name='moses',
+setup(name='molsets',
       version=moses.__version__,
       python_requires='>=3.5.0',
       packages=find_packages() + ['moses/metrics/SA_Score',
