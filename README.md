@@ -28,137 +28,118 @@ The dataset contains 1,936,962 molecular structures. For experiments, we split t
 ## Metrics
 Besides standard uniqueness and validity metrics, MOSES provides other metrics to access the overall quality of generated molecules. Fragment similarity (Frag) and Scaffold similarity (Scaff) are cosine distances between vectors of fragment or scaffold frequencies correspondingly of the generated and test sets. Nearest neighbor similarity (SNN) is the average similarity of generated molecules to the nearest molecule from the test set. Internal diversity (IntDiv) is an average pairwise similarity of generated molecules. Fréchet ChemNet Distance (FCD) measures the difference in distributions of last layer activations of ChemNet.
 
-<table border="1" class="dataframe">
-    <thead>
-        <tr style="text-align: right;">
-            <th rowspan="2">Model</th>
-            <th rowspan="2">Valid (↑)</th>
-            <th rowspan="2">Unique@1k (↑)</th>
-            <th rowspan="2">Unique@10k (↑)</th>
-            <th colspan="2">FCD (↓)</th>
-            <th colspan="2">SNN (↑)</th>
-            <th colspan="2">Frag (↑)</th>
-            <th colspan="2">Scaff (↑)</th>
-            <th rowspan="2">IntDiv (↑)</th>
-            <th rowspan="2">IntDiv2 (↑)</th>
-            <th rowspan="2">Filters (↑)</th>
-        </tr>
-        <tr>
-            <th>Test</th>
-            <th>TestSF</th>
-            <th>Test</th>
-            <th>TestSF</th>
-            <th>Test</th>
-            <th>TestSF</th>
-            <th>Test</th>
-            <th>TestSF</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <th><i>Train</i></th>
-            <td><i>1.0000</i></td>
-            <td><i>1.0000</i></td>
-            <td><i>1.0000</i></td>
-            <td><i>0.1320</i></td>
-            <td><i>0.5994</i></td>
-            <td><i>0.4833</i></td>
-            <td><i>0.4635</i></td>
-            <td><i>0.9997</i></td>
-            <td><i>0.9981</i></td>
-            <td><i>0.8756</i></td>
-            <td><i>0.0000</i></td>
-            <td><i>0.8567</i></td>
-            <td><i>0.8508</i></td>
-            <td><i>1.0000</i></td>
-        </tr>
-        <tr>
-            <th>CharRNN</th>
-            <td>0.9959</td>
-            <td><b>1.0000</b></td>
-            <td>0.9961</td>
-            <td><b>0.1806</b></td>
-            <td><b>0.6428</b></td>
-            <td><b>0.4809</b></td>
-            <td><b>0.4634</b></td>
-            <td><b>0.9994</b></td>
-            <td><b>0.9979</b></td>
-            <td>0.8291</td>
-            <td>0.0632</td>
-            <td>0.8568</td>
-            <td>0.8508</td>
-            <td><b>0.9988</b></td>
-        </tr>
-        <tr>
-            <th>VAE</th>
-            <td>0.9556</td>
-            <td><b>1.0000</b></td>
-            <td>0.9885</td>
-            <td>0.2115</td>
-            <td>0.6837</td>
-            <td>0.4782</td>
-            <td>0.4610</td>
-            <td><b>0.9994</b></td>
-            <td>0.9974</td>
-            <td><b>0.8356</b></td>
-            <td>0.0405</td>
-            <td>0.8549</td>
-            <td>0.8490</td>
-            <td>0.9968</td>
-        </tr>
-        <tr>
-            <th>AAE</th>
-            <td>0.9318</td>
-            <td><b>1.0000</b></td>
-            <td><b>0.9997</b></td>
-            <td>0.6645</td>
-            <td>1.2380</td>
-            <td>0.4267</td>
-            <td>0.4178</td>
-            <td>0.9916</td>
-            <td>0.9898</td>
-            <td>0.7192</td>
-            <td><b>0.1363</b></td>
-            <td><b>0.8604</b></td>
-            <td><b>0.8549</b></td>
-            <td>0.9857</td>
-        </tr>
-        <tr>
-            <th>ORGAN</th>
-            <td>0.8731</td>
-            <td>0.9910</td>
-            <td>0.9260</td>
-            <td>1.5721</td>
-            <td>2.4292</td>
-            <td>0.4745</td>
-            <td>0.4593</td>
-            <td>0.9897</td>
-            <td>0.9883</td>
-            <td>0.7843</td>
-            <td>0.0632</td>
-            <td>0.8526</td>
-            <td>0.8457</td>
-            <td>0.9934</td>
-        </tr>
-        <tr>
-            <th>JTN-VAE</th>
-            <td><b>1.0000</b></td>
-            <td><b>1.0000</b></td>
-            <td>0.9992</td>
-            <td>0.5370</td>
-            <td>1.1328</td>
-            <td>0.4441</td>
-            <td>0.4345</td>
-            <td>0.9960</td>
-            <td>0.9948</td>
-            <td>0.7908</td>
-            <td>0.0978</td>
-            <td>0.8512</td>
-            <td>0.8453</td>
-            <td>0.9778</td>
-        </tr>
-    </tbody>
-</table>
+<thead>
+    <tr style="text-align: right;">
+      <th rowspan="2">Model</th>
+      <th rowspan="2">Valid (↑)</th>
+      <th rowspan="2">Unique@1k (↑)</th>
+      <th rowspan="2">Unique@10k (↑)</th>
+      <th colspan="2">FCD (↓)</th>
+      <th colspan="2">SNN (↓)</th>
+      <th colspan="2">Frag (↑)</th>
+      <th colspan="2">Scaf (↑)</th>
+      <th rowspan="2">IntDiv (↑)</th>
+      <th rowspan="2">IntDiv2 (↑)</th>
+      <th rowspan="2">Filters (↑)</th>
+    </tr>
+    <tr>
+      <th>Test</th>
+      <th>TestSF</th>
+      <th>Test</th>
+      <th>TestSF</th>
+      <th>Test</th>
+      <th>TestSF</th>
+      <th>Test</th>
+      <th>TestSF</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><i>Train</i></td>
+      <td><i>1.0</i></td>
+      <td><i>1.0</i></td>
+      <td><i>1.0</i></td>
+      <td><i>0.008</i></td>
+      <td><i>0.4755</i></td>
+      <td><i>0.6419</i></td>
+      <td><i>0.5859</i></td>
+      <td><i>1.0</i></td>
+      <td><i>0.9986</i></td>
+      <td><i>0.9907</i></td>
+      <td><i>0.0</i></td>
+      <td><i>0.8567</i></td>
+      <td><i>0.8508</i></td>
+      <td><i>1.0</i></td>
+    </tr>
+    <tr>
+      <td>CharRNN</td>
+      <td>0.8088</td>
+      <td><b>1.0</b></td>
+      <td><b>0.9996</b></td>
+      <td>0.355</td>
+      <td>0.8995</td>
+      <td>0.5362</td>
+      <td>0.5137</td>
+      <td>0.9988</td>
+      <td>0.9963</td>
+      <td>0.8817</td>
+      <td><b>0.1398</b></td>
+      <td>0.8547</td>
+      <td>0.8488</td>
+      <td>0.9751</td>
+    </tr>
+    <tr>
+      <td>AAE</td>
+      <td>0.9965</td>
+      <td><b>1.0</b></td>
+      <td>0.995</td>
+      <td>0.3945</td>
+      <td>1.0003</td>
+      <td>0.6197</td>
+      <td>0.5747</td>
+      <td>0.9952</td>
+      <td>0.9939</td>
+      <td>0.8655</td>
+      <td>0.1001</td>
+      <td><b>0.8565</b></td>
+      <td>0.8503</td>
+      <td><b>0.9974</b></td>
+    </tr>
+    <tr>
+      <td>VAE</td>
+      <td>0.9691</td>
+      <td><b>1.0</b></td>
+      <td>0.9989</td>
+      <td><b>0.0844</b></td>
+      <td><b>0.5412</b></td>
+      <td><b>0.6226</b></td>
+      <td><b>0.5766</b></td>
+      <td><b>0.9996</b></td>
+      <td><b>0.9982</b></td>
+      <td><b>0.9331</b></td>
+      <td>0.0616</td>
+      <td><b>0.8565</b></td>
+      <td><b>0.8505</b></td>
+      <td>0.9963</td>
+    </tr>
+    <tr>
+      <td>JTN-VAE</td>
+      <td><b>1.0</b></td>
+      <td><b>1.0</b></td>
+      <td>0.9992</td>
+      <td>0.4224</td>
+      <td>0.9962</td>
+      <td>0.5561</td>
+      <td>0.5273</td>
+      <td>0.9962</td>
+      <td>0.9948</td>
+      <td>0.8925</td>
+      <td>0.1005</td>
+      <td>0.8512</td>
+      <td>0.8453</td>
+      <td>0.9778</td>
+    </tr>
+</tbody>
 
 For comparison of molecular properties, we computed the Frèchet distance between distributions of molecules in the generated and test sets. Below, we provide plots for lipophilicity (logP), Synthetic Accessibility (SA), Quantitative Estimation of Drug-likeness (QED), Natural Product-likeness (NP) and molecular weight.
 
