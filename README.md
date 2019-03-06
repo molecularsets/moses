@@ -168,6 +168,8 @@ For comparison of molecular properties, we computed the Frèchet distance betwee
 ### PyPi
 The simplest way to install MOSES (models and metrics) is to install [RDKit](https://www.rdkit.org/docs/Install.html): `conda install -yq -c rdkit rdkit` and then install MOSES (`molsets`) from pip (`pip install molsets`).
 
+If you are using Ubuntu, you should also install `sudo apt-get install libxrender1 libxext6` for RDKit.
+
 ### Docker
 
 1. Install [docker](https://docs.docker.com/install/) and [nvidia-docker](https://github.com/nvidia/nvidia-docker/wiki/Installation-(version-2.0)).
