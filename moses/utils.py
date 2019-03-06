@@ -6,6 +6,7 @@ from multiprocessing import Pool
 from collections import UserList, defaultdict
 from rdkit import rdBase
 from matplotlib import pyplot as plt
+from rdkit import Chem
 
 
 # https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader
@@ -209,3 +210,22 @@ def disable_rdkit_log():
 
 def enable_rdkit_log():
     rdBase.EnableLog('rdApp.*')
+
+
+def get_mol(smiles_or_mol):
+    '''
+    Loads SMILES/molecule into RDKit's object
+    '''
+    if isinstance(smiles_or_mol, str):
+        if len(smiles_or_mol) == 0:
+            return None
+        mol = Chem.MolFromSmiles(smiles_or_mol)
+        if mol is None:
+            return None
+        try:
+            Chem.SanitizeMol(mol)
+        except ValueError:
+            return None
+        return mol
+    else:
+        return smiles_or_mol

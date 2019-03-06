@@ -378,7 +378,7 @@ class ORGANTrainer(MosesTrainer):
         self._pretrain_discriminator(model, dsc_train_loader,
                                      dsc_val_loader, logger)
 
-        # Policy gradient    
+        # Policy gradient
         self.ref_smiles, self.ref_mols = None, None
         if model.metrics_reward is not None:
             (

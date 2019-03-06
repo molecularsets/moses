@@ -14,7 +14,7 @@ from rdkit.Chem.Scaffolds import MurckoScaffold
 from rdkit.Chem import Descriptors
 from moses.metrics.SA_Score import sascorer
 from moses.metrics.NP_Score import npscorer
-from moses.utils import mapper
+from moses.utils import mapper, get_mol
 
 _base_dir = os.path.split(__file__)[0]
 _mcf = pd.read_csv(os.path.join(_base_dir, 'mcf.csv'))
@@ -22,25 +22,6 @@ _pains = pd.read_csv(os.path.join(_base_dir, 'wehi_pains.csv'),
                      names=['smarts', 'names'])
 _filters = [Chem.MolFromSmarts(x) for x in
             _mcf.append(_pains, sort=True)['smarts'].values]
-
-
-def get_mol(smiles_or_mol):
-    '''
-    Loads SMILES/molecule into RDKit's object
-    '''
-    if isinstance(smiles_or_mol, str):
-        if len(smiles_or_mol) == 0:
-            return None
-        mol = Chem.MolFromSmiles(smiles_or_mol)
-        if mol is None:
-            return None
-        try:
-            Chem.SanitizeMol(mol)
-        except ValueError:
-            return None
-        return mol
-    else:
-        return smiles_or_mol
 
 
 def canonic_smiles(smiles_or_mol):
