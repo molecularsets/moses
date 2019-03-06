@@ -9,8 +9,8 @@ __For more details, please refer to the [paper](https://arxiv.org/abs/1811.12823
 If you are using MOSES in your research paper, please cite us as
 ```
 @article{polykovskiy2018molecular,
-  title={Molecular Sets (MOSES): A Benchmarking Platform for Molecular Generation Models},
-  author={Polykovskiy, Daniil and Zhebrak, Alexander and Sanchez-Lengeling, Benjamin and Golovanov, Sergey and Tatanov, Oktai and Belyaev, Stanislav and Kurbanov, Rauf and Artamonov, Aleksey and Aladinskiy, Vladimir and Veselov, Mark and others},
+  title={{M}olecular {S}ets ({MOSES}): {A} {B}enchmarking {P}latform for {M}olecular {G}eneration {M}odels},
+  author={Polykovskiy, Daniil and Zhebrak, Alexander and Sanchez-Lengeling, Benjamin and Golovanov, Sergey and Tatanov, Oktai and Belyaev, Stanislav and Kurbanov, Rauf and Artamonov, Aleksey and Aladinskiy, Vladimir and Veselov, Mark and Kadurin, Artur and Nikolenko, Sergey and Aspuru-Guzik, Alan and Zhavoronkov, Alex},
   journal={arXiv preprint arXiv:1811.12823},
   year={2018}
 }
