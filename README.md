@@ -38,7 +38,8 @@ The dataset contains 1,936,962 molecular structures. For experiments, we split t
 ## Metrics
 Besides standard uniqueness and validity metrics, MOSES provides other metrics to access the overall quality of generated molecules. Fragment similarity (Frag) and Scaffold similarity (Scaff) are cosine distances between vectors of fragment or scaffold frequencies correspondingly of the generated and test sets. Nearest neighbor similarity (SNN) is the average similarity of generated molecules to the nearest molecule from the test set. Internal diversity (IntDiv) is an average pairwise similarity of generated molecules. Fréchet ChemNet Distance (FCD) measures the difference in distributions of last layer activations of ChemNet.
 
-<thead>
+<table border="1" class="dataframe">
+  <thead>
     <tr style="text-align: right;">
       <th rowspan="2">Model</th>
       <th rowspan="2">Valid (↑)</th>
@@ -149,7 +150,8 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
       <td>0.8453</td>
       <td>0.9778</td>
     </tr>
-</tbody>
+  </tbody>
+</table>
 
 For comparison of molecular properties, we computed the Frèchet distance between distributions of molecules in the generated and test sets. Below, we provide plots for lipophilicity (logP), Synthetic Accessibility (SA), Quantitative Estimation of Drug-likeness (QED), Natural Product-likeness (NP) and molecular weight.
 
