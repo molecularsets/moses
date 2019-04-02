@@ -2,6 +2,7 @@ import torch
 import torch.optim as optim
 
 from tqdm import tqdm
+import time
 
 from moses.utils import mapper, Logger
 from moses.interfaces import MosesTrainer
@@ -17,17 +18,15 @@ class JTreeTrainer(MosesTrainer):
             model.eval()
         else:
             model.train()
-
         postfix = { 'word_acc' : 0,
                     'topo_acc' : 0,
                     'assm_acc' : 0,
                     'steo_acc' : 0,
-                    'kl' : 0,}
-
+                    'latent_loss': 0,}
         kl_w = 0 if epoch < self.config.kl_start else self.config.kl_w
 
         for i, batch in enumerate(tqdm_data):
-            loss, kl_div, wacc, tacc, sacc, dacc = model(batch, kl_w)
+            loss, latent_loss, wacc, tacc, sacc, dacc = model(batch, kl_w)
 
             if optimizer is not None:
                 optimizer.zero_grad()
@@ -38,7 +37,7 @@ class JTreeTrainer(MosesTrainer):
             postfix['topo_acc'] += (tacc * 100 - postfix['topo_acc']) / (i + 1)
             postfix['assm_acc'] += (sacc * 100 - postfix['assm_acc']) / (i + 1)
             postfix['steo_acc'] += (dacc * 100 - postfix['steo_acc']) / (i + 1)
-            postfix['kl'] += (kl_div - postfix['kl']) / (i + 1)
+            postfix['latent_loss'] += (latent_loss - postfix['latent_loss']) / (i + 1)
 
             tqdm_data.set_postfix(postfix)
 
@@ -102,10 +101,8 @@ class JTreeTrainer(MosesTrainer):
 
     def fit(self, model, train_data, val_data=None):
         logger = Logger() if self.config.log_file is not None else None
-
         train_loader = self.get_dataloader(model, train_data, shuffle=True)
         val_loader = None if val_data is None else self.get_dataloader(model, val_data, shuffle=False)
-
         self._train(model, train_loader, val_loader, logger)
 
         return model
