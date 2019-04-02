@@ -12,7 +12,6 @@ from .jtnn_enc import JTNNEncoder
 from .mol_tree import MolTree
 from .mpn import MPN, mol2graph
 
-
 def set_batch_node_id(mol_batch, vocab):
     tot = 0
     for mol_tree in mol_batch:
@@ -21,6 +20,28 @@ def set_batch_node_id(mol_batch, vocab):
             node.wid = vocab.get_index(node.smiles)
             tot += 1
 
+class Discriminator(nn.Module):
+    def __init__(self, input_size, layers):
+        super(Discriminator, self).__init__()
+
+        in_features = [input_size] + layers
+        out_features = layers + [1]
+
+        self.layers_seq = nn.Sequential()
+        for k, (i, o) in enumerate(zip(in_features, out_features)):
+            self.layers_seq.add_module('linear_{}'.format(k), nn.Linear(i, o))
+            if k != len(layers):
+                self.layers_seq.add_module('activation_{}'.format(k), nn.ELU(inplace=True))
+
+    def forward(self, x):
+        return self.layers_seq(x)
+
+def compute_wae_loss(d_prior,D_fake,device):
+    D_loss_prior = nn.BCEWithLogitsLoss()(d_prior, torch.ones(d_prior.size()[0],1,device=device))
+    D_loss_sample = nn.BCEWithLogitsLoss()(d_sample, torch.zeros(d_sample.size()[0],1,device=device))
+    D_loss = D_loss_prior + D_loss_sample
+    G_adv = nn.BCEWithLogitsLoss()(d_sample, torch.ones(d_sample.size()[0],1,device=device))
+    return D_loss,G_adv
 
 class JTNNVAE(nn.Module):
 
@@ -29,6 +50,7 @@ class JTNNVAE(nn.Module):
         self.vocab = vocab
         self.hidden_size = config.hidden
         self.latent_size = config.latent
+        self.latent_model = config.latent_model #vae, wae etc
         self.depth = config.depth
 
         self.embedding = nn.Embedding(vocab.size(), self.hidden_size)
@@ -42,6 +64,9 @@ class JTNNVAE(nn.Module):
         self.T_var = nn.Linear(self.hidden_size, self.latent_size // 2)
         self.G_mean = nn.Linear(self.hidden_size, self.latent_size // 2)
         self.G_var = nn.Linear(self.hidden_size, self.latent_size // 2)
+        ###todo: fix to be  cat[T_mean and G_mean]
+        disc_inp_sz = 2*self.hidden_size + config.latent
+        self.discriminator = Discriminator(disc_inp_sz, config.discriminator_layers)
 
         self.assm_loss = nn.CrossEntropyLoss(reduction='sum')
         self.stereo_loss = nn.CrossEntropyLoss(reduction='sum')
@@ -67,22 +92,35 @@ class JTNNVAE(nn.Module):
         smiles_batch = [mol_tree.smiles for mol_tree in mol_batch]
         mol_vec = self.mpn(mol2graph(smiles_batch, device=device))
         return tree_mess, tree_vec, mol_vec
-
+    
+    def discriminator_forward(self, *args, **kwargs):
+        return self.discriminator(*args, **kwargs)
+    
     def forward(self, mol_batch, beta=0):
         device = self.device
-
+        ##Initialize losses to 0
+        metric = loss = kl_loss = d_loss = adv_loss = torch.tensor(0.0,device=device)
         batch_size = len(mol_batch)
 
         tree_mess, tree_vec, mol_vec = self.encode(mol_batch)
-
         tree_mean = self.T_mean(tree_vec)
         tree_log_var = -torch.abs(self.T_var(tree_vec))
         mol_mean = self.G_mean(mol_vec)
         mol_log_var = -torch.abs(self.G_var(mol_vec))
-
         z_mean = torch.cat([tree_mean, mol_mean], dim=1)
-        z_log_var = torch.cat([tree_log_var, mol_log_var], dim=1)
-        kl_loss = -0.5 * torch.sum(1.0 + z_log_var - z_mean * z_mean - torch.exp(z_log_var)) / batch_size
+        
+        if(self.latent_model == "vae"):
+            z_log_var = torch.cat([tree_log_var, mol_log_var], dim=1)
+            kl_loss = -0.5 * torch.sum(1.0 + z_log_var - z_mean * z_mean - torch.exp(z_log_var)) / batch_size
+
+        if(self.latent_model == "wae"):
+        #WAE latent space
+            d_sample = torch.cat([tree_vec,mol_vec,z_mean], dim=1)
+            disc_out1 = self.discriminator_forward(d_sample)
+            epsilon = torch.randn(batch_size, z_mean.size()[1], device=device)
+            d_prior = torch.cat([tree_vec,mol_vec,epsilon], dim=1)
+            disc_out2 = self.discriminator_forward(d_prior)
+            d_loss,adv_loss = compute_wae_loss(disc_out2,disc_out1,device=device)
 
         epsilon = torch.randn(batch_size, self.latent_size // 2, device=device)
         tree_vec = tree_mean + torch.exp(tree_log_var / 2) * epsilon
@@ -92,10 +130,14 @@ class JTNNVAE(nn.Module):
         word_loss, topo_loss, word_acc, topo_acc = self.decoder(mol_batch, tree_vec)
         assm_loss, assm_acc = self.assm(mol_batch, mol_vec, tree_mess)
         stereo_loss, stereo_acc = self.stereo(mol_batch, mol_vec)
+        if(self.latent_model == "vae"):
+          loss = word_loss + topo_loss + assm_loss + 2 * stereo_loss + beta * kl_loss
+          metric = loss, kl_loss.item(), word_acc, topo_acc, assm_acc, stereo_acc
+        if(self.latent_model == "wae"):
+          loss = word_loss + topo_loss + assm_loss + 2 * stereo_loss + beta * adv_loss + d_loss
+          metric =  loss, adv_loss.item(), word_acc, topo_acc, assm_acc, stereo_acc
 
-        loss = word_loss + topo_loss + assm_loss + 2 * stereo_loss + beta * kl_loss
-
-        return loss, kl_loss.item(), word_acc, topo_acc, assm_acc, stereo_acc
+        return metric
 
     def assm(self, mol_batch, mol_vec, tree_mess):
         device = self.device

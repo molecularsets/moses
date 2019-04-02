@@ -17,6 +17,10 @@ def get_parser(parser=None):
                            help='Epoch to init KL weight (start from 0)')
     model_arg.add_argument('--kl_w', type=float, default=5e-3,
                            help='KL weight value')
+    model_arg.add_argument('--latent_model', type=str, default='vae', choices=['vae','wae'],
+                        help='Latent space generative model; vae, wae etc')
+    model_arg.add_argument('--discriminator_layers', nargs='+', type=int, default=[640, 256,1],
+                           help='Numbers of features for linear layers in WAE discriminator')
 
     # Train
     train_arg = parser.add_argument_group('Training')
