@@ -24,7 +24,7 @@ import os.path as op
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 from rdkit.six import iteritems
-from rdkit.six.moves import cPickle
+import pickle
 
 _fscores = None
 
