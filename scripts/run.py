@@ -1,12 +1,9 @@
-import argparse
 import os
+import argparse
 import pandas as pd
 import importlib.util
 import sys
-
-
-def get_models():
-    return ['aae', 'char_rnn', 'junction_tree', 'organ', 'vae']
+from moses.models_storage import ModelsStorage
 
 
 def load_module(name, path):
@@ -17,18 +14,42 @@ def load_module(name, path):
     return module
 
 
-for model in get_models():
-    globals()[model + '_train'] = load_module('train', os.path.join('.', model, 'train.py'))
-    globals()[model + '_sample'] = load_module('sample', os.path.join('.', model, 'sample.py'))
+MODELS = ModelsStorage()
+split_dataset = load_module('split_dataset', 'split_dataset.py')
+eval_script = load_module('eval', 'eval.py')
+trainer_script = load_module('train', 'train.py')
+sampler_script = load_module('sample', 'sample.py')
 
-split_dataset = load_module('split_dataset', './split_dataset.py')
-eval_script = load_module('eval', './metrics/eval.py')
+
+def get_model_path(config, model):
+    return os.path.join(
+        config.checkpoint_dir, model + config.experiment_suff + '_model.pt'
+    )
+
+
+def get_config_path(config, model):
+    return os.path.join(
+        config.checkpoint_dir, model + config.experiment_suff + '_config.pt'
+    )
+
+
+def get_vocab_path(config, model):
+    return os.path.join(
+        config.checkpoint_dir, model + config.experiment_suff + '_vocab.pt'
+    )
+
+
+def get_generation_path(config, model):
+    return os.path.join(
+        config.data_dir, model + config.experiment_suff + '_generated.csv'
+    )
 
 
 def get_parser():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--model', type=str, default='all', choices=['all'] + get_models(),
+    parser.add_argument('--model', type=str, default='all',
+                        choices=['all'] + MODELS.get_model_names(),
                         help='Which model to run')
     parser.add_argument('--data_dir', type=str, default='../data',
                         help='Directory for datasets')
@@ -38,8 +59,8 @@ def get_parser():
                         help='Number of samples to sample')
     parser.add_argument('--n_jobs', type=int, default=1,
                         help='Number of threads')
-    parser.add_argument('--gpu', type=int, default=-1,
-                        help='GPU index (-1 for cpu)')
+    parser.add_argument('--device', type=str, default='cpu',
+                        help='GPU device index in form `cuda:N` (or `cpu`)')
     parser.add_argument('--metrics', type=str, default='metrics.csv',
                         help='Path to output file with metrics')
     parser.add_argument('--train_size', type=int, default=None,
@@ -51,77 +72,72 @@ def get_parser():
     return parser
 
 
-def get_trainer(model):
-    mapper = {'aae': aae_train, # noqa
-              'char_rnn': char_rnn_train, # noqa
-              'junction_tree': junction_tree_train, # noqa
-              'organ': organ_train, # noqa
-              'vae': vae_train} # noqa
-
-    return mapper[model]
-
-
-def get_sampler(model):
-    mapper = {'aae': aae_sample, # noqa
-              'char_rnn': char_rnn_sample, # noqa
-              'junction_tree': junction_tree_sample, # noqa
-              'organ': organ_sample, # noqa
-              'vae': vae_sample} # noqa
-
-    return mapper[model]
-
-
 def train_model(config, model, train_path):
-    model_path = os.path.join(config.checkpoint_dir, model + config.experiment_suff + '_model.pt')
-    config_path = os.path.join(config.checkpoint_dir, model + config.experiment_suff + '_config.pt')
-    vocab_path = os.path.join(config.checkpoint_dir, model + config.experiment_suff + '_vocab.pt')
+    print('Training...')
+    model_path = get_model_path(config, model)
+    config_path = get_config_path(config, model)
+    vocab_path = get_vocab_path(config, model)
 
     if os.path.exists(model_path) and \
             os.path.exists(config_path) and \
             os.path.exists(vocab_path):
         return
 
-    trainer = get_trainer(model)
-    trainer_parser = trainer.get_parser()
-    device = f'cuda:{config.gpu}' if config.gpu >= 0 else 'cpu'
-    trainer_config = trainer_parser.parse_known_args(sys.argv+[
-                                                     '--device', device,
-                                                     '--train_load', train_path,
-                                                     '--model_save', model_path,
-                                                     '--config_save', config_path,
-                                                     '--vocab_save', vocab_path,
-                                                     '--n_jobs', str(config.n_jobs)])[0]
-    trainer.main(trainer_config)
+    trainer_parser = trainer_script.get_parser()
+    trainer_config = trainer_parser.parse_known_args(
+         [model] + sys.argv[1:] +
+         ['--device', config.device,
+          '--train_load', train_path,
+          '--model_save', model_path,
+          '--config_save', config_path,
+          '--vocab_save', vocab_path,
+          '--n_jobs', str(config.n_jobs)]
+    )[0]
+    trainer_script.main(model, trainer_config)
 
 
 def sample_from_model(config, model):
-    sampler = get_sampler(model)
-    sampler_parser = sampler.get_parser()
-    model_path = os.path.join(config.checkpoint_dir, model + config.experiment_suff + '_model.pt')
-    config_path = os.path.join(config.checkpoint_dir, model + config.experiment_suff + '_config.pt')
-    vocab_path = os.path.join(config.checkpoint_dir, model + config.experiment_suff + '_vocab.pt')
-    gen_save = os.path.join(config.data_dir, model + config.experiment_suff + '_generated.csv')
-    device = f'cuda:{config.gpu}' if config.gpu >= 0 else 'cpu'
-    sampler_config = sampler_parser.parse_known_args(sys.argv+[
-                                                     '--device', device,
-                                                     '--model_load', model_path,
-                                                     '--config_load', config_path,
-                                                     '--vocab_load', vocab_path,
-                                                     '--gen_save', gen_save,
-                                                     '--n_samples', str(config.n_samples)])[0]
-    sampler.main(sampler_config)
+    print('Sampling...')
+    model_path = get_model_path(config, model)
+    config_path = get_config_path(config, model)
+    vocab_path = get_vocab_path(config, model)
+
+    assert os.path.exists(model_path), (
+        "Can't find model path for sampling: '{}'".format(model_path)
+    )
+    assert os.path.exists(config_path), (
+        "Can't find config path for sampling: '{}'".format(config_path)
+    )
+    assert os.path.exists(vocab_path), (
+        "Can't find vocab path for sampling: '{}'".format(vocab_path)
+    )
+
+    sampler_parser = sampler_script.get_parser()
+    sampler_config = sampler_parser.parse_known_args(
+        [model] + sys.argv[1:] +
+        ['--device', config.device,
+         '--model_load', model_path,
+         '--config_load', config_path,
+         '--vocab_load', vocab_path,
+         '--gen_save', get_generation_path(config, model),
+         '--n_samples', str(config.n_samples)]
+    )[0]
+    sampler_script.main(model, sampler_config)
 
 
-def eval_metrics(config, model, test_path, test_scaffolds_path, ptest_path, ptest_scaffolds_path):
+def eval_metrics(config, model, test_path, test_scaffolds_path,
+                 ptest_path, ptest_scaffolds_path):
+    print('Computing metrics...')
     eval_parser = eval_script.get_parser()
-    gen_path = os.path.join(config.data_dir, model + config.experiment_suff + '_generated.csv')
-    eval_config = eval_parser.parse_args(['--test_path', test_path,
-                                          '--test_scaffolds_path', test_scaffolds_path,
-                                          '--ptest_path', ptest_path,
-                                          '--ptest_scaffolds_path', ptest_scaffolds_path,
-                                          '--gen_path', gen_path,
-                                          '--n_jobs', str(config.n_jobs),
-                                          '--gpu', str(config.gpu)])
+    eval_config = eval_parser.parse_args(
+        ['--test_path', test_path,
+         '--test_scaffolds_path', test_scaffolds_path,
+         '--ptest_path', ptest_path,
+         '--ptest_scaffolds_path', ptest_scaffolds_path,
+         '--gen_path', get_generation_path(config, model),
+         '--n_jobs', str(config.n_jobs),
+         '--device', config.device]
+    )
     metrics = eval_script.main(eval_config, print_metrics=False)
 
     return metrics
@@ -134,19 +150,29 @@ def main(config):
     if not os.path.exists(config.checkpoint_dir):
         os.mkdir(config.checkpoint_dir)
 
-    train_path = os.path.join(config.data_dir, 'train.csv')
-    test_path = os.path.join(config.data_dir, 'test.csv')
-    test_scaffolds_path = os.path.join(config.data_dir, 'test_scaffolds.csv')
-    train_path = os.path.join(config.data_dir, 'train.csv')
-    ptest_path = os.path.join(config.data_dir, 'test_stats.npz')
-    ptest_scaffolds_path = os.path.join(config.data_dir, 'test_scaffolds_stats.npz')
-
+    train_path = os.path.join(
+        config.data_dir, 'train.csv'
+    )
+    test_path = os.path.join(
+        config.data_dir, 'test.csv'
+    )
+    test_scaffolds_path = os.path.join(
+        config.data_dir, 'test_scaffolds.csv'
+    )
+    ptest_path = os.path.join(
+        config.data_dir, 'test_stats.npz'
+    )
+    ptest_scaffolds_path = os.path.join(
+        config.data_dir, 'test_scaffolds_stats.npz'
+    )
 
     if not os.path.exists(train_path) or \
             not os.path.exists(test_path) or \
             not os.path.exists(test_scaffolds_path):
         splitting_config = split_dataset.get_parser()
-        conf = ['--output_dir', config.data_dir]
+        conf = ['--dir', config.data_dir,
+                '--device', config.device,
+                '--n_jobs', str(config.n_jobs)]
         if config.train_size is not None:
             conf.extend(['--train_size', str(config.train_size)])
         if config.test_size is not None:
@@ -154,7 +180,9 @@ def main(config):
         splitting_config = splitting_config.parse_args(conf)
         split_dataset.main(splitting_config)
 
-    models = get_models() if config.model == 'all' else [config.model]
+    models = (MODELS.get_model_names()
+              if config.model == 'all'
+              else [config.model])
     for model in models:
         train_model(config, model, train_path)
         sample_from_model(config, model)

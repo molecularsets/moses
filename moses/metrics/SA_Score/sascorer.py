@@ -24,7 +24,7 @@ import os.path as op
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 from rdkit.six import iteritems
-from rdkit.six.moves import cPickle
+import pickle
 
 _fscores = None
 
@@ -35,7 +35,7 @@ def readFragmentScores(name='fpscores'):
     # generate the full path filename:
     if name == "fpscores":
         name = op.join(op.dirname(__file__), name)
-    _fscores = cPickle.load(gzip.open('%s.pkl.gz' % name))
+    _fscores = pickle.load(gzip.open('%s.pkl.gz' % name))
     outDict = {}
     for i in _fscores:
         for j in range(1, len(i)):
@@ -54,8 +54,9 @@ def calculateScore(m):
         readFragmentScores()
 
     # fragment score
-    fp = rdMolDescriptors.GetMorganFingerprint(m,
-                                               2)  # <- 2 is the *radius* of the circular fingerprint
+    fp = rdMolDescriptors.GetMorganFingerprint(
+        m, 2  # <- 2 is the *radius* of the circular fingerprint
+    )
     fps = fp.GetNonzeroElements()
     score1 = 0.
     nf = 0
@@ -87,7 +88,8 @@ def calculateScore(m):
     if nMacrocycles > 0:
         macrocyclePenalty = math.log10(2)
 
-    score2 = 0. - sizePenalty - stereoPenalty - spiroPenalty - bridgePenalty - macrocyclePenalty
+    score2 = (0. - sizePenalty - stereoPenalty -
+              spiroPenalty - bridgePenalty - macrocyclePenalty)
 
     # correction for the fingerprint density
     # not in the original publication, added in version 1.1
@@ -158,7 +160,8 @@ if __name__ == '__main__':
 #       with the distribution.
 #     * Neither the name of Novartis Institutes for BioMedical Research Inc.
 #       nor the names of its contributors may be used to endorse or promote
-#       products derived from this software without specific prior written permission.
+#       products derived from this software without specific prior written
+#       permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT

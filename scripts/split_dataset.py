@@ -13,6 +13,7 @@ def str2bool(v):
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
+
 def get_parser():
     parser = argparse.ArgumentParser()
 
@@ -20,9 +21,9 @@ def get_parser():
                         help='Directory for splitted dataset')
     parser.add_argument('--no_subset', action='store_true',
                         help='Do not create subsets for training and testing')
-    parser.add_argument('--train_size', type=int, default=250000,
+    parser.add_argument('--train_size', type=int,
                         help='Size of training dataset')
-    parser.add_argument('--test_size', type=int, default=10000,
+    parser.add_argument('--test_size', type=int,
                         help='Size of testing dataset')
     parser.add_argument('--seed', type=int, default=0,
                         help='Random state')
@@ -30,8 +31,8 @@ def get_parser():
                         help='Precompute intermediate statistics')
     parser.add_argument('--n_jobs', type=int, default=1,
                         help='Number of workers')
-    parser.add_argument('--gpu', type=int, default=-1,
-                        help='GPU id')
+    parser.add_argument('--device', type=str, default='cpu',
+                        help='GPU device id')
     parser.add_argument('--batch_size', type=int, default=512,
                         help='Batch size for FCD calculation')
     return parser
@@ -39,10 +40,14 @@ def get_parser():
 
 def main(config):
     dataset_path = os.path.join(config.dir, 'dataset_v1.csv')
-    download_url = 'https://media.githubusercontent.com/media/molecularsets/moses/master/data/dataset_v1.csv'
+    repo_url = 'https://media.githubusercontent.com/media/molecularsets/moses/'
+    download_url = repo_url+'master/data/dataset_v1.csv'
     if not os.path.exists(dataset_path):
-        raise ValueError(f"Missing dataset_v1.csv in {config.dir}; "
-                         f"Please, use 'git lfs pull' or download it manually from {download_url}")
+        raise ValueError(
+            "Missing dataset_v1.csv in {}; ".format(config.dir) +
+            "Please, use 'git lfs pull' or download it manually from" +
+            download_url
+        )
 
     if config.no_subset:
         return
@@ -54,24 +59,41 @@ def main(config):
     test_scaffolds_data = data[data['SPLIT'] == 'test_scaffolds']
 
     if config.train_size is not None:
-        train_data = train_data.sample(config.train_size, random_state=config.seed)
+        train_data = train_data.sample(
+            config.train_size, random_state=config.seed
+        )
 
     if config.test_size is not None:
-        test_data = test_data.sample(config.test_size, random_state=config.seed)
-        test_scaffolds_data = test_scaffolds_data.sample(config.test_size, random_state=config.seed)
+        test_data = test_data.sample(
+            config.test_size, random_state=config.seed
+        )
+        test_scaffolds_data = test_scaffolds_data.sample(
+            config.test_size, random_state=config.seed
+        )
 
     train_data.to_csv(os.path.join(config.dir, 'train.csv'), index=False)
     test_data.to_csv(os.path.join(config.dir, 'test.csv'), index=False)
-    test_scaffolds_data.to_csv(os.path.join(config.dir, 'test_scaffolds.csv'), index=False)
+    test_scaffolds_data.to_csv(
+        os.path.join(config.dir, 'test_scaffolds.csv'), index=False
+    )
 
     if config.precompute:
         test_stats = compute_intermediate_statistics(
-            test_data['SMILES'].values, n_jobs=config.n_jobs, gpu=config.gpu, batch_size=config.batch_size)
+            test_data['SMILES'].values, n_jobs=config.n_jobs,
+            device=config.device, batch_size=config.batch_size
+        )
         test_sf_stats = compute_intermediate_statistics(
-            test_scaffolds_data['SMILES'].values, n_jobs=config.n_jobs, gpu=config.gpu, batch_size=config.batch_size)
-
-        np.savez(os.path.join(config.dir, 'test_stats.npz'), stats=test_stats)
-        np.savez(os.path.join(config.dir, 'test_scaffolds_stats.npz'), stats=test_sf_stats)
+            test_scaffolds_data['SMILES'].values, n_jobs=config.n_jobs,
+            device=config.device, batch_size=config.batch_size
+        )
+        np.savez(
+            os.path.join(config.dir, 'test_stats.npz'),
+            stats=test_stats
+        )
+        np.savez(
+            os.path.join(config.dir, 'test_scaffolds_stats.npz'),
+            stats=test_sf_stats
+        )
 
 
 if __name__ == '__main__':

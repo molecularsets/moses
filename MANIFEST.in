@@ -1,0 +1,5 @@
+# MANIFEST.in
+include moses/metrics/NP_Score/publicnp.model.gz
+include moses/metrics/SA_Score/fpscores.pkl.gz
+include moses/metrics/wehi_pains.csv
+include moses/metrics/mcf.csv

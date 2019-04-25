@@ -14,7 +14,7 @@ from rdkit.Chem.Scaffolds import MurckoScaffold
 from rdkit.Chem import Descriptors
 from moses.metrics.SA_Score import sascorer
 from moses.metrics.NP_Score import npscorer
-from moses.utils import mapper
+from moses.utils import mapper, get_mol
 
 _base_dir = os.path.split(__file__)[0]
 _mcf = pd.read_csv(os.path.join(_base_dir, 'mcf.csv'))
@@ -22,25 +22,6 @@ _pains = pd.read_csv(os.path.join(_base_dir, 'wehi_pains.csv'),
                      names=['smarts', 'names'])
 _filters = [Chem.MolFromSmarts(x) for x in
             _mcf.append(_pains, sort=True)['smarts'].values]
-
-
-def get_mol(smiles_or_mol):
-    '''
-    Loads SMILES/molecule into RDKit's object
-    '''
-    if isinstance(smiles_or_mol, str):
-        if len(smiles_or_mol) == 0:
-            return None
-        mol = Chem.MolFromSmiles(smiles_or_mol)
-        if mol is None:
-            return None
-        try:
-            Chem.SanitizeMol(mol)
-        except ValueError:
-            return None
-        return mol
-    else:
-        return smiles_or_mol
 
 
 def canonic_smiles(smiles_or_mol):
@@ -51,61 +32,61 @@ def canonic_smiles(smiles_or_mol):
 
 
 def logP(mol):
-    '''
+    """
     Computes RDKit's logP
-    '''
+    """
     return Chem.Crippen.MolLogP(mol)
 
 
 def SA(mol):
-    '''
+    """
     Computes RDKit's Synthetic Accessibility score
-    '''
+    """
     return sascorer.calculateScore(mol)
 
 
 def NP(mol):
-    '''
+    """
     Computes RDKit's Natural Product-likeness score
-    '''
+    """
     return npscorer.scoreMol(mol)
 
 
 def QED(mol):
-    '''
+    """
     Computes RDKit's QED score
-    '''
+    """
     return qed(mol)
 
 
 def weight(mol):
-    '''
+    """
     Computes molecular weight for given molecule.
     Returns float,
-    '''
+    """
     return Descriptors.MolWt(mol)
 
 
 def get_n_rings(mol):
-    '''
+    """
     Computes the number of rings in a molecule
-    '''
+    """
     return mol.GetRingInfo().NumRings()
 
 
 def fragmenter(mol):
-    '''
+    """
     fragment mol using BRICS and return smiles list
-    '''
+    """
     fgs = AllChem.FragmentOnBRICSBonds(get_mol(mol))
     fgs_smi = Chem.MolToSmiles(fgs).split(".")
     return fgs_smi
 
 
 def compute_fragments(mol_list, n_jobs=1):
-    '''
+    """
     fragment list of mols using BRICS and return smiles list
-    '''
+    """
     fragments = Counter()
     for mol_frag in mapper(n_jobs)(fragmenter, mol_list):
         fragments.update(mol_frag)
@@ -113,9 +94,9 @@ def compute_fragments(mol_list, n_jobs=1):
 
 
 def compute_scaffolds(mol_list, n_jobs=1, min_rings=2):
-    '''
+    """
     Extracts a scafold from a molecule in a form of a canonic SMILES
-    '''
+    """
     scaffolds = Counter()
     map_ = mapper(n_jobs)
     scaffolds = Counter(
@@ -138,20 +119,18 @@ def compute_scaffold(mol, min_rings=2):
 
 def average_agg_tanimoto(stock_vecs, gen_vecs,
                          batch_size=5000, agg='max',
-                         gpu=-1, p=1):
-    '''
+                         device='cpu', p=1):
+    """
     For each molecule in gen_vecs finds closest molecule in stock_vecs.
     Returns average tanimoto score for between these molecules
-    :param stock_vecs: numpy array <n_vectors x dim>
-    :param gen_vecs: numpy array <n_vectors' x dim>
-    :param agg: max or mean
-    :param p: power for averaging: (mean x^p)^(1/p)
-    '''
+
+    Parameters:
+        stock_vecs: numpy array <n_vectors x dim>
+        gen_vecs: numpy array <n_vectors' x dim>
+        agg: max or mean
+        p: power for averaging: (mean x^p)^(1/p)
+    """
     assert agg in ['max', 'mean'], "Can aggregate only max or mean"
-    if gpu != -1:
-        device = "cuda:{}".format(gpu)
-    else:
-        device = "cpu"
     agg_tanimoto = np.zeros(len(gen_vecs))
     total = np.zeros(len(gen_vecs))
     for j in range(0, stock_vecs.shape[0], batch_size):
@@ -180,14 +159,16 @@ def average_agg_tanimoto(stock_vecs, gen_vecs,
 
 def fingerprint(smiles_or_mol, fp_type='maccs', dtype=None, morgan__r=2,
                 morgan__n=1024, *args, **kwargs):
-    '''
+    """
     Generates fingerprint for SMILES
     If smiles is invalid, returns None
     Returns numpy array of fingerprint bits
-    :param smiles: SMILES string
-    :param type: type of fingerprint: [MACCS|morgan]
-    :param dtype: if not None, specifies the dtype of returned array
-    '''
+
+    Parameters:
+        smiles: SMILES string
+        type: type of fingerprint: [MACCS|morgan]
+        dtype: if not None, specifies the dtype of returned array
+    """
     fp_type = fp_type.lower()
     molecule = get_mol(smiles_or_mol, *args, **kwargs)
     if molecule is None:
@@ -211,14 +192,17 @@ def fingerprint(smiles_or_mol, fp_type='maccs', dtype=None, morgan__r=2,
 def fingerprints(smiles_mols_array, n_jobs=1, already_unique=False, *args,
                  **kwargs):
     '''
-    Computes fingerprints of smiles np.array/list/pd.Series with n_jobs workers.
+    Computes fingerprints of smiles np.array/list/pd.Series with n_jobs workers
     e.g.fingerprints(smiles_mols_array, type='morgan', n_jobs=10)
     Inserts np.NaN to rows corresponding to incorrect smiles.
     IMPORTANT: if there is at least one np.NaN, the dtype would be float
-    :param smiles_mols_array: list/array/pd.Series of smiles or already computed RDKit molecules
-    :param n_jobs: number of parralel workers to execute
-    :param already_unique: flag for performance reasons, if smiles array is big and already unique.
-                           Its value is set to True if smiles_mols_array contain RDKit molecules already.
+    Parameters:
+        smiles_mols_array: list/array/pd.Series of smiles or already computed
+            RDKit molecules
+        n_jobs: number of parralel workers to execute
+        already_unique: flag for performance reasons, if smiles array is big
+            and already unique. Its value is set to True if smiles_mols_array
+            contain RDKit molecules already.
     '''
     if isinstance(smiles_mols_array, pd.Series):
         smiles_mols_array = smiles_mols_array.values
@@ -231,9 +215,11 @@ def fingerprints(smiles_mols_array, n_jobs=1, already_unique=False, *args,
         smiles_mols_array, inv_index = np.unique(smiles_mols_array,
                                                  return_inverse=True)
 
-    fps = mapper(n_jobs)(partial(fingerprint, *args, **kwargs), smiles_mols_array)
+    fps = mapper(n_jobs)(
+        partial(fingerprint, *args, **kwargs), smiles_mols_array
+    )
 
-    length = 1  # Need to know the length to convert None into np.array with nan values
+    length = 1
     for fp in fps:
         if fp is not None:
             length = fp.shape[-1]
@@ -254,15 +240,20 @@ def fingerprints(smiles_mols_array, n_jobs=1, already_unique=False, *args,
 def mol_passes_filters(mol,
                        allowed=None,
                        isomericSmiles=False):
-    '''
-    Checks if mol passes MCF and PAINS filters, has only allowed atoms and is not charged
-    '''
+    """
+    Checks if mol
+    * passes MCF and PAINS filters,
+    * has only allowed atoms
+    * is not charged
+    """
     allowed = allowed or {'C', 'N', 'S', 'O', 'F', 'Cl', 'Br', 'H'}
     mol = get_mol(mol)
     if mol is None:
         return False
     ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() != 0 and any(len(x) >= 8 for x in ring_info.AtomRings()):
+    if ring_info.NumRings() != 0 and any(
+            len(x) >= 8 for x in ring_info.AtomRings()
+    ):
         return False
     h_mol = Chem.AddHs(mol)
     if any(atom.GetFormalCharge() != 0 for atom in mol.GetAtoms()):
