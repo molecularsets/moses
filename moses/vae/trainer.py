@@ -1,6 +1,6 @@
 import torch
 import torch.optim as optim
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from torch.nn.utils import clip_grad_norm_
 
