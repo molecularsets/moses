@@ -45,7 +45,7 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
       <th rowspan="2">Unique@1k (↑)</th>
       <th rowspan="2">Unique@10k (↑)</th>
       <th colspan="2">FCD (↓)</th>
-      <th colspan="2">SNN (↓)</th>
+      <th colspan="2">SNN (↑)</th>
       <th colspan="2">Frag (↑)</th>
       <th colspan="2">Scaf (↑)</th>
       <th rowspan="2">IntDiv (↑)</th>
