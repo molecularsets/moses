@@ -2,7 +2,7 @@ import pandas as pd
 from multiprocessing import Pool
 import requests
 from io import BytesIO
-import tqdm
+from tqdm.auto import tqdm
 from moses.metrics import mol_passes_filters, compute_scaffold
 import argparse
 import gzip
@@ -69,7 +69,7 @@ def filter_lines(lines, n_jobs, isomeric):
     with Pool(n_jobs) as pool:
         process_molecule_p = partial(process_molecule, isomeric=isomeric)
         dataset = [
-            x for x in tqdm.tqdm(
+            x for x in tqdm(
                 pool.imap_unordered(process_molecule_p, lines),
                 total=len(lines),
                 miniters=1000

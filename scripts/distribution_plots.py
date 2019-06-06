@@ -17,7 +17,7 @@ def get_parser():
         '--test', type=str, default='test.csv', help='Path to the test set'
     )
     parser.add_argument(
-        '--config', type=str, default='config.csv',
+        '--config', '-c', type=str, default='config.csv',
         help='Path to the config csv with `name` and `path` columns. '
              '`name` is a model name, and '
              '`path` is a path to generated samples`'

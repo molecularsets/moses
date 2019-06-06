@@ -31,7 +31,6 @@ The dataset contains 1,936,962 molecular structures. For experiments, we split t
 * [Character-level Recurrent Neural Network (CharRNN)](./moses/char_rnn/README.md)
 * [Variational Autoencoder (VAE)](./moses/vae/README.md)
 * [Adversarial Autoencoder (AAE)](./moses/aae/README.md)
-* [Objective-Reinforced Generative Adversarial Network (ORGAN)](./moses/organ/README.md)
 * [Junction Tree Variational Autoencoder (JTN-VAE)](https://github.com/wengong-jin/icml18-jtnn/tree/master/fast_molvae)
 
 
@@ -84,20 +83,20 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
     </tr>
     <tr>
       <td>CharRNN</td>
-      <td>0.8088</td>
+      <td>0.9598</td>
       <td><b>1.0</b></td>
-      <td><b>0.9996</b></td>
-      <td>0.355</td>
-      <td>0.8995</td>
-      <td>0.5362</td>
-      <td>0.5137</td>
-      <td>0.9988</td>
-      <td>0.9963</td>
-      <td>0.8817</td>
-      <td><b>0.1398</b></td>
-      <td>0.8547</td>
-      <td>0.8488</td>
-      <td>0.9751</td>
+      <td><b>0.9994</b></td>
+      <td>0.0914</td>
+      <td>0.5429</td>
+      <td>0.579</td>
+      <td>0.5486</td>
+      <td><b>0.9998</b></td>
+      <td><b>0.9984</b></td>
+      <td>0.9184</td>
+      <td><b>0.1289</b></td>
+      <td><b>0.8566</b></td>
+      <td><b>0.8506</b></td>
+      <td>0.9897</td>
     </tr>
     <tr>
       <td>AAE</td>
@@ -112,7 +111,7 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
       <td>0.9939</td>
       <td>0.8655</td>
       <td>0.1001</td>
-      <td><b>0.8565</b></td>
+      <td>0.8565</td>
       <td>0.8503</td>
       <td><b>0.9974</b></td>
     </tr>
@@ -125,12 +124,12 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
       <td><b>0.5412</b></td>
       <td><b>0.6226</b></td>
       <td><b>0.5766</b></td>
-      <td><b>0.9996</b></td>
-      <td><b>0.9982</b></td>
+      <td>0.9996</td>
+      <td>0.9982</td>
       <td><b>0.9331</b></td>
       <td>0.0616</td>
-      <td><b>0.8565</b></td>
-      <td><b>0.8505</b></td>
+      <td>0.8565</td>
+      <td>0.8505</td>
       <td>0.9963</td>
     </tr>
     <tr>
@@ -234,6 +233,21 @@ python scripts/eval.py --ref_path <reference dataset> --gen_path <generated data
 
 # Platform usage
 
+### End-to-End launch
+
+You can run pretty much everything with:
+```bash
+python scripts/run.py
+```
+This will **split** the dataset, **train** the models, **generate** new molecules, and **calculate** the metrics. Evaluation results will be saved in `metrics.csv`.
+
+You can specify the GPU device index as `cuda:n` (or `cpu` for CPU) and/or model by running:
+```bash
+python scripts/run.py --device cuda:1 --model aae
+```
+
+For more details run `python scripts/run.py --help`.
+
 ### Training
 
 ```bash
@@ -272,19 +286,3 @@ python scripts/eval.py \
 ```
 
 For more details run `python scripts/eval.py --help`.
-
-
-### End-to-End launch
-
-You can run pretty much everything with:
-```bash
-python scripts/run.py
-```
-This will **split** the dataset, **train** the models, **generate** new molecules, and **calculate** the metrics. Evaluation results will be saved in `metrics.csv`.
-
-You can specify the GPU device index as `cuda:n` (or `cpu` for CPU) and/or model by running:
-```bash
-python scripts/run.py --device cuda:1 --model aae
-```
-
-For more details run `python scripts/run.py --help`.

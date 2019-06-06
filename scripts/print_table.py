@@ -55,7 +55,7 @@ if __name__ == "__main__":
                'SNN/Test', 'SNN/TestSF', 'Frag/Test',
                'Frag/TestSF', 'Scaf/Test', 'Scaf/TestSF',
                'IntDiv', 'IntDiv2', 'Filters']
-    directions = [2, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    directions = [2, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
     metrics = metrics[targets]
 
     bf_pattern = {
