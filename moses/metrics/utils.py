@@ -110,7 +110,7 @@ def compute_scaffold(mol, min_rings=2):
     mol = get_mol(mol)
     try:
         scaffold = MurckoScaffold.GetScaffoldForMol(mol)
-    except:
+    except (ValueError, RuntimeError):
         return None
     n_rings = get_n_rings(scaffold)
     scaffold_smiles = Chem.MolToSmiles(scaffold)
