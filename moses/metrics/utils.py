@@ -108,7 +108,10 @@ def compute_scaffolds(mol_list, n_jobs=1, min_rings=2):
 
 def compute_scaffold(mol, min_rings=2):
     mol = get_mol(mol)
-    scaffold = MurckoScaffold.GetScaffoldForMol(mol)
+    try:
+        scaffold = MurckoScaffold.GetScaffoldForMol(mol)
+    except:
+        return None
     n_rings = get_n_rings(scaffold)
     scaffold_smiles = Chem.MolToSmiles(scaffold)
     if scaffold_smiles == '' or n_rings < min_rings:
