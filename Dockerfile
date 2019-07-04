@@ -29,9 +29,9 @@ RUN set -ex \
         /usr/share/doc-base
 
 ENV PATH /opt/miniconda/bin:$PATH
-RUN conda install -yq numpy=1.16.0 scipy=1.2.1 matplotlib=3.0.1 pandas=0.23.3 scikit-learn=0.20.3 tqdm \
-    && conda install -yq -c rdkit rdkit=2018.09.1.0 \
-    && conda install -yq -c pytorch pytorch=1.0.1 torchvision=0.2.1 \
+RUN conda install -yq numpy=1.16.0 scipy=1.2.0 matplotlib=3.0.1 pandas=0.23.3 scikit-learn=0.20.3 tqdm>=4.26.0 \
+    && conda install -yq -c rdkit rdkit=2019.03.2 \
+    && conda install -yq -c pytorch pytorch=1.1.1 torchvision=0.2.1 \
     && conda clean -yq -a
 
 WORKDIR /moses

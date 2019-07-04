@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from tqdm import tqdm
+from tqdm.auto import tqdm
 from torch.nn.utils.rnn import pad_sequence
 
 from moses.interfaces import MosesTrainer

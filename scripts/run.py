@@ -7,6 +7,8 @@ from moses.models_storage import ModelsStorage
 
 
 def load_module(name, path):
+    dirname = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(dirname, path)
     spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -187,16 +189,17 @@ def main(config):
         train_model(config, model, train_path)
         sample_from_model(config, model)
 
-    metrics = []
     for model in models:
         model_metrics = eval_metrics(config, model,
                                      test_path, test_scaffolds_path,
                                      ptest_path, ptest_scaffolds_path)
-        model_metrics.update({'model': model})
-        metrics.append(model_metrics)
-
-    table = pd.DataFrame(metrics)
-    table.to_csv(config.metrics, index=False)
+        table = pd.DataFrame([model_metrics]).T
+        if len(models) == 1:
+            metrics_path = ''.join(
+                os.path.splitext(config.metrics)[:-1])+f'_{model}.csv'
+        else:
+            metrics_path = config.metrics
+        table.to_csv(metrics_path, header=False)
 
 
 if __name__ == '__main__':

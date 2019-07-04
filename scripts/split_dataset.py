@@ -45,7 +45,7 @@ def main(config):
     if not os.path.exists(dataset_path):
         raise ValueError(
             "Missing dataset_v1.csv in {}; ".format(config.dir) +
-            "Please, use 'git lfs pull' or download it manually from" +
+            "Please, use 'git lfs pull' or download it manually from " +
             download_url
         )
 
