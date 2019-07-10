@@ -203,6 +203,7 @@ Alternatively, install dependencies and MOSES manually.
 ```bash
 git lfs install
 git clone https://github.com/molecularsets/moses.git
+git lfs pull
 ```
 
 2. [Install RDKit](https://www.rdkit.org/docs/Install.html) for metrics calculation.
