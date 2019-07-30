@@ -58,7 +58,7 @@ class VAETrainer(MosesTrainer):
             loss_values.add(loss.item())
             lr = (optimizer.param_groups[0]['lr']
                   if optimizer is not None
-                  else None)
+                  else 0)
 
             # Update tqdm
             kl_loss_value = kl_loss_values.mean()
@@ -98,7 +98,6 @@ class VAETrainer(MosesTrainer):
         for epoch in range(n_epoch):
             # Epoch start
             kl_weight = kl_annealer(epoch)
-
             tqdm_data = tqdm(train_loader,
                              desc='Training (epoch #{})'.format(epoch))
             postfix = self._train_epoch(model, epoch,

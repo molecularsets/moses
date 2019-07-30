@@ -29,6 +29,12 @@ def get_model_path(config, model):
     )
 
 
+def get_log_path(config, model):
+    return os.path.join(
+        config.checkpoint_dir, model + config.experiment_suff + '_log.txt'
+    )
+
+
 def get_config_path(config, model):
     return os.path.join(
         config.checkpoint_dir, model + config.experiment_suff + '_config.pt'
@@ -74,11 +80,12 @@ def get_parser():
     return parser
 
 
-def train_model(config, model, train_path):
+def train_model(config, model, train_path, test_path):
     print('Training...')
     model_path = get_model_path(config, model)
     config_path = get_config_path(config, model)
     vocab_path = get_vocab_path(config, model)
+    log_path = get_log_path(config, model)
 
     if os.path.exists(model_path) and \
             os.path.exists(config_path) and \
@@ -90,9 +97,11 @@ def train_model(config, model, train_path):
          [model] + sys.argv[1:] +
          ['--device', config.device,
           '--train_load', train_path,
+          '--val_load', test_path,
           '--model_save', model_path,
           '--config_save', config_path,
           '--vocab_save', vocab_path,
+          '--log_file', log_path,
           '--n_jobs', str(config.n_jobs)]
     )[0]
     trainer_script.main(model, trainer_config)
@@ -128,7 +137,7 @@ def sample_from_model(config, model):
 
 
 def eval_metrics(config, model, test_path, test_scaffolds_path,
-                 ptest_path, ptest_scaffolds_path):
+                 ptest_path, ptest_scaffolds_path, train_path):
     print('Computing metrics...')
     eval_parser = eval_script.get_parser()
     eval_config = eval_parser.parse_args(
@@ -138,7 +147,8 @@ def eval_metrics(config, model, test_path, test_scaffolds_path,
          '--ptest_scaffolds_path', ptest_scaffolds_path,
          '--gen_path', get_generation_path(config, model),
          '--n_jobs', str(config.n_jobs),
-         '--device', config.device]
+         '--device', config.device,
+         '--train_path', train_path]
     )
     metrics = eval_script.main(eval_config, print_metrics=False)
 
@@ -167,7 +177,6 @@ def main(config):
     ptest_scaffolds_path = os.path.join(
         config.data_dir, 'test_scaffolds_stats.npz'
     )
-
     if not os.path.exists(train_path) or \
             not os.path.exists(test_path) or \
             not os.path.exists(test_scaffolds_path):
@@ -186,13 +195,14 @@ def main(config):
               if config.model == 'all'
               else [config.model])
     for model in models:
-        train_model(config, model, train_path)
+        train_model(config, model, train_path, test_path)
         sample_from_model(config, model)
 
     for model in models:
         model_metrics = eval_metrics(config, model,
                                      test_path, test_scaffolds_path,
-                                     ptest_path, ptest_scaffolds_path)
+                                     ptest_path, ptest_scaffolds_path,
+                                     train_path)
         table = pd.DataFrame([model_metrics]).T
         if len(models) == 1:
             metrics_path = ''.join(

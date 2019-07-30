@@ -15,7 +15,7 @@ from fcd_torch import calculate_frechet_distance
 def get_all_metrics(test, gen, k=None, n_jobs=1, device='cpu',
                     batch_size=512, test_scaffolds=None,
                     ptest=None, ptest_scaffolds=None,
-                    pool=None, gpu=None):
+                    pool=None, gpu=None, train=None):
     """
     Computes all available metrics between test (scaffold test)
     and generated sets of SMILES.
@@ -34,7 +34,7 @@ def get_all_metrics(test, gen, k=None, n_jobs=1, device='cpu',
             of the scaffold test set
         pool: optional multiprocessing pool to use for parallelization
         gpu: deprecated, use `device`
-
+        train: list of train SMILES
     Available metrics:
         * %valid
         * %unique@k
@@ -47,6 +47,7 @@ def get_all_metrics(test, gen, k=None, n_jobs=1, device='cpu',
             Tanimoto similarity (IntDiv2)
         * %passes filters (Filters)
         * Distribution difference for logP, SA, QED, NP, weight
+        * Novelty (molecules not present in train)
     """
     if k is None:
         k = [1000, 10000]
@@ -117,9 +118,13 @@ def get_all_metrics(test, gen, k=None, n_jobs=1, device='cpu',
                        ('weight', weight)]:
         metrics[name] = FrechetMetric(func, **kwargs)(gen=mols,
                                                       pref=ptest[name])
+
+    if train is not None:
+        metrics['Novelty'] = novelty(mols, train, pool)
     enable_rdkit_log()
     if close_pool:
-        pool.terminate()
+        pool.close()
+        pool.join()
     return metrics
 
 
@@ -209,6 +214,13 @@ def fraction_valid(gen, n_jobs=1):
     """
     gen = mapper(n_jobs)(get_mol, gen)
     return 1 - gen.count(None) / len(gen)
+
+
+def novelty(gen, train, n_jobs=1):
+    gen_smiles = mapper(n_jobs)(canonic_smiles, gen)
+    gen_smiles_set = set(gen_smiles)
+    train_set = set(train)
+    return len(gen_smiles_set - train_set) / len(gen_smiles_set)
 
 
 def remove_invalid(gen, canonize=True, n_jobs=1):

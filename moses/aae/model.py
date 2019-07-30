@@ -154,7 +154,11 @@ class AAE(nn.Module):
             for i in range(max_len):
                 logits, _, states = self.decoder(prevs, one_lens,
                                                  states, i == 0)
-                currents = torch.argmax(logits, dim=-1)
+                logits = torch.softmax(logits, 2)
+                shape = logits.shape[:-1]
+                logits = logits.contiguous().view(-1, logits.shape[-1])
+                currents = torch.distributions.Categorical(logits).sample()
+                currents = currents.view(shape)
 
                 is_end[currents.view(-1) == self.vocabulary.eos] = 1
                 if is_end.sum() == max_len:
