@@ -1,0 +1,8 @@
+storage/
+data/
+slurm*
+*.sh
+.idea
+__pycache__
+.ipynb_checkpoints/
+*.zip
