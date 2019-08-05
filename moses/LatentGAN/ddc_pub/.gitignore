@@ -1,8 +1,0 @@
-# Compiled python modules.
-*.pyc
-
-# Python egg metadata, regenerated from source files by setuptools.
-*.egg-info
-*.egg
-
-*.ipynb_checkpoints

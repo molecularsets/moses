@@ -2,7 +2,7 @@
 ![LatentGAN](../../images/LatentGAN.png)
 
 
-LatentGAN [1] with heteroencoder trained on ChEMBL 25 [2], which encodes SMILES strings into latent vector representations of size 512. A Wasserstein Generative Adversarial network with Gradient Penalty [3] is then trained to generate latent vectors resembling that of the training set, which are then decoded using the heteroencoder. The code has been confirmed to work with the environment provided in the `environment.yml` provided, but not all packages might be necessary. Refactoring the code to follow the other baselines is a Work in Progess. 
+LatentGAN [1] with heteroencoder trained on ChEMBL 25 [2], which encodes SMILES strings into latent vector representations of size 512. A Wasserstein Generative Adversarial network with Gradient Penalty [3] is then trained to generate latent vectors resembling that of the training set, which are then decoded using the heteroencoder. The code has been confirmed to work with the environment provided in the `environment.yml` provided, but not all packages might be necessary. The heteroencoder used is currently not included. Refactoring the code to follow the other baselines is a Work in Progess. 
 
 General Usage Instructions
 --------------------------
