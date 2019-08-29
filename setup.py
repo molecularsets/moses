@@ -18,9 +18,9 @@ setup(name='molsets',
           'seaborn>=0.9.0'
       ],
       description=('Molecular Sets (MOSES): '
-                   'A benchmarking platform for molecular generation models'),
-      author='Neuromation & Insilico Medicine Teams',
-      author_email='developers@neuromation.io, zhebrak@insilico.com',
+                   'A Benchmarking Platform for Molecular Generation Models'),
+      author='Insilico Medicine',
+      author_email='moses@insilico.com',
       license='MIT',
       package_data={
           '': ['*.csv', '*.h5', '*.gz'],
