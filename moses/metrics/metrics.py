@@ -218,7 +218,7 @@ def fraction_valid(gen, n_jobs=1):
 
 def novelty(gen, train, n_jobs=1):
     gen_smiles = mapper(n_jobs)(canonic_smiles, gen)
-    gen_smiles_set = set(gen_smiles)
+    gen_smiles_set = set(gen_smiles) - {None}
     train_set = set(train)
     return len(gen_smiles_set - train_set) / len(gen_smiles_set)
 

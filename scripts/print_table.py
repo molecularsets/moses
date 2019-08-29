@@ -36,7 +36,7 @@ def format_result(result, fmt=None):
     if np.isnan(result['std']):
         result_str = str(result['mean'])
     else:
-        result_str = f"{result['mean']} ± {result['std']}"
+        result_str = f"{result['mean']}±{result['std']}"
     if fmt is not None:
         result_str = fmt.format(result_str)
     return result_str
@@ -66,7 +66,7 @@ if __name__ == "__main__":
                'SNN/Test', 'SNN/TestSF', 'Frag/Test',
                'Frag/TestSF', 'Scaf/Test', 'Scaf/TestSF',
                'IntDiv', 'IntDiv2', 'Filters', 'Novelty']
-    directions = [2, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    directions = [2, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
     metrics = metrics[targets]
 
     bf_pattern = {
