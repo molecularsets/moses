@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 from tqdm.auto import tqdm
 from torch.nn.utils.rnn import pad_sequence
@@ -137,10 +136,12 @@ class AAETrainer(MosesTrainer):
                 total_loss = autoencoder_loss + generator_loss
 
                 postfix['autoencoder_loss'] = (
-                    postfix['autoencoder_loss'] * (i//2) + autoencoder_loss.item()
+                    postfix['autoencoder_loss'] * (i//2) +
+                    autoencoder_loss.item()
                 ) / (i//2 + 1)
                 postfix['generator_loss'] = (
-                    postfix['generator_loss'] * (i//2) + generator_loss.item()
+                    postfix['generator_loss'] * (i//2) +
+                    generator_loss.item()
                 ) / (i//2 + 1)
             else:
                 discriminator_targets = torch.zeros(
@@ -168,12 +169,13 @@ class AAETrainer(MosesTrainer):
                     total_loss.item()
                 ) / (i//2 + 1)
 
-
             if optimizers is not None:
                 optimizers['autoencoder'].zero_grad()
                 optimizers['discriminator'].zero_grad()
                 total_loss.backward()
-                if i % self.config.discriminator_steps == 0:
+                for parameter in model.parameters():
+                    parameter.grad.clamp_(-5, 5)
+                if i % (self.config.discriminator_steps + 1) == 0:
                     optimizers['autoencoder'].step()
                 else:
                     optimizers['discriminator'].step()
@@ -192,10 +194,12 @@ class AAETrainer(MosesTrainer):
         optimizers = {
             'autoencoder': torch.optim.Adam(
                 list(model.encoder.parameters()) +
-                list(model.decoder.parameters()), lr=self.config.lr
+                list(model.decoder.parameters()), lr=self.config.lr,
+                weight_decay=self.config.weight_decay
             ),
             'discriminator': torch.optim.Adam(
-                model.discriminator.parameters(), lr=self.config.lr
+                model.discriminator.parameters(), lr=self.config.lr,
+                weight_decay=self.config.weight_decay
             )
         }
         schedulers = {

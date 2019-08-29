@@ -25,14 +25,15 @@ def main(config, print_metrics=True):
             warnings.warn(f'{config.ptest_path} does not exist')
             ptest = None
         else:
-            ptest = np.load(config.ptest_path)['stats'].item()
+            ptest = np.load(
+                config.ptest_path, allow_pickle=True)['stats'].item()
     if config.ptest_scaffolds_path is not None:
         if not os.path.exists(config.ptest_scaffolds_path):
             warnings.warn(f'{config.ptest_scaffolds_path} does not exist')
             ptest_scaffolds = None
         else:
-            ptest_scaffolds = np.load(config.ptest_scaffolds_path)[
-                'stats'].item()
+            ptest_scaffolds = np.load(
+                config.ptest_scaffolds_path, allow_pickle=True)['stats'].item()
     gen = read_smiles_csv(config.gen_path)
     metrics = get_all_metrics(test, gen, k=config.ks, n_jobs=config.n_jobs,
                               device=config.device,
