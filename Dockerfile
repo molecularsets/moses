@@ -11,8 +11,8 @@ RUN set -ex \
     && apt-get upgrade -yqq \
     && apt-get install -yqq --no-install-recommends \
         git wget curl ssh libxrender1 libxext6 software-properties-common \
-    && wget --no-check-certificate https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
-    && /bin/bash Miniconda3-latest-Linux-x86_64.sh -f -b -p /opt/miniconda \
+    && wget --no-check-certificate https://repo.continuum.io/miniconda/Miniconda3-4.6.14-Linux-x86_64.sh \
+    && /bin/bash Miniconda3-4.6.14-Linux-x86_64.sh -f -b -p /opt/miniconda \
     && add-apt-repository ppa:git-core/ppa \
     && (curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash) \
     && apt-get install git-lfs \
