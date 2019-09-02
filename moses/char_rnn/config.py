@@ -16,7 +16,7 @@ def get_parser(parser=None):
 
     # Train
     train_arg = parser.add_argument_group('Training')
-    train_arg.add_argument('--train_epochs', type=int, default=50,
+    train_arg.add_argument('--train_epochs', type=int, default=80,
                            help='Number of epochs for model training')
     train_arg.add_argument('--n_batch', type=int, default=64,
                            help='Size of batch')

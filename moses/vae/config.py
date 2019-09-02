@@ -36,7 +36,7 @@ def get_parser(parser=None):
                            help='Latent vector dimensionality')
     model_arg.add_argument('--d_d_h',
                            type=int, default=512,
-                           help='Latent vector dimensionality')
+                           help='Decoder hidden dimensionality')
     model_arg.add_argument('--freeze_embeddings',
                            default=False, action='store_true',
                            help='If to freeze embeddings while training')
@@ -56,7 +56,7 @@ def get_parser(parser=None):
                            type=float, default=0,
                            help='Initial kl weight value')
     train_arg.add_argument('--kl_w_end',
-                           type=float, default=1,
+                           type=float, default=0.05,
                            help='Maximum kl weight value')
     train_arg.add_argument('--lr_start',
                            type=float, default=3 * 1e-4,
@@ -65,7 +65,7 @@ def get_parser(parser=None):
                            type=int, default=10,
                            help='Epochs before first restart in SGDR')
     train_arg.add_argument('--lr_n_restarts',
-                           type=int, default=6,
+                           type=int, default=10,
                            help='Number of restarts in SGDR')
     train_arg.add_argument('--lr_n_mult',
                            type=int, default=1,
