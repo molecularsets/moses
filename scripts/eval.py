@@ -15,26 +15,31 @@ def main(config, print_metrics=True):
     test_scaffolds = None
     ptest = None
     ptest_scaffolds = None
+    train = None
     if config.test_scaffolds_path is not None:
         test_scaffolds = read_smiles_csv(config.test_scaffolds_path)
+    if config.train_path is not None:
+        train = read_smiles_csv(config.train_path)
     if config.ptest_path is not None:
         if not os.path.exists(config.ptest_path):
             warnings.warn(f'{config.ptest_path} does not exist')
             ptest = None
         else:
-            ptest = np.load(config.ptest_path)['stats'].item()
+            ptest = np.load(
+                config.ptest_path, allow_pickle=True)['stats'].item()
     if config.ptest_scaffolds_path is not None:
         if not os.path.exists(config.ptest_scaffolds_path):
             warnings.warn(f'{config.ptest_scaffolds_path} does not exist')
             ptest_scaffolds = None
         else:
-            ptest_scaffolds = np.load(config.ptest_scaffolds_path)[
-                'stats'].item()
+            ptest_scaffolds = np.load(
+                config.ptest_scaffolds_path, allow_pickle=True)['stats'].item()
     gen = read_smiles_csv(config.gen_path)
     metrics = get_all_metrics(test, gen, k=config.ks, n_jobs=config.n_jobs,
                               device=config.device,
                               test_scaffolds=test_scaffolds,
-                              ptest=ptest, ptest_scaffolds=ptest_scaffolds)
+                              ptest=ptest, ptest_scaffolds=ptest_scaffolds,
+                              train=train)
 
     if print_metrics:
         for name, value in metrics.items():
@@ -51,6 +56,9 @@ def get_parser():
     parser.add_argument('--test_scaffolds_path',
                         type=str, required=False,
                         help='Path to scaffold test molecules csv')
+    parser.add_argument('--train_path',
+                        type=str, required=False,
+                        help='Path to train molecules csv')
     parser.add_argument('--ptest_path',
                         type=str, required=False,
                         help='Path to precalculated test npz')

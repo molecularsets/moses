@@ -35,7 +35,7 @@ The dataset contains 1,936,962 molecular structures. For experiments, we split t
 
 
 ## Metrics
-Besides standard uniqueness and validity metrics, MOSES provides other metrics to access the overall quality of generated molecules. Fragment similarity (Frag) and Scaffold similarity (Scaff) are cosine distances between vectors of fragment or scaffold frequencies correspondingly of the generated and test sets. Nearest neighbor similarity (SNN) is the average similarity of generated molecules to the nearest molecule from the test set. Internal diversity (IntDiv) is an average pairwise similarity of generated molecules. Fréchet ChemNet Distance (FCD) measures the difference in distributions of last layer activations of ChemNet.
+Besides standard uniqueness and validity metrics, MOSES provides other metrics to access the overall quality of generated molecules. Fragment similarity (Frag) and Scaffold similarity (Scaff) are cosine distances between vectors of fragment or scaffold frequencies correspondingly of the generated and test sets. Nearest neighbor similarity (SNN) is the average similarity of generated molecules to the nearest molecule from the test set. Internal diversity (IntDiv) is an average pairwise similarity of generated molecules. Fréchet ChemNet Distance (FCD) measures the difference in distributions of last layer activations of ChemNet. Novelty is a fraction of unique valid generated molecules not present in the training set.
 
 <table border="1" class="dataframe">
   <thead>
@@ -51,6 +51,7 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
       <th rowspan="2">IntDiv (↑)</th>
       <th rowspan="2">IntDiv2 (↑)</th>
       <th rowspan="2">Filters (↑)</th>
+      <th rowspan="2">Novelty (↑)</th>
     </tr>
     <tr>
       <th>Test</th>
@@ -70,84 +71,89 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
       <td><i>1.0</i></td>
       <td><i>1.0</i></td>
       <td><i>0.008</i></td>
-      <td><i>0.4755</i></td>
-      <td><i>0.6419</i></td>
-      <td><i>0.5859</i></td>
+      <td><i>0.476</i></td>
+      <td><i>0.642</i></td>
+      <td><i>0.586</i></td>
       <td><i>1.0</i></td>
-      <td><i>0.9986</i></td>
-      <td><i>0.9907</i></td>
+      <td><i>0.999</i></td>
+      <td><i>0.991</i></td>
       <td><i>0.0</i></td>
-      <td><i>0.8567</i></td>
-      <td><i>0.8508</i></td>
+      <td><i>0.857</i></td>
+      <td><i>0.851</i></td>
       <td><i>1.0</i></td>
-    </tr>
-    <tr>
-      <td>CharRNN</td>
-      <td>0.9598</td>
-      <td><b>1.0</b></td>
-      <td><b>0.9994</b></td>
-      <td>0.0914</td>
-      <td>0.5429</td>
-      <td>0.579</td>
-      <td>0.5486</td>
-      <td><b>0.9998</b></td>
-      <td><b>0.9984</b></td>
-      <td>0.9184</td>
-      <td><b>0.1289</b></td>
-      <td><b>0.8566</b></td>
-      <td><b>0.8506</b></td>
-      <td>0.9897</td>
+      <td><i>1.0</i></td>
     </tr>
     <tr>
       <td>AAE</td>
-      <td>0.9965</td>
-      <td><b>1.0</b></td>
-      <td>0.995</td>
-      <td>0.3945</td>
-      <td>1.0003</td>
-      <td>0.6197</td>
-      <td>0.5747</td>
-      <td>0.9952</td>
-      <td>0.9939</td>
-      <td>0.8655</td>
-      <td>0.1001</td>
-      <td>0.8565</td>
-      <td>0.8503</td>
-      <td><b>0.9974</b></td>
+      <td>0.937±0.034</td>
+      <td><b>1.0±0.0</b></td>
+      <td>0.997±0.002</td>
+      <td>0.556±0.203</td>
+      <td><b>1.057±0.237</b></td>
+      <td>0.608±0.004</td>
+      <td>0.568±0.005</td>
+      <td>0.991±0.005</td>
+      <td>0.99±0.004</td>
+      <td>0.902±0.037</td>
+      <td>0.079±0.009</td>
+      <td><b>0.856±0.003</b></td>
+      <td><b>0.85±0.003</b></td>
+      <td>0.996±0.001</td>
+      <td>0.793±0.028</td>
     </tr>
     <tr>
-      <td>VAE</td>
-      <td>0.9691</td>
-      <td><b>1.0</b></td>
-      <td>0.9989</td>
-      <td><b>0.0844</b></td>
-      <td><b>0.5412</b></td>
-      <td><b>0.6226</b></td>
-      <td><b>0.5766</b></td>
-      <td>0.9996</td>
-      <td>0.9982</td>
-      <td><b>0.9331</b></td>
-      <td>0.0616</td>
-      <td>0.8565</td>
-      <td>0.8505</td>
-      <td>0.9963</td>
+      <td>CharRNN</td>
+      <td>0.975±0.026</td>
+      <td><b>1.0±0.0</b></td>
+      <td><b>0.999±0.0</b></td>
+      <td><b>0.073±0.025</b></td>
+      <td>0.52±0.038</td>
+      <td>0.601±0.021</td>
+      <td>0.565±0.014</td>
+      <td><b>1.0±0.0</b></td>
+      <td><b>0.998±0.0</b></td>
+      <td>0.924±0.006</td>
+      <td><b>0.11±0.008</b></td>
+      <td><b>0.856±0.0</b></td>
+      <td><b>0.85±0.0</b></td>
+      <td>0.994±0.003</td>
+      <td>0.842±0.051</td>
     </tr>
     <tr>
       <td>JTN-VAE</td>
       <td><b>1.0</b></td>
       <td><b>1.0</b></td>
-      <td>0.9992</td>
-      <td>0.4224</td>
-      <td>0.9962</td>
-      <td>0.5561</td>
-      <td>0.5273</td>
-      <td>0.9962</td>
-      <td>0.9948</td>
-      <td>0.8925</td>
-      <td>0.1005</td>
-      <td>0.8512</td>
-      <td>0.8453</td>
-      <td>0.9778</td>
+      <td><b>0.999</b></td>
+      <td>0.422</td>
+      <td>0.996</td>
+      <td>0.556</td>
+      <td>0.527</td>
+      <td>0.996</td>
+      <td>0.995</td>
+      <td>0.892</td>
+      <td>0.1</td>
+      <td>0.851</td>
+      <td>0.845</td>
+      <td>0.978</td>
+      <td><b>0.915</b></td>
+    </tr>
+    <tr>
+      <td>VAE</td>
+      <td>0.977±0.001</td>
+      <td><b>1.0±0.0</b></td>
+      <td>0.998±0.001</td>
+      <td>0.099±0.013</td>
+      <td>0.567±0.034</td>
+      <td><b>0.626±0.0</b></td>
+      <td><b>0.578±0.001</b></td>
+      <td>0.999±0.0</td>
+      <td><b>0.998±0.0</b></td>
+      <td><b>0.939±0.002</b></td>
+      <td>0.059±0.01</td>
+      <td><b>0.856±0.0</b></td>
+      <td><b>0.85±0.0</b></td>
+      <td><b>0.997±0.0</b></td>
+      <td>0.695±0.007</td>
     </tr>
   </tbody>
 </table>
