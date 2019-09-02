@@ -20,7 +20,7 @@ RUN set -ex \
     && apt-get clean \ 
     && /opt/miniconda/bin/conda install conda=4.6.14=py36_0 \
     && /opt/miniconda/bin/conda clean -yq -a \
-    && rm Miniconda3-latest-Linux-x86_64.sh \ 
+    && rm Miniconda3-4.6.14-Linux-x86_64.sh \ 
     && rm -rf \
         /tmp/* \
         /var/tmp/* \
