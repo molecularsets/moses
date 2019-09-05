@@ -60,7 +60,7 @@ def get_parser():
     parser.add_argument('--model', type=str, default='all',
                         choices=['all'] + MODELS.get_model_names(),
                         help='Which model to run')
-    parser.add_argument('--data_dir', type=str, default='../data',
+    parser.add_argument('--data_dir', type=str, default='./data',
                         help='Directory for datasets')
     parser.add_argument('--checkpoint_dir', type=str, default='./checkpoints',
                         help='Directory for checkpoints')
