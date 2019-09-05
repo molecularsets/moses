@@ -223,12 +223,6 @@ python setup.py install
 
 * Install MOSES as described in the previous section.
 
-* Split the dataset (automatically done with `run.py`):
-```bash
-python scripts/split_dataset.py
-```
-This will create `train.csv`, `test.csv`, `test_scaffolds.csv`, on which you should train and test your models. It will also create some `.npz` files for faster calculation of metrics.
-
 * Calculate metrics for the trained model:
 
 ```bash
@@ -253,6 +247,11 @@ python scripts/run.py --device cuda:1 --model aae
 ```
 
 For more details run `python scripts/run.py --help`.
+
+You can reproduce evaluation of all models with several seeds by running:
+```bash
+sh scripts/run_all_models.sh
+```
 
 ### Training
 
