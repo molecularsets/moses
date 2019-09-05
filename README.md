@@ -225,7 +225,7 @@ python setup.py install
 
 * Split the dataset (automatically done with `run.py`):
 ```bash
-python scripts/split_dataset.py --dir data/
+python scripts/split_dataset.py
 ```
 This will create `train.csv`, `test.csv`, `test_scaffolds.csv`, on which you should train and test your models. It will also create some `.npz` files for faster calculation of metrics.
 
