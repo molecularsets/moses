@@ -9,5 +9,4 @@ pip-delete-this-directory.txt
 .tox
 .cache
 *.log
-.git
 .ipynb_checkpoints/*
