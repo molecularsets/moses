@@ -35,10 +35,6 @@ RUN conda install -yq numpy=1.16.0 scipy=1.2.0 matplotlib=3.0.1 pandas=0.23.3 sc
     && conda clean -yq -a
 
 WORKDIR /moses
-RUN python setup.py install
-RUN git init
-RUN git lfs pull
-RUN conda clean -yq -a
-RUN rm -rf .git/lfs
+RUN python setup.py install && git lfs pull && conda clean -yq -a && rm -rf .git/lfs
 
 CMD [ "/bin/bash" ]
