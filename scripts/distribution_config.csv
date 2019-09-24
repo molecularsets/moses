@@ -1,5 +1,5 @@
 name,path
-CharRNN,../data/samples/char_rnn_generated.csv
-AAE,../data/samples/aae_generated.csv
-VAE,../data/samples/vae_generated.csv
+CharRNN,../data/samples/char_rnn/char_rnn_all.csv
+AAE,../data/samples/aae/aae_all.csv
+VAE,../data/samples/vae/vae_all.csv
 JTN-VAE,../data/samples/jtn_generated.csv

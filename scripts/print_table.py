@@ -1,5 +1,4 @@
 import pandas as pd
-from collections import OrderedDict
 import argparse
 import numpy as np
 import re
@@ -33,20 +32,32 @@ def get_parser():
     return parser
 
 
+def format_result(result, fmt=None):
+    if np.isnan(result['std']):
+        result_str = str(result['mean'])
+    else:
+        result_str = f"{result['mean']}±{result['std']}"
+    if fmt is not None:
+        result_str = fmt.format(result_str)
+    return result_str
+
+
 if __name__ == "__main__":
     parser = get_parser()
     config, unknown = parser.parse_known_args()
     if len(unknown) != 0:
         raise ValueError("Unknown argument " + unknown[0])
 
-    metrics = OrderedDict()
+    metrics = []
     models = pd.read_csv(config.config)
     for path, name in zip(models['path'], models['name']):
-        metrics[name] = pd.read_csv(path, header=None)
-        metrics[name] = {x[1][0]: x[1][1]
-                         for x in metrics[name].iterrows()}
-        metrics[name]['Model'] = name
-    metrics = pd.DataFrame(metrics).T
+        parsed_metrics = pd.read_csv(path, header=None)
+        parsed_metrics = {x[1][0]: x[1][1]
+                          for x in parsed_metrics.iterrows()}
+        parsed_metrics['Model'] = name
+        metrics.append(parsed_metrics)
+    metrics = pd.DataFrame(metrics)
+    metrics = metrics.groupby('Model').agg([np.mean, np.std]).reset_index()
     metrics = metrics.rename(columns={'valid': 'Valid',
                                       'unique@1000': 'Unique@1k',
                                       'unique@10000': 'Unique@10k'})
@@ -54,8 +65,8 @@ if __name__ == "__main__":
                'Unique@10k', 'FCD/Test', 'FCD/TestSF',
                'SNN/Test', 'SNN/TestSF', 'Frag/Test',
                'Frag/TestSF', 'Scaf/Test', 'Scaf/TestSF',
-               'IntDiv', 'IntDiv2', 'Filters']
-    directions = [2, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+               'IntDiv', 'IntDiv2', 'Filters', 'Novelty']
+    directions = [2, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
     metrics = metrics[targets]
 
     bf_pattern = {
@@ -75,25 +86,33 @@ if __name__ == "__main__":
         'latex': [r' ($\downarrow$)', r' ($\uparrow$)', '']
     }[config.extension]
 
+    metrics = metrics.set_index('Model')
+    models = [x for x in metrics.index if x != 'Train']
+
+    if 'Train' in metrics.index:
+        models = ['Train'] + models
+    metrics = metrics.loc[models].reset_index()
+
     for col, d in zip(targets[1:], directions[1:]):
         metrics[col] = metrics[col] \
             .astype(float) \
             .round(config.precision)
         max_val = (2 * d - 1) * np.max(
-            [(2 * d - 1) * m for m, n in zip(metrics[col],
+            [(2 * d - 1) * m for m, n in zip(metrics[col]['mean'],
                                              metrics['Model'])
              if n != 'Train'])
-        metrics[col] = [str(x) if x != max_val or n == 'Train'
-                        else bf_pattern.format(x)
-                        for x, n in zip(metrics[col],
-                                        metrics['Model'])]
-    for col in targets[::-1]:
-        metrics[col] = [it_pattern.format(x)
-                        if n == 'Train' else x
-                        for x, n in zip(metrics[col],
-                                        metrics['Model'])]
+        metric = [format_result(x)
+                  if x['mean'] != max_val or n == 'Train'
+                  else format_result(x, bf_pattern)
+                  for (_, x), n in zip(metrics[col].iterrows(),
+                                       metrics['Model'])]
+        metrics = metrics.drop(col, axis=1, level=0)
+        metrics[col] = metric
+    if 'Train' in models:
+        metrics.iloc[0] = metrics.iloc[0].apply(it_pattern.format)
 
     metrics = metrics.round(config.precision)
+    metrics.columns = metrics.columns.droplevel(1)
     if config.extension == 'csv':
         metrics.to_csv(config.output, index=None)
     elif config.extension == 'html':

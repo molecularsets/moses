@@ -13,14 +13,14 @@ setup(name='molsets',
           'numpy>=1.15',
           'pandas>=0.23',
           'scipy>=1.1.0',
-          'torch>=1.0.0',
+          'torch==1.1.0',
           'fcd_torch>=1.0.5',
           'seaborn>=0.9.0'
       ],
       description=('Molecular Sets (MOSES): '
-                   'A benchmarking platform for molecular generation models'),
-      author='Neuromation & Insilico Medicine Teams',
-      author_email='developers@neuromation.io, zhebrak@insilico.com',
+                   'A Benchmarking Platform for Molecular Generation Models'),
+      author='Insilico Medicine',
+      author_email='moses@insilico.com',
       license='MIT',
       package_data={
           '': ['*.csv', '*.h5', '*.gz'],
