@@ -1,0 +1,11 @@
+Metadata-Version: 1.2
+Name: molsets
+Version: 0.1.4
+Summary: Molecular Sets (MOSES): A benchmarking platform for molecular generation models
+Home-page: UNKNOWN
+Author: Neuromation & Insilico Medicine Teams
+Author-email: developers@neuromation.io, zhebrak@insilico.com
+License: MIT
+Description: UNKNOWN
+Platform: UNKNOWN
+Requires-Python: >=3.5.0

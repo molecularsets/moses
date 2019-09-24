@@ -4,3 +4,4 @@ CharRNN,../data/samples/char_rnn_metrics.csv
 AAE,../data/samples/aae_metrics.csv
 VAE,../data/samples/vae_metrics.csv
 JTN-VAE,../data/samples/jtn_metrics.csv
+LatentGAN,../data/samples/LatentGAN.csv

@@ -13,7 +13,7 @@ setup(name='molsets',
           'numpy>=1.15',
           'pandas>=0.23',
           'scipy>=1.1.0',
-          'torch>=1.1.0',
+          'torch>=1.0.0',
           'fcd_torch>=1.0.5',
           'seaborn>=0.9.0'
       ],
