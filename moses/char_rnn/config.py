@@ -7,7 +7,7 @@ def get_parser(parser=None):
 
     # Model
     model_arg = parser.add_argument_group('Model')
-    model_arg.add_argument("--num_layers", type=int, default=3,
+    model_arg.add_argument("--num_layers", type=int, default=1,
                            help="Number of LSTM layers")
     model_arg.add_argument("--hidden", type=int, default=768,
                            help="Hidden size")

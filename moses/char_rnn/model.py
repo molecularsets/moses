@@ -16,7 +16,7 @@ class CharRNN(nn.Module):
         self.vocab_size = self.input_size = self.output_size = len(vocabulary)
 
         self.embedding_layer = nn.Embedding(self.vocab_size, self.vocab_size, padding_idx=vocabulary.pad)
-        self.lstm_layer = nn.LSTM(self.input_size, self.hidden_size, self.num_layers, dropout=self.dropout,
+        self.lstm_layer = nn.GRU(self.input_size, self.hidden_size, self.num_layers, dropout=self.dropout,
                                   batch_first=True)
         self.linear_layer = nn.Linear(self.hidden_size, self.output_size)
 
@@ -45,6 +45,29 @@ class CharRNN(nn.Module):
         string = self.vocabulary.ids2string(ids, rem_bos=True, rem_eos=True)
 
         return string
+
+    def load_lbann_weights(self,weights_dir,epoch_count=10):
+        
+        with torch.no_grad():
+          #Load Embedding weights
+          emb_weights = np.loadtxt(weights_dir+"model0-epoch"+str(epoch_count)+"-emb_matrix-Weights.txt")
+          self.embedding_layer.weight.data.copy_(torch.from_numpy(np.transpose(emb_weights))) 
+
+          #Load LSTM weights/biases
+          param_idx = ['_ih_matrix','_hh_matrix','_ih_bias', '_hh_bias'] 
+          for l in range(self.num_layers):
+            for idx, val in enumerate(param_idx):
+              param_tensor = np.loadtxt(weights_dir+"model0-epoch"+str(epoch_count)+"-gru"+str(l+1)+val+"-Weights.txt")
+              self.lstm_layer.all_weights[l][idx].copy_(torch.from_numpy(param_tensor))
+
+          #Load Linear layer weights/biases
+          linear_layer_weights = np.loadtxt(weights_dir+"model0-epoch"+str(epoch_count)+"-fcmodule7_matrix-Weights.txt")
+          self.linear_layer.weight.data.copy_(torch.from_numpy(linear_layer_weights))
+          linear_layer_bias = np.loadtxt(weights_dir+"model0-epoch"+str(epoch_count)+"-fcmodule7_bias-Weights.txt")
+          self.linear_layer.bias.data.copy_(torch.from_numpy(linear_layer_bias))
+
+          print("DONE loading LBANN weights ")
+        return
 
     def sample(self, n_batch, max_length=100):
         with torch.no_grad():

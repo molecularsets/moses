@@ -36,6 +36,8 @@ def main(model, config):
     model = MODELS.get_model_class(model)(model_vocab, model_config)
     model.load_state_dict(model_state)
     model = model.to(device)
+    if os.path.exists(config.lbann_weights_dir): 
+      model.load_lbann_weights2(config.lbann_weights_dir,config.lbann_epoch_counts)
     model.eval()
 
     samples = []

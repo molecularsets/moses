@@ -59,6 +59,10 @@ def get_parser():
                         help='Size of testing dataset')
     parser.add_argument('--experiment_suff', type=str, default='',
                         help='Experiment suffix to break ambiguity')
+    parser.add_argument('--lbann_weights_dir', type=str, default='./lbann_weights',
+                        help='Directory for LBANN weights for inference')
+    parser.add_argument('--lbann_epoch_counts', type=int, default=30,
+                        help='LBANN epoch count at which to load trained model')
     return parser
 
 def train_model(config, model, train_path):
@@ -96,6 +100,8 @@ def sample_from_model(config, model):
                                                      '--model_load', model_path,
                                                      '--config_load', config_path,
                                                      '--vocab_load', vocab_path,
+                                                     '--lbann_weights_dir', str(config.lbann_weights_dir),
+                                                     '--lbann_epoch_counts', str(config.lbann_epoch_counts),
                                                      '--gen_save', get_generation_path(config, model),
                                                      '--n_samples', str(config.n_samples)])[0]
     sampler_script.main(model, sampler_config)
