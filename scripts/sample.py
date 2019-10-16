@@ -4,6 +4,7 @@ import torch
 import rdkit
 import pandas as pd
 from tqdm import tqdm
+import os
 
 from moses.models_storage import ModelsStorage
 from moses.script_utils import add_sample_args, set_seed
@@ -37,7 +38,7 @@ def main(model, config):
     model.load_state_dict(model_state)
     model = model.to(device)
     if os.path.exists(config.lbann_weights_dir): 
-      model.load_lbann_weights2(config.lbann_weights_dir,config.lbann_epoch_counts)
+      model.load_lbann_weights(config.lbann_weights_dir,config.lbann_epoch_counts)
     model.eval()
 
     samples = []
