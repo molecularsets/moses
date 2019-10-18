@@ -86,7 +86,7 @@ def add_sample_args(parser):
     common_arg.add_argument("--max_len",
                             type=int, default=100,
                             help="Max of length of SMILES")
-    common_arg.add_argument('--lbann_weights_dir', type=str, default='./lbann_weights',
+    common_arg.add_argument('--lbann_weights_dir', type=str, default='',
                         help='Directory for LBANN weights for inference')
     common_arg.add_argument('--lbann_epoch_counts', type=int, default=30,
                         help='LBANN epoch count at which to load trained model')

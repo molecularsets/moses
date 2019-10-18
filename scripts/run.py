@@ -59,7 +59,7 @@ def get_parser():
                         help='Size of testing dataset')
     parser.add_argument('--experiment_suff', type=str, default='',
                         help='Experiment suffix to break ambiguity')
-    parser.add_argument('--lbann_weights_dir', type=str, default='./lbann_weights',
+    parser.add_argument('--lbann_weights_dir', type=str, default=' ',
                         help='Directory for LBANN weights for inference')
     parser.add_argument('--lbann_epoch_counts', type=int, default=30,
                         help='LBANN epoch count at which to load trained model')
@@ -93,6 +93,10 @@ def sample_from_model(config, model):
     assert os.path.exists(model_path), "Can't find model path for sampling: '{}'".format(model_path)
     assert os.path.exists(config_path), "Can't find config path for sampling: '{}'".format(config_path)
     assert os.path.exists(vocab_path), "Can't find vocab path for sampling: '{}'".format(vocab_path)
+    
+    if(config.lbann_weights_dir):
+      assert os.path.exists(config.lbann_weights_dir), ("LBANN inference mode is specified but directory " 
+                                                       " to load weights does not exist: '{}'".format(config.lbann_weights_dir))
 
     sampler_parser = sampler_script.get_parser()
     sampler_config = sampler_parser.parse_known_args([model,] + sys.argv[1:] + [
@@ -149,7 +153,8 @@ def main(config):
 
     models = MODELS.get_model_names() if config.model == 'all' else [config.model]
     for model in models:
-        train_model(config, model, train_path)
+        if not os.path.exists(config.lbann_weights_dir): #LBANN is inference only 
+          train_model(config, model, train_path)
         sample_from_model(config, model)
 
     metrics = []
@@ -161,6 +166,7 @@ def main(config):
         metrics.append(model_metrics)
 
     table = pd.DataFrame(metrics)
+    print("Saving computed metrics to ", config.metrics)
     table.to_csv(config.metrics, index=False)
 
 
