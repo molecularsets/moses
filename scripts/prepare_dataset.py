@@ -1,7 +1,5 @@
 import pandas as pd
 from multiprocessing import Pool
-import requests
-from io import BytesIO
 from tqdm.auto import tqdm
 from moses.metrics import mol_passes_filters, compute_scaffold
 import argparse
