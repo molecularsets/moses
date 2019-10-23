@@ -10,14 +10,15 @@ import torch.autograd as autograd
 
 
 class LatentGAN(nn.Module):
-    def __init__(self,vocabulary, config):
+    def __init__(self, vocabulary, config):
         super(LatentGAN, self).__init__()
         self.vocabulary = vocabulary
         self.generator = Generator()
-        self.model_version=config.heteroencoder_version
+        self.model_version = config.heteroencoder_version
         self.discriminator = Discriminator()
-        self.Sampler = Sampler(generator=Generator())
-        self.sample = sample
+        self.sample_decoder = None
+        self.model_loaded = False
+        self.new_batch_size = 256
         # init params
         cuda = True if torch.cuda.is_available() else False
         if cuda:
@@ -26,29 +27,30 @@ class LatentGAN(nn.Module):
         self.Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 
     def forward(self, n_batch):
-        out = sample(n_batch)
+        out = self.sample(n_batch)
         return out
 
     def encode_smiles(self, smiles_in, encoder=None):
 
         model = load_model(model_version=encoder)
 
-        # Input SMILES
-        #smiles_in = np.array(smiles)
-
-        # MUST convert SMILES to binary mols for the model to accept them (it re-converts them to SMILES internally)
-        mols_in = [Chem.rdchem.Mol.ToBinary(Chem.MolFromSmiles(smiles)) for smiles in smiles_in]
+        # MUST convert SMILES to binary mols for the model to accept them
+        # (it re-converts them to SMILES internally)
+        mols_in = [Chem.rdchem.Mol.ToBinary(Chem.MolFromSmiles(smiles))
+                   for smiles in smiles_in]
         latent = model.transform(model.vectorize(mols_in))
 
         return latent.tolist()
 
-    def compute_gradient_penalty(self, real_samples, fake_samples, discriminator):
+    def compute_gradient_penalty(self, real_samples,
+                                 fake_samples, discriminator):
         """Calculates the gradient penalty loss for WGAN GP"""
         # Random weight term for interpolation between real and fake samples
         alpha = self.Tensor(np.random.random((real_samples.size(0), 1)))
 
         # Get random interpolation between real and fake samples
-        interpolates = (alpha * real_samples + ((1 - alpha) * fake_samples)).requires_grad_(True)
+        interpolates = (alpha * real_samples +
+                        ((1 - alpha) * fake_samples)).requires_grad_(True)
         d_interpolates = discriminator(interpolates)
         fake = self.Tensor(real_samples.shape[0], 1).fill_(1.0)
 
@@ -70,58 +72,81 @@ class LatentGAN(nn.Module):
     def device(self):
         return next(self.parameters()).device
 
+    def sample(self, n_batch, max_length=100):
+        if not self.model_loaded:
+            # Checking for first batch of model to only load model once
+            print('Heteroencoder for Sampling Loaded')
+            self.sample_decoder = load_model(model_version=self.model_version)
+            # load generator
+
+            self.Gen = self.generator
+            self.Gen.eval()
+
+            self.D = self.discriminator
+            torch.no_grad()
+            cuda = True if torch.cuda.is_available() else False
+            if cuda:
+                self.Gen.cuda()
+                self.D.cuda()
+            self.S = Sampler(generator=self.Gen)
+            self.model_loaded = True
+
+            if n_batch <= 256:
+                print('Batch size of {} detected. Decoding '
+                      'performs poorly when Batch size != 256. \
+                 Setting batch size to 256'.format(n_batch))
+        # Sampling performs very poorly on default sampling batch parameters.
+        #  This takes care of the default scenario.
+        if n_batch == 32:
+            n_batch = 256
+
+        latent = self.S.sample(n_batch)
+        sanitycheck = self.D(latent)
+        print('mean latent values')
+        print(torch.mean(latent))
+        print('var latent values')
+        print(torch.var(latent))
+        print('generator loss of sample')
+        print(-torch.mean(sanitycheck))
+        latent = latent.detach().cpu().numpy()
+
+        if self.new_batch_size != n_batch:
+            # The batch decoder creates a new instance of the decoder
+            # every time a new batch size is given, e.g. for the
+            # final batch of the generation.
+            self.new_batch_size = n_batch
+            self.sample_decoder.batch_input_length = self.new_batch_size
+        lat = latent
+
+        sys.stdout.flush()
+
+        smi, _ = self.sample_decoder.predict_batch(lat, temp=0)
+        return smi
 
 
 def load_model(model_version=None):
     # Import model
     currentDirectory = os.getcwd()
-    DEFAULT_MODEL_VERSION = 'new_chembl_model'
 
     if model_version == 'chembl':
-        model_name = 'new_chembl_model'
-
+        model_name = 'chembl_pretrained'
     elif model_version == 'moses':
-        model_name = '16888509--1000--0.0927--0.0000010'
+        model_name = 'moses_pretrained'
+    elif model_version == 'new':
+        model_name = 'new_model'
     else:
-        model_name = DEFAULT_MODEL_VERSION
-    #path = os.path.join(os.path.dirname(os.path.realpath(__file__)), model_name)
-    path = '{}/moses/latentgan/heteroencoder_models/{}'.format(currentDirectory,model_name)
+        print('No predefined model of that name found. '
+              'using the default pre-trained MOSES heteroencoder')
+        model_name = 'moses_pretrained'
+
+    path = '{}/moses/latentgan/heteroencoder_models/{}' \
+        .format(currentDirectory, model_name)
     print("Loading heteroencoder model titled {}".format(model_version))
     print("Path to model file: {}".format(path))
     model = ddc.DDC(model_name=path)
+    sys.stdout.flush()
 
     return model
-
-
-def sample(self, n_batch):
-
-    sys.stdout.flush()
-    #torch.no_grad()
-    model = load_model()
-    # load generator
-    G = self.generator
-    #G.eval()
-
-    cuda = True if torch.cuda.is_available() else False
-    if cuda:
-        G.cuda()
-    # Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
-
-    S = Sampler(generator=G)
-    print('Sampling model')
-    sys.stdout.flush()
-    latent = S.sample(n_batch)
-
-    latent = latent.detach().cpu().numpy().tolist()
-    smiles = []
-    batch_size = 256  # decoding batch size
-    n = len(latent)
-
-    for indx in range(0, n // batch_size):
-        lat = np.array(latent[(indx) * batch_size:(indx + 1) * batch_size])
-        smi, _ = model.predict_batch(lat, temp=0)
-        smiles.append(smi)
-    return smiles
 
 
 class LatentMolsDataset(data.Dataset):
@@ -136,7 +161,7 @@ class LatentMolsDataset(data.Dataset):
 
 
 class Discriminator(nn.Module):
-    def __init__(self, data_shape=(1,512)):
+    def __init__(self, data_shape=(1, 512)):
         super(Discriminator, self).__init__()
         self.data_shape = data_shape
 
@@ -153,15 +178,15 @@ class Discriminator(nn.Module):
         return validity
 
 
-
 class Generator(nn.Module):
-    def __init__(self, data_shape=(1,512), latent_dim=None):
+    def __init__(self, data_shape=(1, 512), latent_dim=None):
         super(Generator, self).__init__()
         self.data_shape = data_shape
 
         # latent dim of the generator is one of the hyperparams.
         # by default it is set to the prod of data_shapes
-        self.latent_dim = int(np.prod(self.data_shape)) if latent_dim is None else latent_dim
+        self.latent_dim = int(np.prod(self.data_shape)) \
+            if latent_dim is None else latent_dim
 
         def block(in_feat, out_feat, normalize=True):
             layers = [nn.Linear(in_feat, out_feat)]
@@ -184,7 +209,6 @@ class Generator(nn.Module):
         return out
 
 
-
 class Sampler(object):
     """
     Sampling the mols the generator.
@@ -192,18 +216,11 @@ class Sampler(object):
     """
 
     def __init__(self, generator: Generator):
-        cuda = True if torch.cuda.is_available() else False
-        self.set_generator(generator,cuda)
-
-    def set_generator(self, generator,cuda):
-        self.G = generator.cuda() if cuda else generator
+        self.G = generator
 
     def sample(self, n):
         # Sample noise as generator input
-        z = torch.cuda.FloatTensor(np.random.uniform(-1, 1, (n, self.G.latent_dim)))
+        z = torch.cuda.FloatTensor(np.random.uniform(-1, 1,
+                                                     (n, self.G.latent_dim)))
         # Generate a batch of mols
         return self.G(z)
-
-
-
-
