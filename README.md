@@ -155,6 +155,25 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
       <td><b>0.997±0.0</b></td>
       <td>0.695±0.007</td>
     </tr>
+    <tr>
+      <td>LatentGAN</td>
+      <td>0.899</td>
+      <td><b>1.0</b></td>
+      <td>0.998</td>
+      <td>0.275</td>
+      <td>0.777</td>
+      <td>0.54</td>
+      <td>0.514</td>
+      <td>0.999</td>
+      <td>0.997</td>
+      <td>0.889</td>
+      <td>0.107</td>
+      <td><b>0.856</b></td>
+      <td><b>0.85</b></td>
+      <td>0.969</td>
+      <td><b>0.952</b></td>
+    </tr>
+
   </tbody>
 </table>
 
