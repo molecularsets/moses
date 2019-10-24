@@ -32,6 +32,7 @@ The dataset contains 1,936,962 molecular structures. For experiments, we split t
 * [Variational Autoencoder (VAE)](./moses/vae/README.md)
 * [Adversarial Autoencoder (AAE)](./moses/aae/README.md)
 * [Junction Tree Variational Autoencoder (JTN-VAE)](https://github.com/wengong-jin/icml18-jtnn/tree/master/fast_molvae)
+* [Latent Generative Adversarial Network (LatentGAN)](./moses/latentgan/README.md)
 
 
 ## Metrics
