@@ -1,3 +1,0 @@
-moses
-moses/metrics/NP_Score
-moses/metrics/SA_Score

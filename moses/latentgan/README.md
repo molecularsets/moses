@@ -11,6 +11,7 @@ Important!
 ==========
 Currently, the Deep-Drug-Coder [4] and its dependency package molvecgen [5] are not available in pypi, these have to be installed from there respective repositories (links provided below).
 
+The pretrained models of the LatentGAN are currently not shared in this repository due to file size constraints. These will be added in the near future.
 
 ## References
 
