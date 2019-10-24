@@ -1,7 +1,5 @@
 import pandas as pd
 from multiprocessing import Pool
-import requests
-from io import BytesIO
 from tqdm.auto import tqdm
 from moses.metrics import mol_passes_filters, compute_scaffold
 import argparse
@@ -27,9 +25,9 @@ def get_parser():
         '--seed', type=int, default=0, help='Random state'
     )
     parser.add_argument(
-        '--url', type=str,
-        default='http://zinc.docking.org/db/bysubset/11/11_p0.smi.gz',
-        help='url to .smi.gz file with smiles'
+        '--zinc', type=str,
+        default='../data/11_p0.smi.gz',
+        help='path to .smi.gz file with ZINC smiles'
     )
     parser.add_argument(
         '--n_jobs', type=int, default=1,
@@ -41,7 +39,7 @@ def get_parser():
     )
     parser.add_argument(
         '--isomeric', action='store_true', default=False,
-        help='Save non-isomeric SMILES'
+        help='Save isomeric SMILES (non-isomeric by default)'
     )
     return parser
 
@@ -56,10 +54,9 @@ def process_molecule(mol_row, isomeric):
     return _id, smiles
 
 
-def download_dataset(url):
-    logger.info('Downloading from {}'.format(url))
-    req = requests.get(url)
-    with gzip.open(BytesIO(req.content)) as smi:
+def unzip_dataset(path):
+    logger.info("Unzipping dataset")
+    with gzip.open(path) as smi:
         lines = smi.readlines()
     return lines
 
@@ -104,7 +101,7 @@ def split_dataset(dataset, seed):
 
 
 def main(config):
-    lines = download_dataset(config.url)
+    lines = unzip_dataset(config.zinc)
     dataset = filter_lines(lines, config.n_jobs, config.isomeric)
     dataset = split_dataset(dataset, config.seed)
     if not config.keep_ids:

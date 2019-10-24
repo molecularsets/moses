@@ -1,5 +1,6 @@
 name,path
 Train,../data/samples/train_metrics.csv
+LatentGAN,../data/samples/LatentGAN.csv
 CharRNN,../data/samples/char_rnn/metrics_char_rnn_1.csv
 CharRNN,../data/samples/char_rnn/metrics_char_rnn_2.csv
 CharRNN,../data/samples/char_rnn/metrics_char_rnn_3.csv
