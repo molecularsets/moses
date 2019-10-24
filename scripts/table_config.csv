@@ -11,4 +11,4 @@ VAE,../data/samples/vae/metrics_vae_1.csv
 VAE,../data/samples/vae/metrics_vae_2.csv
 VAE,../data/samples/vae/metrics_vae_3.csv
 JTN-VAE,../data/samples/jtn_metrics.csv
-
+LatentGAN,../data/samples/latent_gan_metrics.csv
