@@ -103,13 +103,6 @@ class LatentGAN(nn.Module):
             n_batch = 256
 
         latent = self.S.sample(n_batch)
-        sanitycheck = self.D(latent)
-        print('mean latent values')
-        print(torch.mean(latent))
-        print('var latent values')
-        print(torch.var(latent))
-        print('generator loss of sample')
-        print(-torch.mean(sanitycheck))
         latent = latent.detach().cpu().numpy()
 
         if self.new_batch_size != n_batch:

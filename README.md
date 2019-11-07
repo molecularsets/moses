@@ -32,6 +32,7 @@ The dataset contains 1,936,962 molecular structures. For experiments, we split t
 * [Variational Autoencoder (VAE)](./moses/vae/README.md)
 * [Adversarial Autoencoder (AAE)](./moses/aae/README.md)
 * [Junction Tree Variational Autoencoder (JTN-VAE)](https://github.com/wengong-jin/icml18-jtnn/tree/master/fast_molvae)
+* [Latent Generative Adversarial Network (LatentGAN)](./moses/latentgan/README.md)
 
 
 ## Metrics
@@ -89,7 +90,7 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
       <td><b>1.0±0.0</b></td>
       <td>0.997±0.002</td>
       <td>0.556±0.203</td>
-      <td><b>1.057±0.237</b></td>
+      <td>1.057±0.237</td>
       <td>0.608±0.004</td>
       <td>0.568±0.005</td>
       <td>0.991±0.005</td>
@@ -107,7 +108,7 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
       <td><b>1.0±0.0</b></td>
       <td><b>0.999±0.0</b></td>
       <td><b>0.073±0.025</b></td>
-      <td>0.52±0.038</td>
+      <td><b>0.52±0.038</b></td>
       <td>0.601±0.021</td>
       <td>0.565±0.014</td>
       <td><b>1.0±0.0</b></td>
@@ -155,6 +156,25 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
       <td><b>0.997±0.0</b></td>
       <td>0.695±0.007</td>
     </tr>
+    <tr>
+      <td>LatentGAN</td>
+      <td>0.899</td>
+      <td><b>1.0</b></td>
+      <td>0.998</td>
+      <td>0.275</td>
+      <td>0.777</td>
+      <td>0.54</td>
+      <td>0.514</td>
+      <td>0.999</td>
+      <td>0.997</td>
+      <td>0.889</td>
+      <td>0.107</td>
+      <td><b>0.856</b></td>
+      <td><b>0.85</b></td>
+      <td>0.969</td>
+      <td><b>0.952</b></td>
+    </tr>
+
   </tbody>
 </table>
 

@@ -179,5 +179,5 @@ if __name__ == "__main__":
         latex = re.sub(r'!bf2!', '}', latex)
         latex = re.sub(r'!it1!', r'{\\it', latex)
         latex = re.sub(r'!it2!', '}', latex)
-        with open(config.output, 'w') as f:
+        with open(config.output, 'w', encoding='utf-8') as f:
             f.write(latex)

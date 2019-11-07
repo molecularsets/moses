@@ -123,11 +123,6 @@ class LatentGANTrainer(MosesTrainer):
                     logger.append(postfix)
                     logger.save(self.config.log_file)
 
-            # Putting the generator and discriminator weights onto
-            # the model instance for checkpoint purposes
-            # The parameters of the model are
-            # the weights used during the sampling stage later.
-
             sys.stdout.flush()
             if (self.config.model_save is not None) and \
                     (epoch % self.config.save_frequency == 0):
