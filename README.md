@@ -97,7 +97,7 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
       <td>0.99±0.004</td>
       <td>0.902±0.037</td>
       <td>0.079±0.009</td>
-      <td><b>0.856±0.003</b></td>
+      <td>0.856±0.003</td>
       <td><b>0.85±0.003</b></td>
       <td>0.996±0.001</td>
       <td>0.793±0.028</td>
@@ -115,7 +115,7 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
       <td><b>0.998±0.0</b></td>
       <td>0.924±0.006</td>
       <td><b>0.11±0.008</b></td>
-      <td><b>0.856±0.0</b></td>
+      <td>0.856±0.0</td>
       <td><b>0.85±0.0</b></td>
       <td>0.994±0.003</td>
       <td>0.842±0.051</td>
@@ -151,7 +151,7 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
       <td><b>0.998±0.0</b></td>
       <td><b>0.939±0.002</b></td>
       <td>0.059±0.01</td>
-      <td><b>0.856±0.0</b></td>
+      <td>0.856±0.0</td>
       <td><b>0.85±0.0</b></td>
       <td><b>0.997±0.0</b></td>
       <td>0.695±0.007</td>
