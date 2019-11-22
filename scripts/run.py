@@ -27,8 +27,8 @@ def get_model_path(config, model):
 def get_config_path(config, model):
     return os.path.join(config.checkpoint_dir, model + config.experiment_suff + '_config.pt')
 
-def get_vocab_path(config, model):
-    return os.path.join(config.checkpoint_dir, model + config.experiment_suff + '_vocab.pt')
+#def get_vocab_path(config, model):
+#    return os.path.join(config.checkpoint_dir, model + config.experiment_suff + '_vocab.pt')
 
 def get_generation_path(config, model):
     return os.path.join(config.data_dir, model + config.experiment_suff + '_generated.csv')
@@ -59,16 +59,25 @@ def get_parser():
                         help='Size of testing dataset')
     parser.add_argument('--experiment_suff', type=str, default='',
                         help='Experiment suffix to break ambiguity')
+    parser.add_argument('--vocab-path', type=str, default='',
+                        help='path to experiment vocabulary')
+    parser.add_argument('--model-path', type=str, default='',
+                        help='path to experiment model')
+    parser.add_argument('--config-path', type=str, default='',
+                        help='path to experiment config')
     parser.add_argument('--lbann_weights_dir', type=str, default=' ',
                         help='Directory for LBANN weights for inference')
     parser.add_argument('--lbann_epoch_counts', type=int, default=30,
                         help='LBANN epoch count at which to load trained model')
     return parser
 
+'''
+# UNDER CONSTRUCTION FOR COMPATIBILITY WITH LOADING AND TRAINING LBANN MODELS
 def train_model(config, model, train_path):
     model_path = get_model_path(config, model)
     config_path = get_config_path(config, model)
-    vocab_path = get_vocab_path(config, model)
+    #vocab_path = get_vocab_path(config, model)
+    vocab_path = config.vocab_path    
 
     if os.path.exists(model_path) and \
             os.path.exists(config_path) and \
@@ -84,11 +93,16 @@ def train_model(config, model, train_path):
                                                      '--vocab_save', vocab_path,
                                                      '--n_jobs', str(config.n_jobs)])[0]
     trainer_script.main(model, trainer_config)
+'''
+
 
 def sample_from_model(config, model):
-    model_path = get_model_path(config, model)
-    config_path = get_config_path(config, model)
-    vocab_path = get_vocab_path(config, model)
+    #model_path = get_model_path(config, model)
+    model_path = config.model_path
+    #config_path = get_config_path(config, model)
+    config_path = config.config_path
+    #vocab_path = get_vocab_path(config, model)
+    vocab_path = config.vocab_path
 
     assert os.path.exists(model_path), "Can't find model path for sampling: '{}'".format(model_path)
     assert os.path.exists(config_path), "Can't find config path for sampling: '{}'".format(config_path)

@@ -31,17 +31,19 @@ def main(model, config):
         torch.cuda.set_device(device.index or 0)
 
     if(config.lbann_weights_dir):
-      assert os.path.exists(config.lbann_weights_dir), ("LBANN inference mode is specified but directory "
+        assert os.path.exists(config.lbann_weights_dir), ("LBANN inference mode is specified but directory "
                                                        " to load weights does not exist: '{}'".format(config.lbann_weights_dir))
     model_config = torch.load(config.config_load)
     model_vocab = torch.load(config.vocab_load)
     model_state = torch.load(config.model_load)
 
-    model = MODELS.get_model_class(model)(model_vocab, model_config)
-    model.load_state_dict(model_state)
-    model = model.to(device)
+    model = MODELS.get_model_class(model)(model_vocab, model_config)  
     if os.path.exists(config.lbann_weights_dir): 
-      model.load_lbann_weights(config.lbann_weights_dir,config.lbann_epoch_counts)
+        model.load_lbann_weights(config.lbann_weights_dir,config.lbann_epoch_counts)
+    else:
+        # assume that a non-LBANN model is being loaded
+        model.load_state_dict(model_state)
+    model = model.to(device)
     model.eval()
 
     samples = []
