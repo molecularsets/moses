@@ -174,12 +174,16 @@ def get_predictions(smiles, gpu=-1, batch_size=128):
         device = "/gpu:{}".format(gpu)
     else:
         device = "/cpu"
-    config = tf.ConfigProto(allow_soft_placement=True)
+    #config = tf.ConfigProto(allow_soft_placement=True)
+    config = tf.compat.v1.ConfigProto(allow_soft_placement=True)
     config.gpu_options.allow_growth = True
     with tf.device(device):
-        sess = tf.Session(config=config)
-        set_session(sess)
-        K.clear_session()
+        #sess = tf.Session(config=config)
+        sess = tf.compat.v1.Session(config=config)
+        #set_session(sess)
+        tf.compat.v1.keras.backend.set_session(sess)
+        #K.clear_session()
+        tf.keras.backend.clear_session()
         model = load_ref_model(model_path)
         smiles_act = model.predict_generator(
              myGenerator_predict(smiles, batch_size=batch_size),
