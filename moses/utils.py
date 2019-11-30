@@ -1,12 +1,12 @@
 import random
-import torch
+from collections import UserList, defaultdict
+from multiprocessing import Pool
+
 import numpy as np
 import pandas as pd
-from multiprocessing import Pool
-from collections import UserList, defaultdict
-from rdkit import rdBase
+import torch
 from matplotlib import pyplot as plt
-from rdkit import Chem
+from rdkit import Chem, rdBase
 
 
 # https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader
@@ -201,7 +201,10 @@ class CircularBuffer:
         return self.data[self.pointer]
 
     def mean(self):
-        return self.data.mean()
+        if self.size > 0:
+            return self.data[:self.size].mean()
+        else:
+            return 0.0
 
 
 def disable_rdkit_log():
