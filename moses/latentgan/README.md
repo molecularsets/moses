@@ -9,7 +9,7 @@ LatentGAN [1] with heteroencoder trained on ChEMBL 25 [2], which encodes SMILES 
 
 Important!
 ==========
-Currently, the Deep-Drug-Coder [4] and its dependency package molvecgen [5] are not available in pypi, these have to be installed from their respective repositories (links provided below). Please note that you have to use the MOSES branch of the DeepDrugCoder, due to combability issues of the update.
+Currently, the Deep-Drug-Coder [4] and its dependency package molvecgen [5] are not available in pypi, these have to be installed from their respective repositories (links provided below). Please note that you have to use the MOSES branch of the DeepDrugCoder, due to combability issues of the latest update of the heteroencoder.
 
 
 ## References
