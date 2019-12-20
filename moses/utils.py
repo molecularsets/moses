@@ -201,7 +201,10 @@ class CircularBuffer:
         return self.data[self.pointer]
 
     def mean(self):
-        return self.data.mean()
+        if self.size > 0:
+            return self.data[:self.size].mean()
+        else:
+            return 0.0
 
 
 def disable_rdkit_log():
