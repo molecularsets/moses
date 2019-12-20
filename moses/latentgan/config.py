@@ -7,7 +7,7 @@ def get_parser(parser=None):
 
     # Model
     model_arg = parser.add_argument_group('Model')
-    model_arg.add_argument("--heteroencoder_version", type=str, default='new',
+    model_arg.add_argument("--heteroencoder_version", type=str, default='moses',
                            help="Which heteroencoder model version to use")
     # Train
     train_arg = parser.add_argument_group('Training')
