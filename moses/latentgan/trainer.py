@@ -10,8 +10,6 @@ from moses.interfaces import MosesTrainer
 from moses.utils import CharVocab, Logger
 from .model import LatentMolsDataset
 from .model import load_model
-from .model import Generator
-from .model import Discriminator
 from .model import Sampler
 from rdkit import Chem
 from ddc_pub import ddc_v3 as ddc
@@ -22,12 +20,6 @@ class LatentGANTrainer(MosesTrainer):
     def __init__(self, config):
         self.config = config
         self.latent_size = self.config.latent_vector_dim
-        self.generator = Generator(data_shape=(1, self.latent_size))
-        self.discriminator = Discriminator(data_shape=(1, self.latent_size))
-        cuda = True if torch.cuda.is_available() else False
-        if cuda:
-            self.discriminator.cuda()
-            self.generator.cuda()
 
     def _train_epoch(self, model, tqdm_data,
                      optimizer_disc=None, optimizer_gen=None):
@@ -131,23 +123,6 @@ class LatentGANTrainer(MosesTrainer):
                     logger.append(postfix)
                     logger.save(self.config.log_file)
 
-            # Putting the generator and discriminator weights onto
-            # the model instance for checkpoint purposes
-            # The parameters of the model are
-            # the weights used during the sampling stage later.
-
-            gen_params = self.generator.named_parameters()
-            disc_params = self.discriminator.named_parameters()
-            model_params = dict(model.named_parameters())
-            for name, param in gen_params:
-                iter_name = 'generator.{}'.format(name)
-                if iter_name in model_params:
-                    model_params[iter_name].data.copy_(param.data)
-            for name, param in disc_params:
-                iter_name = 'discriminator.{}'.format(name)
-                if iter_name in model_params:
-                    model_params[iter_name].data.copy_(param.data)
-            model.load_state_dict(model_params, strict=False)
             sys.stdout.flush()
             if (self.config.model_save is not None) and \
                     (epoch % self.config.save_frequency == 0):
@@ -184,6 +159,13 @@ class LatentGANTrainer(MosesTrainer):
             model,
             train_data,
             val_data=None):
+
+        self.generator = model.Generator
+        self.discriminator = model.Discriminator
+        cuda = True if torch.cuda.is_available() else False
+        if cuda:
+            self.discriminator.cuda()
+            self.generator.cuda()
 
         logger = Logger() if self.config.log_file is not None else None
 

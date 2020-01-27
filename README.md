@@ -97,7 +97,7 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
       <td>0.99±0.004</td>
       <td>0.902±0.037</td>
       <td>0.079±0.009</td>
-      <td><b>0.856±0.003</b></td>
+      <td>0.856±0.003</td>
       <td><b>0.85±0.003</b></td>
       <td>0.996±0.001</td>
       <td>0.793±0.028</td>
@@ -115,7 +115,7 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
       <td><b>0.998±0.0</b></td>
       <td>0.924±0.006</td>
       <td><b>0.11±0.008</b></td>
-      <td><b>0.856±0.0</b></td>
+      <td>0.856±0.0</td>
       <td><b>0.85±0.0</b></td>
       <td>0.994±0.003</td>
       <td>0.842±0.051</td>
@@ -136,7 +136,7 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
       <td>0.851</td>
       <td>0.845</td>
       <td>0.978</td>
-      <td><b>0.915</b></td>
+      <td>0.915</td>
     </tr>
     <tr>
       <td>VAE</td>
@@ -151,28 +151,28 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
       <td><b>0.998±0.0</b></td>
       <td><b>0.939±0.002</b></td>
       <td>0.059±0.01</td>
-      <td><b>0.856±0.0</b></td>
+      <td>0.856±0.0</td>
       <td><b>0.85±0.0</b></td>
       <td><b>0.997±0.0</b></td>
       <td>0.695±0.007</td>
     </tr>
     <tr>
       <td>LatentGAN</td>
-      <td>0.899</td>
-      <td><b>1.0</b></td>
-      <td>0.998</td>
-      <td>0.275</td>
-      <td>0.777</td>
-      <td>0.54</td>
-      <td>0.514</td>
-      <td>0.999</td>
-      <td>0.997</td>
-      <td>0.889</td>
-      <td>0.107</td>
-      <td><b>0.856</b></td>
-      <td><b>0.85</b></td>
-      <td>0.969</td>
-      <td><b>0.952</b></td>
+      <td>0.897±0.002</td>
+      <td><b>1.0±0.0</b></td>
+      <td>0.997±0.005</td>
+      <td>0.296±0.021</td>
+      <td>0.824±0.030</td>
+      <td>0.538±0.001</td>
+      <td>0.514±0.009</td>
+      <td>0.999±0.003</td>
+      <td><b>0.998±0.003</b></td>
+      <td>0.886±0.006</td>
+      <td>0.1±0.015</td>
+      <td><b>0.857±0.0</b></td>
+      <td><b>0.85±0.0</b></td>
+      <td>0.973±0.001</td>
+      <td><b>0.949±0.001</b></td>
     </tr>
 
   </tbody>

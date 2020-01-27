@@ -13,17 +13,19 @@ class LatentGAN(nn.Module):
     def __init__(self, vocabulary, config):
         super(LatentGAN, self).__init__()
         self.vocabulary = vocabulary
-        self.generator = Generator()
+        self.Generator = Generator(
+            data_shape=(1, config.latent_vector_dim))
         self.model_version = config.heteroencoder_version
-        self.discriminator = Discriminator()
+        self.Discriminator = Discriminator(
+            data_shape=(1, config.latent_vector_dim))
         self.sample_decoder = None
         self.model_loaded = False
         self.new_batch_size = 256
         # init params
         cuda = True if torch.cuda.is_available() else False
         if cuda:
-            self.discriminator.cuda()
-            self.generator.cuda()
+            self.Discriminator.cuda()
+            self.Generator.cuda()
         self.Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 
     def forward(self, n_batch):
@@ -79,10 +81,10 @@ class LatentGAN(nn.Module):
             self.sample_decoder = load_model(model_version=self.model_version)
             # load generator
 
-            self.Gen = self.generator
+            self.Gen = self.Generator
             self.Gen.eval()
 
-            self.D = self.discriminator
+            self.D = self.Discriminator
             torch.no_grad()
             cuda = True if torch.cuda.is_available() else False
             if cuda:
@@ -101,13 +103,6 @@ class LatentGAN(nn.Module):
             n_batch = 256
 
         latent = self.S.sample(n_batch)
-        sanitycheck = self.D(latent)
-        print('mean latent values')
-        print(torch.mean(latent))
-        print('var latent values')
-        print(torch.var(latent))
-        print('generator loss of sample')
-        print(-torch.mean(sanitycheck))
         latent = latent.detach().cpu().numpy()
 
         if self.new_batch_size != n_batch:

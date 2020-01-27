@@ -1,6 +1,5 @@
 name,path
 Train,../data/samples/train_metrics.csv
-LatentGAN,../data/samples/LatentGAN.csv
 CharRNN,../data/samples/char_rnn/metrics_char_rnn_1.csv
 CharRNN,../data/samples/char_rnn/metrics_char_rnn_2.csv
 CharRNN,../data/samples/char_rnn/metrics_char_rnn_3.csv
@@ -11,4 +10,7 @@ VAE,../data/samples/vae/metrics_vae_1.csv
 VAE,../data/samples/vae/metrics_vae_2.csv
 VAE,../data/samples/vae/metrics_vae_3.csv
 JTN-VAE,../data/samples/jtn_metrics.csv
-LatentGAN,../data/samples/latent_gan_metrics.csv
+LatentGAN,../data/samples/latent_gan/metrics_latent_gan_1.csv
+LatentGAN,../data/samples/latent_gan/metrics_latent_gan_2.csv
+LatentGAN,../data/samples/latent_gan/metrics_latent_gan_3.csv
+
