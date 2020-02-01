@@ -3,6 +3,7 @@ for MODEL in char_rnn vae aae
 do
     for SEED in 1 2 3
     do
+        mkdir -p checkpoints/$MODEL/$MODEL\_$SEED
         python scripts/run.py \
             --model $MODEL \
             --data data \
