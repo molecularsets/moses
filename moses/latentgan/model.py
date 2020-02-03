@@ -1,7 +1,6 @@
 import torch.nn as nn
 import numpy as np
 import torch
-from ddc_pub import ddc_v3 as ddc
 import os
 from rdkit import Chem
 import sys
@@ -120,6 +119,8 @@ class LatentGAN(nn.Module):
 
 
 def load_model(model_version=None):
+    from ddc_pub import ddc_v3 as ddc
+
     # Import model
     currentDirectory = os.getcwd()
 

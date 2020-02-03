@@ -12,7 +12,6 @@ from .model import LatentMolsDataset
 from .model import load_model
 from .model import Sampler
 from rdkit import Chem
-from ddc_pub import ddc_v3 as ddc
 
 
 class LatentGANTrainer(MosesTrainer):
@@ -159,7 +158,7 @@ class LatentGANTrainer(MosesTrainer):
             model,
             train_data,
             val_data=None):
-
+        from ddc_pub import ddc_v3 as ddc
         self.generator = model.Generator
         self.discriminator = model.Discriminator
         cuda = True if torch.cuda.is_available() else False

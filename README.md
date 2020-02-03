@@ -191,7 +191,7 @@ For comparison of molecular properties, we computed the Frèchet distance betwee
 # Installation
 
 ### PyPi
-The simplest way to install MOSES (models and metrics) is to install [RDKit](https://www.rdkit.org/docs/Install.html): `conda install -yq -c rdkit rdkit` and then install MOSES (`molsets`) from pip (`pip install molsets`).
+The simplest way to install MOSES (models and metrics) is to install [RDKit](https://www.rdkit.org/docs/Install.html): `conda install -yq -c rdkit rdkit` and then install MOSES (`molsets`) from pip (`pip install molsets`). If you want to use LatentGAN, you should also install additional dependencies using `bash install_latentgan_dependencies.sh`.
 
 If you are using Ubuntu, you should also install `sudo apt-get install libxrender1 libxext6` for RDKit.
 
@@ -236,6 +236,11 @@ git clone https://github.com/molecularsets/moses.git
 3. Install MOSES:
 ```bash
 python setup.py install
+```
+
+4. (Optional) Install dependencies for LatentGAN:
+```bash
+bash install_latentgan_dependencies.sh
 ```
 
 
