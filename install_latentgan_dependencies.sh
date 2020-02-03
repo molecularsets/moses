@@ -10,4 +10,4 @@ cd molvecgen
 python setup.py install
 cd ..
 conda install -y tensorflow-gpu==1.12
-conda install -y -c conda-forge rdkit
+conda install -y -c conda-forge rdkit==2019.09.3
