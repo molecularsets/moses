@@ -9,4 +9,4 @@ git clone https://github.com/EBjerrum/molvecgen.git
 cd molvecgen
 python setup.py install
 cd ..
-conda install -y tensorflow-gpu==1.14
+pip install tensorflow-gpu==1.14
