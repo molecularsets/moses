@@ -72,8 +72,8 @@ def get_parser():
                         nargs='+', default=[1000, 10000],
                         type=int,
                         help='Number of molecules to calculate uniqueness at.'
-                            'Multiple values are possible. Defaults to '
-                            '--unique_k 1000 10000')
+                             'Multiple values are possible. Defaults to '
+                             '--unique_k 1000 10000')
     parser.add_argument('--n_jobs',
                         type=int, default=1,
                         help='Number of processes to run metrics')
