@@ -1,12 +1,13 @@
-import pandas as pd
-from multiprocessing import Pool
-from tqdm.auto import tqdm
-from moses.metrics import mol_passes_filters, compute_scaffold
 import argparse
 import gzip
 import logging
-from rdkit import Chem
 from functools import partial
+from multiprocessing import Pool
+import pandas as pd
+from tqdm.auto import tqdm
+from rdkit import Chem
+
+from moses.metrics import mol_passes_filters, compute_scaffold
 
 
 logging.basicConfig(level=logging.INFO)

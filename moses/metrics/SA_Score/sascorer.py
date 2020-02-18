@@ -20,11 +20,11 @@ from __future__ import print_function
 
 import math
 import os.path as op
+import pickle
 
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 from rdkit.six import iteritems
-import pickle
 
 _fscores = None
 
@@ -117,7 +117,7 @@ def calculateScore(m):
 
 def processMols(mols):
     print('smiles\tName\tsa_score')
-    for i, m in enumerate(mols):
+    for m in mols:
         if m is None:
             continue
 

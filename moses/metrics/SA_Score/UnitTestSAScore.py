@@ -1,9 +1,9 @@
 from __future__ import print_function
 
 import unittest
+from rdkit import Chem
 
 import sascorer
-from rdkit import Chem
 
 print(sascorer.__file__)
 

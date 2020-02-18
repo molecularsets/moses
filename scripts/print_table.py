@@ -1,7 +1,7 @@
-import pandas as pd
 import argparse
-import numpy as np
 import re
+import pandas as pd
+import numpy as np
 
 
 def get_parser():

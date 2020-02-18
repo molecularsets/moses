@@ -1,7 +1,7 @@
+import random
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import random
 
 from tqdm.auto import tqdm
 from torch.nn.utils.rnn import pad_sequence

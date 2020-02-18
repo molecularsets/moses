@@ -1,11 +1,11 @@
 import random
-import torch
-import numpy as np
-import pandas as pd
 from multiprocessing import Pool
 from collections import UserList, defaultdict
-from rdkit import rdBase
+import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt
+import torch
+from rdkit import rdBase
 from rdkit import Chem
 
 
@@ -115,7 +115,7 @@ def mapper(n_jobs):
             return list(map(*args, **kwargs))
 
         return _mapper
-    elif isinstance(n_jobs, int):
+    if isinstance(n_jobs, int):
         pool = Pool(n_jobs)
 
         def _mapper(*args, **kwargs):
@@ -126,8 +126,7 @@ def mapper(n_jobs):
             return result
 
         return _mapper
-    else:
-        return n_jobs.map
+    return n_jobs.map
 
 
 class Logger(UserList):
@@ -140,14 +139,12 @@ class Logger(UserList):
     def __getitem__(self, key):
         if isinstance(key, int):
             return self.data[key]
-        elif isinstance(key, slice):
+        if isinstance(key, slice):
             return Logger(self.data[key])
-        else:
-            ldata = self.sdata[key]
-            if isinstance(ldata[0], dict):
-                return Logger(ldata)
-            else:
-                return ldata
+        ldata = self.sdata[key]
+        if isinstance(ldata[0], dict):
+            return Logger(ldata)
+        return ldata
 
     def append(self, step_dict):
         super().append(step_dict)
@@ -203,8 +200,7 @@ class CircularBuffer:
     def mean(self):
         if self.size > 0:
             return self.data[:self.size].mean()
-        else:
-            return 0.0
+        return 0.0
 
 
 def disable_rdkit_log():
@@ -230,5 +226,4 @@ def get_mol(smiles_or_mol):
         except ValueError:
             return None
         return mol
-    else:
-        return smiles_or_mol
+    return smiles_or_mol

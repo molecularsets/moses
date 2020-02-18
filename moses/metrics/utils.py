@@ -116,8 +116,7 @@ def compute_scaffold(mol, min_rings=2):
     scaffold_smiles = Chem.MolToSmiles(scaffold)
     if scaffold_smiles == '' or n_rings < min_rings:
         return None
-    else:
-        return scaffold_smiles
+    return scaffold_smiles
 
 
 def average_agg_tanimoto(stock_vecs, gen_vecs,
@@ -236,8 +235,7 @@ def fingerprints(smiles_mols_array, n_jobs=1, already_unique=False, *args,
         fps = np.vstack(fps)
     if not already_unique:
         return fps[inv_index]
-    else:
-        return fps
+    return fps
 
 
 def mol_passes_filters(mol,

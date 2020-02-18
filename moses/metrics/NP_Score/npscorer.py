@@ -15,14 +15,14 @@
 #
 
 from __future__ import print_function
-from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 import sys
 import math
 import gzip
 import pickle
 import os.path
 from collections import namedtuple
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 
 _fscores = None
@@ -82,7 +82,7 @@ def scoreMol(mol, fscore=None):
 def processMols(fscore, suppl):
     print("calculating ...", file=sys.stderr)
     n = 0
-    for i, m in enumerate(suppl):
+    for m in suppl:
         if m is None:
             continue
 
