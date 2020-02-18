@@ -1,15 +1,16 @@
 import warnings
+from multiprocessing import Pool
 import numpy as np
 from scipy.spatial.distance import cosine as cos_distance
+from fcd_torch import FCD as FCDMetric
+from fcd_torch import calculate_frechet_distance
+
+from moses.utils import mapper
+from moses.utils import disable_rdkit_log, enable_rdkit_log
 from .utils import compute_fragments, average_agg_tanimoto, \
     compute_scaffolds, fingerprints, \
     get_mol, canonic_smiles, mol_passes_filters, \
     logP, QED, SA, NP, weight
-from moses.utils import mapper
-from multiprocessing import Pool
-from moses.utils import disable_rdkit_log, enable_rdkit_log
-from fcd_torch import FCD as FCDMetric
-from fcd_torch import calculate_frechet_distance
 
 
 def get_all_metrics(test, gen, k=None, n_jobs=1, device='cpu',
@@ -22,7 +23,7 @@ def get_all_metrics(test, gen, k=None, n_jobs=1, device='cpu',
     Parameters:
         test: list of test SMILES
         gen: list of generated SMILES
-        k: list with values for unique@k. Will calculate number of
+        k: int or list with values for unique@k. Will calculate number of
             unique molecules in the first k molecules. Default [1000, 10000]
         n_jobs: number of workers for parallel processing
         device: 'cpu' or 'cuda:n', where n is GPU device number
@@ -230,9 +231,8 @@ def remove_invalid(gen, canonize=True, n_jobs=1):
     if not canonize:
         mols = mapper(n_jobs)(get_mol, gen)
         return [gen_ for gen_, mol in zip(gen, mols) if mol is not None]
-    else:
-        return [x for x in mapper(n_jobs)(canonic_smiles, gen) if
-                x is not None]
+    return [x for x in mapper(n_jobs)(canonic_smiles, gen) if
+            x is not None]
 
 
 class Metric:

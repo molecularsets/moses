@@ -37,7 +37,7 @@ class VAETrainer(MosesTrainer):
         kl_loss_values = CircularBuffer(self.config.n_last)
         recon_loss_values = CircularBuffer(self.config.n_last)
         loss_values = CircularBuffer(self.config.n_last)
-        for i, input_batch in enumerate(tqdm_data):
+        for input_batch in tqdm_data:
             input_batch = tuple(data.to(model.device) for data in input_batch)
 
             # Forward

@@ -68,9 +68,12 @@ def get_parser():
     parser.add_argument('--gen_path',
                         type=str, required=True,
                         help='Path to generated molecules csv')
-    parser.add_argument('--ks',
+    parser.add_argument('--ks', '--unique_k',
                         nargs='+', default=[1000, 10000],
-                        help='Prefixes to calc uniqueness at')
+                        type=int,
+                        help='Number of molecules to calculate uniqueness at.'
+                            'Multiple values are possible. Defaults to '
+                            '--unique_k 1000 10000')
     parser.add_argument('--n_jobs',
                         type=int, default=1,
                         help='Number of processes to run metrics')

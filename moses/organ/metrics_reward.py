@@ -1,7 +1,7 @@
 import random
+from collections import Counter
 import numpy as np
 
-from collections import Counter
 from moses.metrics import remove_invalid, \
                           fraction_passes_filters, internal_diversity, \
                           FCDMetric, SNNMetric, FragMetric, ScafMetric, \

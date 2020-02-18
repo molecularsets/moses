@@ -14,9 +14,10 @@ before_install:
 
 install:
   - conda install -q -c rdkit rdkit
-  - conda install -q flake8 scipy=1.2.0
+  - conda install -q flake8 scipy=1.2.0 pylint
   - python setup.py install
 
 script:
   - flake8
+  - pylint --disable=all --enable=no-else-return,unused-variable,wrong-import-order moses/ scripts/
   - python tests/test_metrics.py

@@ -1,11 +1,11 @@
-import torch.nn as nn
+import os
+import sys
 import numpy as np
 import torch
-import os
-from rdkit import Chem
-import sys
+import torch.nn as nn
 from torch.utils import data
 import torch.autograd as autograd
+from rdkit import Chem
 
 
 class LatentGAN(nn.Module):
