@@ -1,8 +1,9 @@
-import numpy as np
 import os
 import argparse
-import rdkit
 import warnings
+import numpy as np
+import rdkit
+
 from moses.metrics.metrics import get_all_metrics
 from moses.script_utils import read_smiles_csv
 

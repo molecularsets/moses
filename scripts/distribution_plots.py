@@ -1,9 +1,10 @@
-import pandas as pd
-from collections import OrderedDict
-import matplotlib.pyplot as plt
-import seaborn as sns
 import os
 import argparse
+from collections import OrderedDict
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 from moses.metrics import FrechetMetric, NP, weight, logP, SA, QED
 from moses.metrics.utils import get_mol, mapper
 from moses.utils import disable_rdkit_log
