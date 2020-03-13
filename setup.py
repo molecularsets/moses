@@ -1,9 +1,8 @@
 from setuptools import setup, find_packages
-import moses
 
 
 setup(name='molsets',
-      version=moses.__version__,
+      version='0.3',
       python_requires='>=3.5.0',
       packages=find_packages() + ['moses/metrics/SA_Score',
                                   'moses/metrics/NP_Score',
