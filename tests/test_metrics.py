@@ -32,7 +32,8 @@ class test_metrics(unittest.TestCase):
                        'weight': 14761.927533455337}
 
     def test_get_all_metrics(self):
-        metrics = get_all_metrics(self.test, self.gen, k=3)
+        metrics = get_all_metrics(gen=self.gen,
+                                  test=self.test, k=3)
         fail = set()
         for metric in self.target:
             if not np.allclose(metrics[metric], self.target[metric]):
@@ -46,7 +47,8 @@ class test_metrics(unittest.TestCase):
         assert len(fail) == 0, f"Some metrics didn't pass tests: {fail}"
 
     def test_get_all_metrics_multiprocess(self):
-        metrics = get_all_metrics(self.test, self.gen, k=3, n_jobs=2)
+        metrics = get_all_metrics(gen=self.gen,
+                                  test=self.test, k=3, n_jobs=2)
         fail = set()
         for metric in self.target:
             if not np.allclose(metrics[metric], self.target[metric]):
@@ -60,8 +62,8 @@ class test_metrics(unittest.TestCase):
         assert len(fail) == 0, f"Some metrics didn't pass tests: {fail}"
 
     def test_get_all_metrics_scaffold(self):
-        get_all_metrics(self.test, self.gen,
-                        test_scaffolds=self.test_sf,
+        get_all_metrics(gen=self.gen,
+                        test=self.test, test_scaffolds=self.test_sf,
                         k=3, n_jobs=2)
 
     def test_valid_unique(self):

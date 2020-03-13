@@ -1,10 +1,12 @@
 import warnings
+import os
 from multiprocessing import Pool
 import numpy as np
 from scipy.spatial.distance import cosine as cos_distance
 from fcd_torch import FCD as FCDMetric
 from fcd_torch import calculate_frechet_distance
 
+from moses.dataset import get_dataset, get_statistics
 from moses.utils import mapper
 from moses.utils import disable_rdkit_log, enable_rdkit_log
 from .utils import compute_fragments, average_agg_tanimoto, \
@@ -13,29 +15,35 @@ from .utils import compute_fragments, average_agg_tanimoto, \
     logP, QED, SA, NP, weight
 
 
-def get_all_metrics(test, gen, k=None, n_jobs=1, device='cpu',
-                    batch_size=512, test_scaffolds=None,
+def get_all_metrics(gen, k=None, n_jobs=1,
+                    device='cpu', batch_size=512, pool=None,
+                    test=None, test_scaffolds=None,
                     ptest=None, ptest_scaffolds=None,
-                    pool=None, gpu=None, train=None):
+                    train=None):
     """
     Computes all available metrics between test (scaffold test)
     and generated sets of SMILES.
     Parameters:
-        test: list of test SMILES
         gen: list of generated SMILES
         k: int or list with values for unique@k. Will calculate number of
             unique molecules in the first k molecules. Default [1000, 10000]
         n_jobs: number of workers for parallel processing
         device: 'cpu' or 'cuda:n', where n is GPU device number
         batch_size: batch size for FCD metric
-        test_scaffolds: list of scaffold test SMILES
-            Will compute only on the general test set if not specified
-        ptest: dict with precalculated statistics of the test set
-        ptest_scaffolds: dict with precalculated statistics
-            of the scaffold test set
         pool: optional multiprocessing pool to use for parallelization
-        gpu: deprecated, use `device`
-        train: list of train SMILES
+
+        test (None or list): test SMILES. If None, will load
+            a default test set
+        test_scaffolds (None or list): scaffold test SMILES. If None, will
+            load a default scaffold test set
+        ptest (None or dict): precalculated statistics of the test set. If None,
+            will load default test statistics. If you specified a custom test
+            set, default test statistics will be ignored
+        ptest_scaffolds (None or dict): precalculated statistics of the scaffold
+            test set If None, will load default scaffold test statistics.
+            If you specified a custom test set, default test statistics
+            will be ignored
+        train (None or list): train SMILES. If None, will load a default train set
     Available metrics:
         * %valid
         * %unique@k
@@ -50,19 +58,28 @@ def get_all_metrics(test, gen, k=None, n_jobs=1, device='cpu',
         * Distribution difference for logP, SA, QED, NP, weight
         * Novelty (molecules not present in train)
     """
+    if test is None:
+        if ptest is not None:
+            raise ValueError(
+                "You cannot specify custom test "
+                "statistics for default test set")
+        test = get_dataset('test')
+        ptest = get_statistics('test')
+
+    if test is None:
+        if ptest is not None:
+            raise ValueError(
+                "You cannot specify custom scaffold test "
+                "statistics for default scaffold test set")
+        test_scaffolds = get_dataset('test_scaffolds')
+        ptest_scaffolds = get_statistics('test_scaffolds')
+
+    train = train or get_dataset('train')
+    
     if k is None:
         k = [1000, 10000]
     disable_rdkit_log()
     metrics = {}
-    if gpu is not None:
-        warnings.warn(
-            "parameter `gpu` is deprecated. Use `device`",
-            DeprecationWarning
-        )
-        if gpu == -1:
-            device = 'cpu'
-        else:
-            device = 'cuda:{}'.format(gpu)
     close_pool = False
     if pool is None:
         if n_jobs != 1:

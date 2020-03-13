@@ -1,12 +1,14 @@
 from setuptools import setup, find_packages
+import pandas as pd
+import os
 import moses
-
 
 setup(name='molsets',
       version=moses.__version__,
       python_requires='>=3.5.0',
       packages=find_packages() + ['moses/metrics/SA_Score',
-                                  'moses/metrics/NP_Score'],
+                                  'moses/metrics/NP_Score',
+                                  'moses/dataset/data'],
       install_requires=[
           'tqdm>=4.26.0',
           'matplotlib>=3.0.0',
@@ -23,6 +25,6 @@ setup(name='molsets',
       author_email='moses@insilico.com',
       license='MIT',
       package_data={
-          '': ['*.csv', '*.h5', '*.gz'],
+          '': ['*.csv', '*.h5', '*.gz', '*.csv.gz', '*.npz'],
       }
       )

@@ -41,7 +41,7 @@ def add_train_args(parser):
     common_arg = parser.add_argument_group('Common')
     add_common_arg(common_arg)
     common_arg.add_argument('--train_load',
-                            type=str, required=True,
+                            type=str,
                             help='Input data in csv format to train')
     common_arg.add_argument('--val_load', type=str,
                             help="Input data in csv format to validation")
