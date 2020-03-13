@@ -1,7 +1,6 @@
 from setuptools import setup, find_packages
-import pandas as pd
-import os
 import moses
+
 
 setup(name='molsets',
       version=moses.__version__,

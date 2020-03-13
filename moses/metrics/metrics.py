@@ -1,5 +1,4 @@
 import warnings
-import os
 from multiprocessing import Pool
 import numpy as np
 from scipy.spatial.distance import cosine as cos_distance
@@ -36,14 +35,15 @@ def get_all_metrics(gen, k=None, n_jobs=1,
             a default test set
         test_scaffolds (None or list): scaffold test SMILES. If None, will
             load a default scaffold test set
-        ptest (None or dict): precalculated statistics of the test set. If None,
-            will load default test statistics. If you specified a custom test
-            set, default test statistics will be ignored
-        ptest_scaffolds (None or dict): precalculated statistics of the scaffold
-            test set If None, will load default scaffold test statistics.
-            If you specified a custom test set, default test statistics
-            will be ignored
-        train (None or list): train SMILES. If None, will load a default train set
+        ptest (None or dict): precalculated statistics of the test set. If
+            None, will load default test statistics. If you specified a custom
+            test set, default test statistics will be ignored
+        ptest_scaffolds (None or dict): precalculated statistics of the
+            scaffold test set If None, will load default scaffold test
+            statistics. If you specified a custom test set, default test
+            statistics will be ignored
+        train (None or list): train SMILES. If None, will load a default
+            train set
     Available metrics:
         * %valid
         * %unique@k
@@ -75,7 +75,7 @@ def get_all_metrics(gen, k=None, n_jobs=1,
         ptest_scaffolds = get_statistics('test_scaffolds')
 
     train = train or get_dataset('train')
-    
+
     if k is None:
         k = [1000, 10000]
     disable_rdkit_log()
