@@ -61,8 +61,21 @@ def get_parser():
     parser.add_argument('--model', type=str, default='all',
                         choices=['all'] + MODELS.get_model_names(),
                         help='Which model to run')
-    parser.add_argument('--data_dir', type=str, default='./data',
-                        help='Directory for datasets')
+    parser.add_argument('--test_path',
+                        type=str, required=False,
+                        help='Path to test molecules csv')
+    parser.add_argument('--test_scaffolds_path',
+                        type=str, required=False,
+                        help='Path to scaffold test molecules csv')
+    parser.add_argument('--train_path',
+                        type=str, required=False,
+                        help='Path to train molecules csv')
+    parser.add_argument('--ptest_path',
+                        type=str, required=False,
+                        help='Path to precalculated test npz')
+    parser.add_argument('--ptest_scaffolds_path',
+                        type=str, required=False,
+                        help='Path to precalculated scaffold test npz')
     parser.add_argument('--checkpoint_dir', type=str, default='./checkpoints',
                         help='Directory for checkpoints')
     parser.add_argument('--n_samples', type=int, default=30000,
@@ -95,16 +108,21 @@ def train_model(config, model, train_path, test_path):
         return
 
     trainer_parser = trainer_script.get_parser()
+    args = [
+        '--device', config.device,
+        '--model_save', model_path,
+        '--config_save', config_path,
+        '--vocab_save', vocab_path,
+        '--log_file', log_path,
+        '--n_jobs', str(config.n_jobs)
+    ]
+    if train_path is not None:
+        args.extend(['--train_load', train_path])
+    if test_path is not None:
+        args.extend(['--val_load', test_path])
+
     trainer_config = trainer_parser.parse_known_args(
-         [model] + sys.argv[1:] +
-         ['--device', config.device,
-          '--train_load', train_path,
-          '--val_load', test_path,
-          '--model_save', model_path,
-          '--config_save', config_path,
-          '--vocab_save', vocab_path,
-          '--log_file', log_path,
-          '--n_jobs', str(config.n_jobs)]
+         [model] + sys.argv[1:] + args
     )[0]
     trainer_script.main(model, trainer_config)
 
@@ -142,56 +160,37 @@ def eval_metrics(config, model, test_path, test_scaffolds_path,
                  ptest_path, ptest_scaffolds_path, train_path):
     print('Computing metrics...')
     eval_parser = eval_script.get_parser()
-    eval_config = eval_parser.parse_args(
-        ['--test_path', test_path,
-         '--test_scaffolds_path', test_scaffolds_path,
-         '--ptest_path', ptest_path,
-         '--ptest_scaffolds_path', ptest_scaffolds_path,
-         '--gen_path', get_generation_path(config, model),
-         '--n_jobs', str(config.n_jobs),
-         '--device', config.device,
-         '--train_path', train_path]
-    )
+    args = [
+        '--gen_path', get_generation_path(config, model),
+        '--n_jobs', str(config.n_jobs),
+        '--device', config.device,
+    ]
+    if test_path is not None:
+        args.extend(['--test_path', test_path])
+    if test_scaffolds_path is not None:
+        args.extend(['--test_scaffolds_path', test_scaffolds_path])
+    if ptest_path is not None:
+        args.extend(['--ptest_path', ptest_path])
+    if ptest_scaffolds_path is not None:
+        args.extend(['--ptest_scaffolds_path', ptest_scaffolds_path])
+    if train_path is not None:
+        args.extend(['--train_path', train_path])
+
+    eval_config = eval_parser.parse_args(args)
     metrics = eval_script.main(eval_config, print_metrics=False)
 
     return metrics
 
 
 def main(config):
-    if not os.path.exists(config.data_dir):
-        os.mkdir(config.data_dir)
-
     if not os.path.exists(config.checkpoint_dir):
         os.mkdir(config.checkpoint_dir)
 
-    train_path = os.path.join(
-        config.data_dir, 'train.csv'
-    )
-    test_path = os.path.join(
-        config.data_dir, 'test.csv'
-    )
-    test_scaffolds_path = os.path.join(
-        config.data_dir, 'test_scaffolds.csv'
-    )
-    ptest_path = os.path.join(
-        config.data_dir, 'test_stats.npz'
-    )
-    ptest_scaffolds_path = os.path.join(
-        config.data_dir, 'test_scaffolds_stats.npz'
-    )
-    if not os.path.exists(train_path) or \
-            not os.path.exists(test_path) or \
-            not os.path.exists(test_scaffolds_path):
-        splitting_config = split_dataset.get_parser()
-        conf = ['--dir', config.data_dir,
-                '--device', config.device,
-                '--n_jobs', str(config.n_jobs)]
-        if config.train_size is not None:
-            conf.extend(['--train_size', str(config.train_size)])
-        if config.test_size is not None:
-            conf.extend(['--test_size', str(config.test_size)])
-        splitting_config = splitting_config.parse_args(conf)
-        split_dataset.main(splitting_config)
+    train_path = config.train_path
+    test_path = config.test_path
+    test_scaffolds_path = config.test_scaffolds_path
+    ptest_path = config.ptest_path
+    ptest_scaffolds_path = config.ptest_scaffolds_path
 
     models = (MODELS.get_model_names()
               if config.model == 'all'

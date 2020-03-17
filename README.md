@@ -248,15 +248,45 @@ bash install_latentgan_dependencies.sh
 
 * Install MOSES as described in the previous section.
 
-* Calculate metrics for the trained model:
+* Retrieve `train`, `test` and `test_scaffolds` datasets using the following code:
 
-```bash
-python scripts/eval.py --ref_path <reference dataset> --gen_path <generated dataset>
+```python
+import moses
+
+train = moses.get_dataset('train')
+test = moses.get_dataset('test')
+test_scaffolds = moses.get_dataset('test_scaffolds')
 ```
 
-* Add both generated samples and metrics to your repository
+* You can use a standard torch [DataLoader](https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader) in your models. We provide a simple `StringDataset` class for convenience:
 
-# Platform usage
+```python
+from torch.utils.data import DataLoader
+from moses import CharVocab, StringDataset
+
+train = moses.get_dataset('train')
+vocab = CharVocab.from_data(train)
+train_dataset = StringDataset(vocab, train)
+train_dataloader = DataLoader(
+    train_dataset, batch_size=512,
+    shuffle=True, collate_fn=train_dataset.default_collate
+)
+
+for with_bos, with_eos, lengths in train_dataloader:
+    ...
+```
+
+* Calculate metrics from your model's samples. We recomend sampling at least `30,000` molecules:
+
+```python
+import moses
+metrics = moses.get_all_metrics(list_of_generated_smiles)
+```
+
+* Add generated samples and metrics to your repository. Run the experiment multiple times to estimate the variance of the metrics.
+
+
+# Reproducing the baselines
 
 ### End-to-End launch
 

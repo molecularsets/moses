@@ -2,3 +2,8 @@ data/*.csv filter=lfs diff=lfs merge=lfs -text
 data/samples/*generated.csv filter=lfs diff=lfs merge=lfs -text
 *.npz filter=lfs diff=lfs merge=lfs -text
 data/11_p0.smi.gz filter=lfs diff=lfs merge=lfs -text
+moses/dataset/data/test_scaffolds_stats.npz filter=lfs diff=lfs merge=lfs -text
+moses/dataset/data/test_stats.npz filter=lfs diff=lfs merge=lfs -text
+moses/dataset/data/test.csv.gz filter=lfs diff=lfs merge=lfs -text
+moses/dataset/data/test_scaffolds.csv.gz filter=lfs diff=lfs merge=lfs -text
+moses/dataset/data/train.csv.gz filter=lfs diff=lfs merge=lfs -text

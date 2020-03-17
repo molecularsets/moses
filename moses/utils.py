@@ -16,7 +16,7 @@ def set_torch_seed_to_all_gens(_):
     np.random.seed(seed)
 
 
-class SS:
+class SpecialTokens:
     bos = '<bos>'
     eos = '<eos>'
     pad = '<pad>'
@@ -32,10 +32,10 @@ class CharVocab:
 
         return cls(chars, *args, **kwargs)
 
-    def __init__(self, chars, ss=SS):
+    def __init__(self, chars, ss=SpecialTokens):
         if (ss.bos in chars) or (ss.eos in chars) or \
                 (ss.pad in chars) or (ss.unk in chars):
-            raise ValueError('SS in chars')
+            raise ValueError('SpecialTokens in chars')
 
         all_syms = sorted(list(chars)) + [ss.bos, ss.eos, ss.pad, ss.unk]
 
@@ -227,3 +227,90 @@ def get_mol(smiles_or_mol):
             return None
         return mol
     return smiles_or_mol
+
+
+class StringDataset:
+    def __init__(self, vocab, data):
+        """
+        Creates a convenient Dataset with SMILES tokinization
+
+        Arguments:
+            vocab: CharVocab instance for tokenization
+            data (list): SMILES strings for the dataset
+        """
+        self.vocab = vocab
+        self.tokens = [vocab.string2ids(s) for s in data]
+        self.data = data
+        self.bos = vocab.bos
+        self.eos = vocab.eos
+
+    def __len__(self):
+        """
+        Computes a number of objects in the dataset
+        """
+        return len(self.tokens)
+
+    def __getitem__(self, index):
+        """
+        Prepares torch tensors with a given SMILES.
+
+        Arguments:
+            index (int): index of SMILES in the original dataset
+
+        Returns:
+            A tuple (with_bos, with_eos, smiles), where
+            * with_bos is a torch.long tensor of SMILES tokens with
+                BOS (beginning of a sentence) token
+            * with_eos is a torch.long tensor of SMILES tokens with
+                EOS (end of a sentence) token
+            * smiles is an original SMILES from the dataset
+        """
+        tokens = self.tokens[index]
+        with_bos = torch.tensor([self.bos] + tokens, dtype=torch.long)
+        with_eos = torch.tensor(tokens + [self.eos], dtype=torch.long)
+        return with_bos, with_eos, self.data[index]
+
+    def default_collate(self, batch, return_data=False):
+        """
+        Simple collate function for SMILES dataset. Joins a
+        batch of objects from StringDataset into a batch
+
+        Arguments:
+            batch: list of objects from StringDataset
+            pad: padding symbol, usually equals to vocab.pad
+            return_data: if True, will return SMILES used in a batch
+
+        Returns:
+            with_bos, with_eos, lengths [, data] where
+            * with_bos: padded sequence with BOS in the beginning
+            * with_eos: padded sequence with EOS in the end
+            * lengths: array with SMILES lengths in the batch
+            * data: SMILES in the batch
+
+        Note: output batch is sorted with respect to SMILES lengths in
+            decreasing order, since this is a default format for torch
+            RNN implementations
+        """
+        with_bos, with_eos, data = list(zip(*batch))
+        lengths = [len(x) for x in with_bos]
+        order = np.argsort(lengths)[::-1]
+        with_bos = [with_bos[i] for i in order]
+        with_eos = [with_eos[i] for i in order]
+        lengths = [lengths[i] for i in order]
+        with_bos = torch.nn.utils.rnn.pad_sequence(
+            with_bos, padding_value=self.vocab.pad
+        )
+        with_eos = torch.nn.utils.rnn.pad_sequence(
+            with_eos, padding_value=self.vocab.pad
+        )
+        if return_data:
+            data = np.array(data)[order]
+            return with_bos, with_eos, lengths, data
+        return with_bos, with_eos, lengths
+
+
+def batch_to_device(batch, device):
+    return [
+        x.to(device) if isinstance(x, torch.Tensor) else x
+        for x in batch
+    ]
