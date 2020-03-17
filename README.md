@@ -258,7 +258,7 @@ test = moses.get_dataset('test')
 test_scaffolds = moses.get_dataset('test_scaffolds')
 ```
 
-* You can use a standard torch [DataLoader](https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader) in your models. We provide a simle `StringDataset` class for convenience:
+* You can use a standard torch [DataLoader](https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader) in your models. We provide a simple `StringDataset` class for convenience:
 
 ```python
 from torch.utils.data import DataLoader
