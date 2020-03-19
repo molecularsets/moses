@@ -66,8 +66,8 @@ def get_all_metrics(gen, k=None, n_jobs=1,
         test = get_dataset('test')
         ptest = get_statistics('test')
 
-    if test is None:
-        if ptest is not None:
+    if test_scaffolds is None:
+        if ptest_scaffolds is not None:
             raise ValueError(
                 "You cannot specify custom scaffold test "
                 "statistics for default scaffold test set")
