@@ -1,9 +1,8 @@
 import unittest
 import tempfile
-import numpy as np
 
 import moses
-from moses.baselines import CombinatorialGenerator
+from moses.baselines import HMM, CombinatorialGenerator
 
 
 class test_baselines(unittest.TestCase):
