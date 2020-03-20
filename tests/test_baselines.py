@@ -2,7 +2,7 @@ import unittest
 import tempfile
 
 import moses
-from moses.baselines import HMM, CombinatorialGenerator
+from moses.baselines import CombinatorialGenerator
 
 
 class test_baselines(unittest.TestCase):
