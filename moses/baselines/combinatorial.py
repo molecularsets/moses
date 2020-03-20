@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from rdkit import Chem
 
+import moses
 from moses.metrics.utils import fragmenter
 from moses.utils import mapper
 
@@ -182,10 +183,44 @@ class CombinatorialGenerator:
         return mol
 
 
+def reproduce(seed, samples_path=None, metrics_path=None,
+              n_jobs=1, device='cpu', verbose=False,
+              samples=30000):
+    train = moses.get_dataset('train')
+    model = CombinatorialGenerator(n_jobs=args.n_jobs)
+
+    if verbose:
+        print("Training...")
+    model.fit(train)
+
+    if verbose:
+        print(f"Sampling for seed {seed}")
+    seeds = list(range(
+        (seed - 1) * samples, seed * samples
+    ))
+    samples = mapper(args.n_jobs)(model.generate_one,
+                                  seeds)
+    if samples_path is not None:
+        with open(samples_path, 'w') as f:
+            f.write('SMILES\n')
+            for sample in samples:
+                f.write(sample+'\n')
+    if verbose:
+        print(f"Computing metrics for seed {seed}")
+    metrics = moses.get_all_metrics(
+        samples, n_jobs=args.n_jobs, device=args.device)
+    filename = f'combinatorial_metrics_{seed}.csv'
+    path = os.path.join(args.metrics_path, filename)
+    if metrics_path is not None:
+        with open(path, 'w') as f:
+            for key, value in metrics.items():
+                f.write("%s,%f\n" % (key, value))
+    return samples, metrics
+
+
 if __name__ == "__main__":
     import argparse
     import os
-    import moses
 
     parser = argparse.ArgumentParser(
         "Reproduce combinatorial experiment")
@@ -196,32 +231,14 @@ if __name__ == "__main__":
         '--device', type=str, required=False,
         default='cpu', help='Device for computing metrics')
     parser.add_argument(
-        '--samples', type=int, required=False,
-        default=30000, help='Number of samples for metrics')
-    parser.add_argument(
         '--metrics_path', type=str, required=False,
         default='.', help='Path to save metrics')
     args = parser.parse_known_args()[0]
 
-    train = moses.get_dataset('train')
-    model = CombinatorialGenerator(n_jobs=args.n_jobs)
-
-    print("Collecting statistics...")
-    model.fit(train)
-
     for seed in [1, 2, 3]:
-        print(f"Sampling for seed {seed}")
-        seeds = list(range(
-            (seed - 1) * args.samples, seed * args.samples
-        ))
-        samples = mapper(args.n_jobs)(model.generate_one,
-                                      seeds)
-
-        print(f"Computing metrics for seed {seed}")
-        metrics = moses.get_all_metrics(
-            samples, n_jobs=args.n_jobs, device=args.device)
         filename = f'combinatorial_metrics_{seed}.csv'
-        path = os.path.join(args.metrics_path, filename)
-        with open(path, 'w') as f:
-            for key, value in metrics.items():
-                f.write("%s,%f\n" % (key, value))
+        metrics_path = os.path.join(args.metrics_path, filename)
+
+        reproduce(seed=seed, n_jobs=args.n_jobs,
+                  device=args.device, verbose=True,
+                  metrics_path=metrics_path)
