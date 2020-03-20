@@ -126,7 +126,6 @@ if __name__ == "__main__":
     import argparse
     import os
     import moses
-    from moses.utils import mapper
 
     parser = argparse.ArgumentParser(
         "Reproduce combinatorial experiment")
