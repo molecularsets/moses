@@ -1,4 +1,5 @@
 from collections import Counter
+import pickle
 import numpy as np
 import pandas as pd
 from rdkit import Chem
@@ -9,10 +10,23 @@ from moses.utils import mapper
 
 class CombinatorialGenerator:
     def __init__(self, n_jobs=1):
+        """
+        Combinatorial Generator randomly connects BRICS fragments
+
+        Arguments:
+            n_jobs: number of processes for training
+        """
         self.n_jobs = n_jobs
         self.fitted = False
 
     def fit(self, data):
+        """
+        Collects fragment frequencies in a training set
+
+        Arguments:
+            data: list of SMILES, training dataset
+
+        """
         # Split molecules from dataset into BRICS fragments
         fragments = mapper(self.n_jobs)(fragmenter, data)
 
@@ -38,9 +52,57 @@ class CombinatorialGenerator:
             fragments_count_distribution[k] /= total
         self.fragments_count_distribution = fragments_count_distribution
         self.fitted = True
+        return self
+
+    def save(self, path):
+        """
+        Saves a model using pickle
+
+        Arguments:
+            path: path to .pkl file for saving
+        """
+        if not self.fitted:
+            raise RuntimeError("Can't save empty model."
+                               " Fit the model first")
+        data = {
+            'fragment_counts': self.fragment_counts,
+            'fragments_count_distribution': self.fragments_count_distribution
+        }
+        with open(path, 'wb') as f:
+            pickle.dump(data, f)
+
+    @classmethod
+    def load(cls, path):
+        """
+        Loads saved model
+
+        Arguments:
+            path: path to saved .pkl file
+
+        Returns:
+            Loaded CombinatorialGenerator
+        """
+        with open(path, "rb") as f:
+            data = pickle.load(f)
+        model = cls()
+        model.fragment_counts = data['fragment_counts']
+        model.fragments_count_distribution = \
+            data['fragments_count_distribution']
+        model.fitted = True
+        return model
 
     def generate_one(self, seed=None):
-        np.random.seed(seed)
+        """
+        Generates a SMILES string using fragment frequencies
+
+        Arguments:
+            seed: if specified, will set numpy seed before sampling
+
+        Retruns:
+            SMILES string
+        """
+        if seed is not None:
+            np.random.seed(seed)
         if not self.fitted:
             raise RuntimeError("Fit the model before generating")
         mol = None
@@ -55,12 +117,10 @@ class CombinatorialGenerator:
             # Enforce lower and upper limit on the number of connection points
             if mol is None:
                 current_attachments = 0
+                max_attachments = total_fragments - 1
             else:
                 connections_mol = self.get_connection_points(mol)
                 current_attachments = len(connections_mol)
-            if i == 0:
-                max_attachments = total_fragments - 1
-            else:
                 max_attachments = (
                     total_fragments - i - current_attachments + 1
                 )
