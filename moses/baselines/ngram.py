@@ -1,7 +1,7 @@
 import numpy as np
+from tqdm.auto import tqdm
 import moses
 from moses import CharVocab
-from tqdm.auto import tqdm
 
 
 class NGram:
@@ -10,6 +10,7 @@ class NGram:
         self._dict = dict()
         self.vocab = None
         self.default_probs = None
+        self.zero_probs = None
         self.verbose = verbose
 
     def fit(self, data):
@@ -52,7 +53,9 @@ class NGram:
         if self.vocab is None:
             raise RuntimeError('Error: Fit the model before generating')
 
-        if context_len is None or context_len <= 0 or context_len > self.max_context_len:
+        if context_len is None:
+            context_len = self.max_context_len
+        elif context_len <= 0 or context_len > self.max_context_len:
             context_len = self.max_context_len
 
         res = [self.vocab.bos]
@@ -74,7 +77,9 @@ class NGram:
         if self.vocab is None:
             raise RuntimeError('Error: model is not trained')
 
-        if context_len is None or context_len <= 0 or context_len > self.max_context_len:
+        if context_len is None:
+            context_len = self.max_context_len
+        elif context_len <= 0 or context_len > self.max_context_len:
             context_len = self.max_context_len
 
         tokens = tuple(self.vocab.string2ids(smiles, True, True))
@@ -95,8 +100,11 @@ class NGram:
 
         return likelihood
 
-    def generate(self, n, l_smooth=1., context_len=None, max_len=100, verbose=False):
-        generator = (self.generate_one(l_smooth, context_len, max_len) for i in range(n))
+    def generate(self, n, l_smooth=1., context_len=None,
+                 max_len=100, verbose=False):
+        generator = (self.generate_one(l_smooth,
+                                       context_len,
+                                       max_len) for i in range(n))
         if verbose:
             print('generating...')
             generator = tqdm(generator, total=n)
@@ -107,7 +115,7 @@ def reproduce(seed, samples_path=None, metrics_path=None,
               n_jobs=1, device='cpu', verbose=False,
               samples=30000):
     data = moses.get_dataset('train')
-    model = NGram(1)
+    model = NGram(5)
     model.fit(data)
     np.random.seed(seed)
     smiles = model.generate(samples, verbose=verbose)
@@ -118,10 +126,10 @@ def reproduce(seed, samples_path=None, metrics_path=None,
             out.write('SMILES\n')
             for s in smiles:
                 out.write(s+'\n')
-    
+
     if metrics_path is not None:
         with open(metrics_path, 'w') as out:
             for key, value in metrics.items():
-                f.write("%s,%f\n" % (key, value))
+                out.write("%s,%f\n" % (key, value))
 
     return samples, metrics
