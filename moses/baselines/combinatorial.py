@@ -187,7 +187,7 @@ def reproduce(seed, samples_path=None, metrics_path=None,
               n_jobs=1, device='cpu', verbose=False,
               samples=30000):
     train = moses.get_dataset('train')
-    model = CombinatorialGenerator(n_jobs=args.n_jobs)
+    model = CombinatorialGenerator(n_jobs=n_jobs)
 
     if verbose:
         print("Training...")
@@ -198,8 +198,7 @@ def reproduce(seed, samples_path=None, metrics_path=None,
     seeds = list(range(
         (seed - 1) * samples, seed * samples
     ))
-    samples = mapper(args.n_jobs)(model.generate_one,
-                                  seeds)
+    samples = mapper(n_jobs)(model.generate_one, seeds)
     if samples_path is not None:
         with open(samples_path, 'w') as f:
             f.write('SMILES\n')
@@ -208,11 +207,9 @@ def reproduce(seed, samples_path=None, metrics_path=None,
     if verbose:
         print(f"Computing metrics for seed {seed}")
     metrics = moses.get_all_metrics(
-        samples, n_jobs=args.n_jobs, device=args.device)
-    filename = f'combinatorial_metrics_{seed}.csv'
-    path = os.path.join(args.metrics_path, filename)
+        samples, n_jobs=n_jobs, device=device)
     if metrics_path is not None:
-        with open(path, 'w') as f:
+        with open(metrics_path, 'w') as f:
             for key, value in metrics.items():
                 f.write("%s,%f\n" % (key, value))
     return samples, metrics
