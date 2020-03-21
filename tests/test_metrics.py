@@ -1,7 +1,8 @@
 import unittest
-import numpy as np
 import warnings
+import numpy as np
 from rdkit import Chem
+
 from moses.metrics import get_all_metrics, fraction_valid, fraction_unique
 from moses.utils import disable_rdkit_log, enable_rdkit_log
 

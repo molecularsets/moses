@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 
 setup(name='molsets',
-      version='0.3',
+      version='0.3.1',
       python_requires='>=3.5.0',
       packages=find_packages() + ['moses/metrics/SA_Score',
                                   'moses/metrics/NP_Score',
@@ -15,7 +15,8 @@ setup(name='molsets',
           'scipy>=1.1.0',
           'torch==1.1.0',
           'fcd_torch>=1.0.5',
-          'seaborn>=0.9.0'
+          'seaborn>=0.9.0',
+          'pomegranate==0.12.0',
       ],
       description=('Molecular Sets (MOSES): '
                    'A Benchmarking Platform for Molecular Generation Models'),
