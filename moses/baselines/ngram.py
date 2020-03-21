@@ -67,8 +67,8 @@ class NGram:
             while context not in self._dict:
                 context = context[1:]
             probs = self._dict[context]
-            probs += self.default_probs*l_smooth
-            normed = probs / probs.sum()
+            smoothed = probs + self.default_probs*l_smooth
+            normed = smoothed / smoothed.sum()
             next_symbol = np.random.choice(len(self.vocab), p=normed)
             res.append(next_symbol)
 
