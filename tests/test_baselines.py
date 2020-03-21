@@ -36,6 +36,7 @@ class test_baselines(unittest.TestCase):
         with tempfile.NamedTemporaryFile() as f:
             model_1.save(f.name)
             model_l = NGram.load(f.name)
+        np.random.seed(0)
         sample_l = model_l.generate_one(context_len=1)
         self.assertEqual(
             sample_1, sample_2,
