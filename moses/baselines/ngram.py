@@ -1,3 +1,4 @@
+import pickle
 import numpy as np
 from tqdm.auto import tqdm
 import moses
@@ -100,25 +101,63 @@ class NGram:
 
         return likelihood
 
-    def generate(self, n, l_smooth=1., context_len=None,
-                 max_len=100, verbose=False):
+    def generate(self, n, l_smooth=1., context_len=None, max_len=100):
         generator = (self.generate_one(l_smooth,
                                        context_len,
                                        max_len) for i in range(n))
-        if verbose:
+        if self.verbose:
             print('generating...')
             generator = tqdm(generator, total=n)
         return list(generator)
+
+    def save(self, path):
+        """
+        Saves a model using pickle
+        Arguments:
+            path: path to .pkl file for saving
+        """
+        if self.vocab is None:
+            raise RuntimeError("Can't save empty model."
+                               " Fit the model first")
+        data = {
+            '_dict': self._dict,
+            'vocab': self.vocab,
+            'default_probs': self.default_probs,
+            'zero_probs': self.zero_probs,
+            'max_context_len': self.max_context_len
+        }
+        with open(path, 'wb') as f:
+            pickle.dump(data, f)
+
+    @classmethod
+    def load(cls, path):
+        """
+        Loads saved model
+        Arguments:
+            path: path to saved .pkl file
+        Returns:
+            Loaded CombinatorialGenerator
+        """
+        with open(path, "rb") as f:
+            data = pickle.load(f)
+        model = cls()
+        model._dict = data['_dict']
+        model.vocab = data['vocab']
+        model.default_probs = data['default_probs']
+        model.zero_probs = data['zero_probs']
+        model.max_context_len = data['max_context_len']
+
+        return model
 
 
 def reproduce(seed, samples_path=None, metrics_path=None,
               n_jobs=1, device='cpu', verbose=False,
               samples=30000):
     data = moses.get_dataset('train')
-    model = NGram(5)
+    model = NGram(10, verbose=verbose)
     model.fit(data)
     np.random.seed(seed)
-    smiles = model.generate(samples, verbose=verbose)
+    smiles = model.generate(samples, l_smooth=0.01)
     metrics = moses.get_all_metrics(smiles, n_jobs=n_jobs, device=device)
 
     if samples_path is not None:
@@ -132,4 +171,4 @@ def reproduce(seed, samples_path=None, metrics_path=None,
             for key, value in metrics.items():
                 out.write("%s,%f\n" % (key, value))
 
-    return samples, metrics
+    return smiles, metrics
