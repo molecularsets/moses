@@ -127,6 +127,7 @@ def reproduce(seed, samples_path=None, metrics_path=None,
                 f.write("%s,%f\n" % (key, value))
     return samples, metrics
 
+
 if __name__ == "__main__":
     import argparse
 
