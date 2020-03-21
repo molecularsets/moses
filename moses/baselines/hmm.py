@@ -103,25 +103,29 @@ def reproduce(seed, samples_path=None, metrics_path=None,
               n_jobs=1, device='cpu', verbose=False,
               samples=30000):
     data = moses.get_dataset('train')[:100000]
-    model = HMM(n_jobs=args.n_jobs, seed=args.seed)
+    if verbose:
+        print("Training...")
+    model = HMM(n_jobs=n_jobs, seed=seed, verbose=verbose)
     model.fit(data)
-    if args.model_save is not None:
-        model.save(args.model_save)
-    np.random.seed(args.seed)
+    np.random.seed(seed)
+    if verbose:
+        print(f"Sampling for seed {seed}")
     samples = [model.generate_one()
-               for _ in range(args.samples)]
+               for _ in range(samples)]
     if samples_path is not None:
         with open(samples_path, 'w') as f:
             f.write('SMILES\n')
             for sample in samples:
                 f.write(sample+'\n')
-
+    if verbose:
+        print(f"Computing metrics for seed {seed}")
     metrics = moses.get_all_metrics(
-        samples, n_jobs=args.n_jobs, device=args.device)
-    with open(samples_path, 'w') as f:
-        for key, value in metrics.items():
-            f.write("%s,%f\n" % (key, value))
-
+        samples, n_jobs=n_jobs, device=device)
+    if metrics_path is not None:
+        with open(samples_path, 'w') as f:
+            for key, value in metrics.items():
+                f.write("%s,%f\n" % (key, value))
+    return samples, metrics
 
 if __name__ == "__main__":
     import argparse
