@@ -110,6 +110,7 @@ def reproduce(seed, samples_path=None, metrics_path=None,
     np.random.seed(seed)
     if verbose:
         print(f"Sampling for seed {seed}")
+    np.random.seed(seed)
     samples = [model.generate_one()
                for _ in range(samples)]
     if samples_path is not None:

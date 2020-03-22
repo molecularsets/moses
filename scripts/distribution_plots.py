@@ -75,6 +75,7 @@ if __name__ == "__main__":
                 label='{0} ({1:0.2g})'.format(model, dist))
         plt.title(metric_name, fontsize=14)
         plt.legend()
+        plt.tight_layout()
         plt.savefig(
             os.path.join(config.img_folder, metric_name+'.pdf')
         )
