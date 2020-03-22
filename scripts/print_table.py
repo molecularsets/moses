@@ -57,7 +57,7 @@ if __name__ == "__main__":
         parsed_metrics['Model'] = name
         metrics.append(parsed_metrics)
     metrics = pd.DataFrame(metrics)
-    metrics = metrics.groupby('Model').agg([np.mean, np.std]).reset_index()
+    metrics = metrics.groupby('Model', sort=False).agg([np.mean, np.std]).reset_index()
     metrics = metrics.rename(columns={'valid': 'Valid',
                                       'unique@1000': 'Unique@1k',
                                       'unique@10000': 'Unique@10k'})
@@ -66,7 +66,7 @@ if __name__ == "__main__":
                'SNN/Test', 'SNN/TestSF', 'Frag/Test',
                'Frag/TestSF', 'Scaf/Test', 'Scaf/TestSF',
                'IntDiv', 'IntDiv2', 'Filters', 'Novelty']
-    directions = [2, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    directions = [2, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
     metrics = metrics[targets]
 
     bf_pattern = {
@@ -97,9 +97,10 @@ if __name__ == "__main__":
         metrics[col] = metrics[col] \
             .astype(float) \
             .round(config.precision)
-        max_val = (2 * d - 1) * np.max(
-            [(2 * d - 1) * m for m, n in zip(metrics[col]['mean'],
-                                             metrics['Model'])
+        sgn = (2 * d - 1)
+        max_val = sgn * np.max(
+            [sgn * m for m, n in zip(metrics[col]['mean'],
+                                     metrics['Model'])
              if n != 'Train'])
         metric = [format_result(x)
                   if x['mean'] != max_val or n == 'Train'
@@ -136,7 +137,7 @@ if __name__ == "__main__":
             h = first_header[i]
             new_header.append(
                 ' ' * 6 + '<th {}="2">{}{}</th>'.format(
-                    spans[i], h, arrow[directions[total]]
+                    spans[i], h, arrow[directions[i]]
                 )
             )
             i += 1
