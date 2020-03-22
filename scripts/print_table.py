@@ -57,7 +57,8 @@ if __name__ == "__main__":
         parsed_metrics['Model'] = name
         metrics.append(parsed_metrics)
     metrics = pd.DataFrame(metrics)
-    metrics = metrics.groupby('Model', sort=False).agg([np.mean, np.std]).reset_index()
+    metrics = metrics.groupby('Model', sort=False)
+    metrics = metrics.agg([np.mean, np.std]).reset_index()
     metrics = metrics.rename(columns={'valid': 'Valid',
                                       'unique@1000': 'Unique@1k',
                                       'unique@10000': 'Unique@10k'})
