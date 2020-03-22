@@ -5,14 +5,14 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from moses.metrics import FrechetMetric, NP, weight, logP, SA, QED
+from moses.metrics import FrechetMetric, weight, logP, SA, QED
 from moses.metrics.utils import get_mol, mapper
 from moses.utils import disable_rdkit_log
 
 
 def get_parser():
     parser = argparse.ArgumentParser(
-        "Prepares distribution plots for NP, weight, logP, SA, and QED\n"
+        "Prepares distribution plots for weight, logP, SA, and QED\n"
     )
     parser.add_argument(
         '--test', type=str, default='test.csv', help='Path to the test set'
@@ -49,7 +49,6 @@ if __name__ == "__main__":
         generated[name] = pd.read_csv(path)
 
     metrics = {
-        'NP': NP,
         'weight': weight,
         'logP': logP,
         'SA': SA,
