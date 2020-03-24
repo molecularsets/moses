@@ -6,7 +6,7 @@ from moses import CharVocab
 
 
 class NGram:
-    def __init__(self, max_context_len=3, verbose=False):
+    def __init__(self, max_context_len=10, verbose=False):
         self.max_context_len = max_context_len
         self._dict = dict()
         self.vocab = None
@@ -50,7 +50,7 @@ class NGram:
                     probs[cid] += 1.
                     self._dict[context] = probs
 
-    def generate_one(self, l_smooth=1., context_len=None, max_len=100):
+    def generate_one(self, l_smooth=0.01, context_len=None, max_len=100):
         if self.vocab is None:
             raise RuntimeError('Error: Fit the model before generating')
 
@@ -74,7 +74,7 @@ class NGram:
 
         return self.vocab.ids2string(res)
 
-    def nll(self, smiles, l_smooth=1., context_len=None):
+    def nll(self, smiles, l_smooth=0.01, context_len=None):
         if self.vocab is None:
             raise RuntimeError('Error: model is not trained')
 
@@ -101,7 +101,7 @@ class NGram:
 
         return likelihood
 
-    def generate(self, n, l_smooth=1., context_len=None, max_len=100):
+    def generate(self, n, l_smooth=0.01, context_len=None, max_len=100):
         generator = (self.generate_one(l_smooth,
                                        context_len,
                                        max_len) for i in range(n))

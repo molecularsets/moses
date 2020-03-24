@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.com/molecularsets/moses.svg?branch=master)](https://travis-ci.com/molecularsets/moses) [![PyPI version](https://badge.fury.io/py/molsets.svg)](https://badge.fury.io/py/molsets)
 
-Deep generative models such as generative adversarial networks, variational autoencoders, and autoregressive models are rapidly growing in popularity for the discovery of new molecules and materials. In this work, we introduce MOlecular SEtS (MOSES), a benchmarking platform to support research on machine learning for drug discovery. MOSES implements several popular molecular generation models and includes a set of metrics that evaluate the diversity and quality of generated molecules. MOSES is meant to standardize the research on molecular generation and facilitate the sharing and comparison of new models. Additionally, we provide a large-scale comparison of existing state of the art models and elaborate on current challenges for generative models that might prove fertile ground for new research. Our platform and source code are freely available here.
+Deep generative models are rapidly becoming popular for the discovery of new molecules and materials. Such models learn on a large collection of molecular structures and produce novel compounds. In this work, we introduce Molecular Sets (MOSES), a benchmarking platform to support research on machine learning for drug discovery. MOSES implements several popular molecular generation models and provides a set of metrics to evaluate the quality and diversity of generated molecules. With MOSES, we aim to standardize the research on molecular generation and facilitate the sharing and comparison of new models.
 
 __For more details, please refer to the [paper](https://arxiv.org/abs/1811.12823).__
 

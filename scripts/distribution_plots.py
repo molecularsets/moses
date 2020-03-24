@@ -4,6 +4,7 @@ from collections import OrderedDict
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from scipy.stats import wasserstein_distance
 
 from moses.metrics import FrechetMetric, weight, logP, SA, QED
 from moses.metrics.utils import get_mol, mapper
@@ -68,7 +69,7 @@ if __name__ == "__main__":
 
     for metric_i, metric_name in enumerate(metrics):
         for model, d in distributions[metric_name].items():
-            dist = FrechetMetric()(distributions[metric_name]['MOSES'], d)
+            dist = wasserstein_distance(distributions[metric_name]['MOSES'], d)
             sns.distplot(
                 d, hist=False, kde=True,
                 kde_kws={'shade': True, 'linewidth': 3},
