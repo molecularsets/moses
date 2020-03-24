@@ -1,19 +1,3 @@
-valid,0.112700
-unique@1000,0.493000
-unique@10000,0.413783
-FCD/Test,26.414153
-SNN/Test,0.398976
-Frag/Test,0.469624
-Scaf/Test,0.201835
-FCD/TestSF,27.404046
-SNN/TestSF,0.391028
-Frag/TestSF,0.463978
-Scaf/TestSF,0.029528
-IntDiv,0.800085
-IntDiv2,0.752059
-Filters,0.942029
-logP,0.754492
-SA,0.741674
-QED,0.268965
-weight,181.587940
-Novelty,1.000000
+version https://git-lfs.github.com/spec/v1
+oid sha256:b0fc2ab5d3e32d5fbff9eb036697ffc786525cf9d4799f1574f2881a1b55dfe3
+size 340
