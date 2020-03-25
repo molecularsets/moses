@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy.stats import wasserstein_distance
 
-from moses.metrics import FrechetMetric, weight, logP, SA, QED
+from moses.metrics import weight, logP, SA, QED
 from moses.metrics.utils import get_mol, mapper
 from moses.utils import disable_rdkit_log
 

@@ -136,7 +136,7 @@ class NGram:
         Arguments:
             path: path to saved .pkl file
         Returns:
-            Loaded CombinatorialGenerator
+            Loaded NGramGenerator
         """
         with open(path, "rb") as f:
             data = pickle.load(f)
