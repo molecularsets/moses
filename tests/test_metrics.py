@@ -29,7 +29,6 @@ class test_metrics(unittest.TestCase):
                        'logP': 4.9581881764518005,
                        'SA': 0.5086898026154574,
                        'QED': 0.045033731661603064,
-                       'NP': 0.2902816615644048,
                        'weight': 14761.927533455337}
 
     def test_get_all_metrics(self):
