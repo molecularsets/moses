@@ -1,7 +1,8 @@
 import unittest
-import numpy as np
 import warnings
+import numpy as np
 from rdkit import Chem
+
 from moses.metrics import get_all_metrics, fraction_valid, fraction_unique
 from moses.utils import disable_rdkit_log, enable_rdkit_log
 
@@ -25,11 +26,10 @@ class test_metrics(unittest.TestCase):
                        'Scaf/Test': 0.5,
                        'IntDiv': 0.7189187309761661,
                        'Filters': 0.75,
-                       'logP': 4.9581881764518005,
-                       'SA': 0.5086898026154574,
-                       'QED': 0.045033731661603064,
-                       'NP': 0.2902816615644048,
-                       'weight': 14761.927533455337}
+                       'logP': 1.63229,
+                       'SA': 0.5238335295121783,
+                       'QED': 0.20370891752648637,
+                       'weight': 106.87}
 
     def test_get_all_metrics(self):
         metrics = get_all_metrics(gen=self.gen,

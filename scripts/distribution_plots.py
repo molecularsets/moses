@@ -4,15 +4,16 @@ from collections import OrderedDict
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from scipy.stats import wasserstein_distance
 
-from moses.metrics import FrechetMetric, NP, weight, logP, SA, QED
+from moses.metrics import weight, logP, SA, QED
 from moses.metrics.utils import get_mol, mapper
 from moses.utils import disable_rdkit_log
 
 
 def get_parser():
     parser = argparse.ArgumentParser(
-        "Prepares distribution plots for NP, weight, logP, SA, and QED\n"
+        "Prepares distribution plots for weight, logP, SA, and QED\n"
     )
     parser.add_argument(
         '--test', type=str, default='test.csv', help='Path to the test set'
@@ -49,7 +50,6 @@ if __name__ == "__main__":
         generated[name] = pd.read_csv(path)
 
     metrics = {
-        'NP': NP,
         'weight': weight,
         'logP': logP,
         'SA': SA,
@@ -69,13 +69,14 @@ if __name__ == "__main__":
 
     for metric_i, metric_name in enumerate(metrics):
         for model, d in distributions[metric_name].items():
-            dist = FrechetMetric()(distributions[metric_name]['MOSES'], d)
+            dist = wasserstein_distance(distributions[metric_name]['MOSES'], d)
             sns.distplot(
                 d, hist=False, kde=True,
                 kde_kws={'shade': True, 'linewidth': 3},
                 label='{0} ({1:0.2g})'.format(model, dist))
         plt.title(metric_name, fontsize=14)
         plt.legend()
+        plt.tight_layout()
         plt.savefig(
             os.path.join(config.img_folder, metric_name+'.pdf')
         )

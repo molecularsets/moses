@@ -5,14 +5,14 @@ import numpy as np
 from moses.metrics import remove_invalid, \
                           fraction_passes_filters, internal_diversity, \
                           FCDMetric, SNNMetric, FragMetric, ScafMetric, \
-                          FrechetMetric, logP, QED, SA, NP, weight
+                          WassersteinMetric, logP, QED, SA, weight
 from moses.utils import mapper, get_mol
 
 
 class MetricsReward:
     supported_metrics = ['fcd', 'snn', 'fragments', 'scaffolds',
                          'internal_diversity', 'filters',
-                         'logp', 'sa', 'qed', 'np', 'weight']
+                         'logp', 'sa', 'qed', 'weight']
 
     @staticmethod
     def _nan2zero(value):
@@ -65,23 +65,19 @@ class MetricsReward:
                         rollout_mols, n_jobs=self.n_jobs
                     )
                 elif metric_name == 'logp':
-                    m = -FrechetMetric(func=logP, n_jobs=self.n_jobs)(
+                    m = -WassersteinMetric(func=logP, n_jobs=self.n_jobs)(
                         ref_mols, rollout_mols
                     )
                 elif metric_name == 'sa':
-                    m = -FrechetMetric(func=SA, n_jobs=self.n_jobs)(
+                    m = -WassersteinMetric(func=SA, n_jobs=self.n_jobs)(
                         ref_mols, rollout_mols
                     )
                 elif metric_name == 'qed':
-                    m = -FrechetMetric(func=QED, n_jobs=self.n_jobs)(
-                        ref_mols, rollout_mols
-                    )
-                elif metric_name == 'np':
-                    m = -FrechetMetric(func=NP, n_jobs=self.n_jobs)(
+                    m = -WassersteinMetric(func=QED, n_jobs=self.n_jobs)(
                         ref_mols, rollout_mols
                     )
                 elif metric_name == 'weight':
-                    m = -FrechetMetric(func=weight, n_jobs=self.n_jobs)(
+                    m = -WassersteinMetric(func=weight, n_jobs=self.n_jobs)(
                         ref_mols, rollout_mols
                     )
 

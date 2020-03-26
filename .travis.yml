@@ -19,5 +19,5 @@ install:
 
 script:
   - flake8
-  - pylint --disable=all --enable=no-else-return,unused-variable,wrong-import-order moses/ scripts/
-  - python tests/test_metrics.py
+  - pylint --disable=all --enable=no-else-return,unused-variable,wrong-import-order moses/ scripts/ tests/
+  - python -m unittest discover -p "test_*.py" -v

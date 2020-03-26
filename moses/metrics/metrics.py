@@ -3,7 +3,7 @@ from multiprocessing import Pool
 import numpy as np
 from scipy.spatial.distance import cosine as cos_distance
 from fcd_torch import FCD as FCDMetric
-from fcd_torch import calculate_frechet_distance
+from scipy.stats import wasserstein_distance
 
 from moses.dataset import get_dataset, get_statistics
 from moses.utils import mapper
@@ -11,7 +11,7 @@ from moses.utils import disable_rdkit_log, enable_rdkit_log
 from .utils import compute_fragments, average_agg_tanimoto, \
     compute_scaffolds, fingerprints, \
     get_mol, canonic_smiles, mol_passes_filters, \
-    logP, QED, SA, NP, weight
+    logP, QED, SA, weight
 
 
 def get_all_metrics(gen, k=None, n_jobs=1,
@@ -55,7 +55,7 @@ def get_all_metrics(gen, k=None, n_jobs=1,
         * Internal diversity 2: using square root of mean squared
             Tanimoto similarity (IntDiv2)
         * %passes filters (Filters)
-        * Distribution difference for logP, SA, QED, NP, weight
+        * Distribution difference for logP, SA, QED, weight
         * Novelty (molecules not present in train)
     """
     if test is None:
@@ -66,8 +66,8 @@ def get_all_metrics(gen, k=None, n_jobs=1,
         test = get_dataset('test')
         ptest = get_statistics('test')
 
-    if test is None:
-        if ptest is not None:
+    if test_scaffolds is None:
+        if ptest_scaffolds is not None:
             raise ValueError(
                 "You cannot specify custom scaffold test "
                 "statistics for default scaffold test set")
@@ -132,10 +132,10 @@ def get_all_metrics(gen, k=None, n_jobs=1,
 
     # Properties
     for name, func in [('logP', logP), ('SA', SA),
-                       ('QED', QED), ('NP', NP),
+                       ('QED', QED),
                        ('weight', weight)]:
-        metrics[name] = FrechetMetric(func, **kwargs)(gen=mols,
-                                                      pref=ptest[name])
+        metrics[name] = WassersteinMetric(func, **kwargs)(
+            gen=mols, pref=ptest[name])
 
     if train is not None:
         metrics['Novelty'] = novelty(mols, train, pool)
@@ -169,9 +169,9 @@ def compute_intermediate_statistics(smiles, n_jobs=1, device='cpu',
     statistics['Frag'] = FragMetric(**kwargs).precalc(mols)
     statistics['Scaf'] = ScafMetric(**kwargs).precalc(mols)
     for name, func in [('logP', logP), ('SA', SA),
-                       ('QED', QED), ('NP', NP),
+                       ('QED', QED),
                        ('weight', weight)]:
-        statistics[name] = FrechetMetric(func, **kwargs).precalc(mols)
+        statistics[name] = WassersteinMetric(func, **kwargs).precalc(mols)
     if close_pool:
         pool.terminate()
     return statistics
@@ -326,7 +326,7 @@ class ScafMetric(Metric):
         return cos_similarity(pref['scaf'], pgen['scaf'])
 
 
-class FrechetMetric(Metric):
+class WassersteinMetric(Metric):
     def __init__(self, func=None, **kwargs):
         self.func = func
         super().__init__(**kwargs)
@@ -336,9 +336,9 @@ class FrechetMetric(Metric):
             values = mapper(self.n_jobs)(self.func, mols)
         else:
             values = mols
-        return {'mu': np.mean(values), 'var': np.var(values)}
+        return {'values': values}
 
     def metric(self, pref, pgen):
-        return calculate_frechet_distance(
-            pref['mu'], pref['var'], pgen['mu'], pgen['var']
+        return wasserstein_distance(
+            pref['values'], pgen['values']
         )

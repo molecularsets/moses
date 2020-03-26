@@ -33,7 +33,7 @@ RUN conda install -yq numpy=1.16.0 scipy=1.2.0 matplotlib=3.0.1 \
     && conda install -yq -c rdkit rdkit=2019.09.3 \
     && conda install -yq -c pytorch pytorch=1.1.0 torchvision=0.2.1 \
     && conda clean -yq -a \
-    && pip install tensorflow-gpu==1.14
+    && pip install tensorflow-gpu==1.14 pomegranade==0.12.0
 
 RUN git clone https://github.com/pcko1/Deep-Drug-Coder.git --branch moses \
     && cd Deep-Drug-Coder \

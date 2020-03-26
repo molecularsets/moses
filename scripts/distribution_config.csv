@@ -1,4 +1,7 @@
 name,path
+HMM,../data/samples/hmm/hmm_all.csv
+NGram,../data/samples/ngram/ngram_all.csv
+Combinatorial,../data/samples/combinatorial/combinatorial_all.csv
 CharRNN,../data/samples/char_rnn/char_rnn_all.csv
 AAE,../data/samples/aae/aae_all.csv
 VAE,../data/samples/vae/vae_all.csv

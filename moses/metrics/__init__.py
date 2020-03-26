@@ -10,7 +10,7 @@ from .metrics import get_all_metrics, \
                      FragMetric, \
                      ScafMetric
 from .utils import mol_passes_filters, compute_scaffold
-from .metrics import FrechetMetric, NP, weight, logP, SA, QED
+from .metrics import WassersteinMetric, weight, logP, SA, QED
 
 
 __all__ = ['get_all_metrics',
@@ -22,8 +22,7 @@ __all__ = ['get_all_metrics',
            'remove_invalid',
            'compute_scaffold',
            'mol_passes_filters',
-           'FrechetMetric',
-           'NP',
+           'WassersteinMetric',
            'weight',
            'logP',
            'SA',
