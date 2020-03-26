@@ -232,7 +232,7 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
 </table>
 
 
-For comparison of molecular properties, we computed the Frèchet distance between distributions of molecules in the generated and test sets. Below, we provide plots for lipophilicity (logP), Synthetic Accessibility (SA), Quantitative Estimation of Drug-likeness (QED) and molecular weight.
+For comparison of molecular properties, we computed the Wasserstein-1 distance between distributions of molecules in the generated and test sets. Below, we provide plots for lipophilicity (logP), Synthetic Accessibility (SA), Quantitative Estimation of Drug-likeness (QED) and molecular weight.
 
 |logP|SA|
 |----|--|
