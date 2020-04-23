@@ -30,6 +30,11 @@ class test_baselines(unittest.TestCase):
     def test_combinatorial(self):
         model = CombinatorialGenerator()
         model.fit(self.train[:100])
+        self.assertEqual(
+            model.fragment_counts.shape,
+            (156, 5),
+            "Model was not fitted properly"
+        )
         sample_original = model.generate_one(1)
         with tempfile.NamedTemporaryFile() as f:
             model.save(f.name)

@@ -231,13 +231,9 @@ class CombinatorialGenerator:
 
     @staticmethod
     def sample_fragment(counts):
-        try:
-            new_fragment = counts.sample(
-                weights=counts['frequency']
-            )
-        except:
-            print(counts)
-            raise
+        new_fragment = counts.sample(
+            weights=counts['frequency']
+        )
         new_fragment = dict(new_fragment.iloc[0])
         fragment = Chem.MolFromSmiles(new_fragment['fragment'])
         return fragment
