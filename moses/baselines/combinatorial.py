@@ -40,15 +40,11 @@ class CombinatorialGenerator:
         Arguments:
             n_jobs: number of processes for training
             mode: sampling mode
-                last bit sets sampling connection point or fragment first
-                second bit sets sampling connection between two fragments
-                0: Sample connection point, sample from unique reactions
-                1: Sample fragment first, sample from unique reactions
-                2: Sample connection point, sample from all possible reactions
-                3: Sample fragment first, sample from all possible reactions
+                0: Sample fragment then connection
+                1: Sample connection point then fragments
         """
         self.n_jobs = n_jobs
-        self.mode = mode
+        self.set_mode(mode)
         self.fitted = False
 
     def fit(self, data):
@@ -132,7 +128,7 @@ class CombinatorialGenerator:
         return model
 
     def set_mode(self, mode):
-        if mode not in [0, 1, 2, 3]:
+        if mode not in [0, 1]:
             raise ValueError('Incorrect mode value: %s' % mode)
         self.mode = mode
 
@@ -180,13 +176,11 @@ class CombinatorialGenerator:
             if mol is None:
                 mol = self.sample_fragment(counts_masked)
             else:
-                if self.mode & 1:  # Sample fragment first
-                    con_filter = self.get_connection_filter(connections_mol)
-                else:  # Choose connection atom first
+                if self.mode == 1:  # Choose connection atom first
                     atom_mol = np.random.choice(connections_mol)
                     connections_mol = [atom_mol]
-                    con_filter = 2**atom_mol.GetIsotope()
 
+                con_filter = self.get_connection_filter(connections_mol)
                 # Mask fragments with possible reactions
                 counts_masked = counts_masked[
                     counts_masked['connection_rules'] & con_filter > 0
@@ -198,13 +192,8 @@ class CombinatorialGenerator:
                     connections_fragment
                 )
 
-                if self.mode & 2:  # Sample weighted connection
-                    c_i = np.random.choice(len(possible_connections))
-                    a1, a2 = possible_connections[c_i]
-                else:  # Sample from unique connections
-                    possible_connections = list(set(possible_connections))
-                    c_i = np.random.choice(len(possible_connections))
-                    a1, a2 = possible_connections[c_i]
+                c_i = np.random.choice(len(possible_connections))
+                a1, a2 = possible_connections[c_i]
 
                 # Connect a new fragment to the molecule
                 mol = self.connect_mols(mol, fragment, a1, a2)
@@ -217,13 +206,14 @@ class CombinatorialGenerator:
         smiles = Chem.MolToSmiles(mol)
         return smiles
 
-    def generate(self, n, seed, mode=0):
+    def generate(self, n, seed=1, mode=0, verbose=False):
         self.set_mode(mode)
-        generator = (self.generate_one(seed) for i in range(n))
-        if self.verbose:
+        seeds = range((seed - 1) * n, seed * n)
+        if verbose:
             print('generating...')
-            generator = tqdm(generator, total=n)
-        return list(generator)
+            seeds = tqdm(seeds, total=n)
+        samples = mapper(self.n_jobs)(self.generate_one, seeds)
+        return samples
 
     def get_connection_rule(self, fragment):
         """
@@ -277,7 +267,7 @@ class CombinatorialGenerator:
         return atoms
 
     @staticmethod
-    def filter_connections(atoms1, atoms2):
+    def filter_connections(atoms1, atoms2, unique=True):
         possible_connections = []
         for a1 in atoms1:
             i1 = a1.GetIsotope()

@@ -29,7 +29,7 @@ class test_baselines(unittest.TestCase):
 
     def test_combinatorial(self):
         model = CombinatorialGenerator()
-        model.fit(self.train[:10])
+        model.fit(self.train[:100])
         sample_original = model.generate_one(1)
         with tempfile.NamedTemporaryFile() as f:
             model.save(f.name)
