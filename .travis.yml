@@ -9,12 +9,10 @@ before_install:
   - export PATH="$HOME/conda/bin:$PATH"
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
-  - conda create -n test_env python=$TRAVIS_PYTHON_VERSION pip cmake
+  - conda create -c rdkit -n test_env python=$TRAVIS_PYTHON_VERSION pip cmake rdkit
   - source activate test_env
 
 install:
-  - conda update -q conda
-  - conda install -q -c rdkit rdkit
   - conda install -q flake8 scipy=1.2.0 pylint
   - python setup.py install
 
