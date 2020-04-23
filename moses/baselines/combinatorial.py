@@ -177,8 +177,7 @@ class CombinatorialGenerator:
                 mol = self.sample_fragment(counts_masked)
             else:
                 if self.mode == 1:  # Choose connection atom first
-                    atom_mol = np.random.choice(connections_mol)
-                    connections_mol = [atom_mol]
+                    connections_mol = [np.random.choice(connections_mol)]
 
                 con_filter = self.get_connection_filter(connections_mol)
                 # Mask fragments with possible reactions
@@ -232,9 +231,13 @@ class CombinatorialGenerator:
 
     @staticmethod
     def sample_fragment(counts):
-        new_fragment = counts.sample(
-            weights=counts['frequency']
-        )
+        try:
+            new_fragment = counts.sample(
+                weights=counts['frequency']
+            )
+        except:
+            print(counts)
+            raise
         new_fragment = dict(new_fragment.iloc[0])
         fragment = Chem.MolFromSmiles(new_fragment['fragment'])
         return fragment
