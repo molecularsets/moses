@@ -6,6 +6,7 @@ import moses
 from moses.baselines import CombinatorialGenerator
 from moses.baselines import NGram
 from moses.baselines import HMM
+from moses.metrics.utils import fragmenter
 
 
 class test_baselines(unittest.TestCase):
@@ -28,8 +29,24 @@ class test_baselines(unittest.TestCase):
         )
 
     def test_combinatorial(self):
+        self.assertEqual(
+            self.train[0],
+            'CCCS(=O)c1ccc2[nH]c(=NC(=O)OC)[nH]c2c1',
+            "Train set is different: %s" % self.train[0]
+        )
+        fragments = fragmenter('CCCS(=O)c1ccc2[nH]c(=NC(=O)OC)[nH]c2c1')
+        self.assertEqual(
+            fragments,
+            ['[1*]C(=O)N=c1[nH]c2ccc(S(=O)CCC)cc2[nH]1', '[3*]OC'],
+            "Fragmenter is not working properly: %s" % str(fragments)
+        )
         model = CombinatorialGenerator()
-        model.fit(self.train[:10])
+        model.fit(self.train[:100])
+        self.assertEqual(
+            model.fragment_counts.shape,
+            (156, 5),
+            "Model was not fitted properly"
+        )
         sample_original = model.generate_one(1)
         with tempfile.NamedTemporaryFile() as f:
             model.save(f.name)
