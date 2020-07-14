@@ -111,8 +111,8 @@ def get_parser():
     parser.add_argument(
         "--lbann_epoch_counts",
         type=int,
-        default=30,
-        help="LBANN epoch count at which to load trained model",
+        default=None,
+        help="LBANN epoch count at which to load trained model,not required if only one trained model is available",
     )
     return parser
 

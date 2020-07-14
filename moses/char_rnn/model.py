@@ -47,8 +47,11 @@ class CharRNN(nn.Module):
 
         return string
 
-    def load_lbann_weights(self,weights_dir,epoch_count=10):
-        
+    def load_lbann_weights(self,weights_dir,epoch_count=None):
+
+       if epoch_count is None:
+         epoch_count = '*'
+ 
         with torch.no_grad():
           #Load Embedding weights
           emb_weights = np.loadtxt(glob.glob(weights_dir+"*.epoch."+str(epoch_count)+"-emb_matrix-Weights.txt")[0])
