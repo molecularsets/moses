@@ -117,7 +117,8 @@ def get_parser():
     parser.add_argument(
         "--lbann_epoch_counts",
         type=int,
-        default=10,
+        default=-1,
+        required=False,
         help="LBANN epoch count at which to load trained model,not required if only one trained model is available",
     )
     parser.add_argument("--save_reconstruction", action='store_true')

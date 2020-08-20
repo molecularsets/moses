@@ -50,10 +50,10 @@ def main(model, config):
 
     if(config.save_reconstruction) :
       test_data = read_smiles_csv(config.test_path)
-      print("Reconstructing ", len(test_data), " test samples")
+      print("Reconstructing ", len(test_data), " of ", config.test_path," test samples")
       test_loader = trainer.get_dataloader(model, test_data, shuffle=False)
-      batch = 0;
-      tqdm_data = tqdm(test_loader, desc='Reconstruction (batch #{})'.format(batch+1))
+      #tqdm_data = tqdm(test_loader, desc='Reconstruction (batch #{})'.format(batch+1))
+      tqdm_data = tqdm(test_loader, desc='Reconstruction')
       model.reconstruct(tqdm_data,config.pred_save)
       print("Reconstructed samples of ", config.test_path, " saved to ", config.pred_save)
 

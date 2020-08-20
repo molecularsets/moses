@@ -256,8 +256,10 @@ class VAE(nn.Module):
                 
             return [self.tensor2string(i_x) for i_x in new_x]
 
-    def load_lbann_weights(self,weights_dir,epoch_count=10):
+    def load_lbann_weights(self,weights_dir,epoch_count=-1):
         print("Loading LBANN Weights ")
+        if(epoch_count < 0):
+          epoch_count = '*'
  
         with torch.no_grad():
           emb_weights = np.loadtxt(glob.glob(weights_dir+"*.epoch."+str(epoch_count)+"*-emb_matrix-Weights.txt")[0])
