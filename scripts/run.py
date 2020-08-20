@@ -77,7 +77,7 @@ def get_parser():
         help="Directory for checkpoints",
     )
     parser.add_argument(
-        "--n_samples", type=int, default=30000, help="Number of samples to sample"
+        "--n_samples", type=int, default=1000, help="Number of samples to sample"
     )
     parser.add_argument("--n_jobs", type=int, default=1, help="Number of threads")
     parser.add_argument("--gpu", type=int, default=-1, help="GPU index (-1 for cpu)")
