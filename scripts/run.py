@@ -6,7 +6,6 @@ import sys
 
 from moses.models_storage import ModelsStorage
 
-
 def load_module(name, path):
     spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
@@ -16,6 +15,7 @@ def load_module(name, path):
 
 
 MODELS = ModelsStorage()
+
 
 split_dataset = load_module("split_dataset", "split_dataset.py")
 eval_script = load_module("eval", "metrics/eval.py")
@@ -42,9 +42,16 @@ def get_vocab_path(config, model):
 
 
 def get_generation_path(config, model):
-    return os.path.join(
-        config.data_dir, model + config.experiment_suff + "_generated.csv"
-    )
+    if(config.lbann_weights_dir):
+      return os.path.join(config.lbann_weights_dir + 'e' + str(config.lbann_epoch_counts) + model + config.experiment_suff + '_generated.csv')
+    else :
+      return os.path.join(config.data_dir, model + config.experiment_suff + '_generated.csv')
+
+def get_reconstruction_path(config, model):
+    if(config.lbann_weights_dir):
+      return os.path.join(config.lbann_weights_dir + 'e' + str(config.lbann_epoch_counts) + model + config.experiment_suff + '_predicted.csv')
+    else :
+      return os.path.join(config.data_dir, model + config.experiment_suff + '_predicted.csv')
 
 
 def get_device(config):
@@ -53,7 +60,6 @@ def get_device(config):
 
 def get_parser():
     parser = argparse.ArgumentParser()
-
     parser.add_argument(
         "--model",
         type=str,
@@ -105,25 +111,26 @@ def get_parser():
     parser.add_argument(
         "--lbann_weights_dir",
         type=str,
-        default=" ",
+        default='',
         help="Directory for LBANN weights for inference",
     )
     parser.add_argument(
         "--lbann_epoch_counts",
         type=int,
-        default=None,
+        default=10,
         help="LBANN epoch count at which to load trained model,not required if only one trained model is available",
     )
+    parser.add_argument("--save_reconstruction", action='store_true')
     return parser
 
 
-"""
 # UNDER CONSTRUCTION FOR COMPATIBILITY WITH LOADING AND TRAINING LBANN MODELS
 def train_model(config, model, train_path):
     model_path = get_model_path(config, model)
     config_path = get_config_path(config, model)
-    #vocab_path = get_vocab_path(config, model)
-    vocab_path = config.vocab_path    
+    vocab_path = get_vocab_path(config, model)
+
+    #vocab_path = config.vocab_path    
 
     if os.path.exists(model_path) and \
             os.path.exists(config_path) and \
@@ -139,13 +146,12 @@ def train_model(config, model, train_path):
                                                      '--vocab_save', vocab_path,
                                                      '--n_jobs', str(config.n_jobs)])[0]
     trainer_script.main(model, trainer_config)
-"""
 
 
-def sample_from_model(config, model):
-    model_path = config.model_path
-    config_path = config.config_path
-    vocab_path = config.vocab_path
+def sample_from_model(config, model,test_path):
+    model_path = config.model_path if config.model_path != '' else get_model_path(config, model)
+    config_path = config.config_path if config.config_path != '' else get_config_path(config, model)
+    vocab_path = config.vocab_path if config.vocab_path != '' else get_vocab_path(config, model)
 
     assert os.path.exists(
         model_path
@@ -182,8 +188,12 @@ def sample_from_model(config, model):
             str(config.lbann_epoch_counts),
             "--gen_save",
             get_generation_path(config, model),
+            "--pred_save",
+            get_reconstruction_path(config, model),
             "--n_samples",
             str(config.n_samples),
+            '--test_path', 
+            test_path,
         ]
     )[0]
     sampler_script.main(model, sampler_config)
@@ -223,10 +233,9 @@ def main(config):
     if not os.path.exists(config.checkpoint_dir):
         os.mkdir(config.checkpoint_dir)
 
-    train_path = os.path.join(config.data_dir, "train.csv")
+    train_path = os.path.join(config.data_dir, "train10k.csv")
     test_path = os.path.join(config.data_dir, "test.csv")
     test_scaffolds_path = os.path.join(config.data_dir, "test_scaffolds.csv")
-    train_path = os.path.join(config.data_dir, "train.csv")
     ptest_path = os.path.join(config.data_dir, "test_stats.npz")
     ptest_scaffolds_path = os.path.join(config.data_dir, "test_scaffolds_stats.npz")
 
@@ -248,8 +257,7 @@ def main(config):
     for model in models:
         if not os.path.exists(config.lbann_weights_dir):  # LBANN is inference only
             train_model(config, model, train_path)
-        sample_from_model(config, model)
-
+        sample_from_model(config, model,test_path)
     metrics = []
     for model in models:
         model_metrics = eval_metrics(
@@ -262,12 +270,10 @@ def main(config):
         )
         model_metrics.update({"model": model})
         metrics.append(model_metrics)
-
+    
     table = pd.DataFrame(metrics)
     print("Saving computed metrics to ", config.metrics)
     table.to_csv(config.metrics, index=False)
-
-
 if __name__ == "__main__":
     parser = get_parser()
     config = parser.parse_known_args()[0]
