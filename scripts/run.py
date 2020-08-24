@@ -246,6 +246,7 @@ def main(config):
 
     models = MODELS.get_model_names() if config.model == "all" else [config.model]
     for model in models:
+        print(f"lbann weights dir: {config.lbann_weights_dir}")
         if not os.path.exists(config.lbann_weights_dir):  # LBANN is inference only
             train_model(config, model, train_path)
         sample_from_model(config, model)

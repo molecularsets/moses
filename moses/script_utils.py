@@ -94,10 +94,22 @@ def add_sample_args(parser):
     return parser
 
 
-def read_smiles_csv(path):
-    return pd.read_csv(path,
-                       usecols=['SMILES'],
-                       squeeze=True).astype(str).tolist()
+def read_smiles_csv(path, smiles_col='SMILES'):
+
+    # need to check if the specified path even has a SMILES field, if not, just make one
+    df_first = pd.read_csv(path, nrows=1)
+    if smiles_col in df_first.columns:
+
+        return pd.read_csv(path,
+                           usecols=[smiles_col],
+                           squeeze=True).astype(str).tolist()
+    # if the specified smiles_col is not in the columns of the csv file and there are multiple columns, then it is ambigously defined so error out
+    elif len(df_first.columns) > 1:
+        raise RuntimeError(f"the provided value for smiles_col, {smiles_col}, is not contained in the header for this csv file, further there are multiple columns to read from, smiles_col is ambiguous.")
+    # we'll now assume that if the csv has a single column, then that column must be smiles...this might not be true but that's the user responsibility
+    else:
+        print(f"{smiles_col} not contained in the csv file, assuming the only column contains the smiles data")
+        return pd.read_csv(path, header=None, squeeze=True).astype(str).tolist()
 
 def set_seed(seed):
     torch.manual_seed(seed)
