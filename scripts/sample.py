@@ -7,7 +7,7 @@ from tqdm import tqdm
 import os
 
 from moses.models_storage import ModelsStorage
-from moses.script_utils import add_sample_args, set_seed
+from moses.script_utils import add_sample_args, set_seed, read_smiles_csv
 
 lg = rdkit.RDLogger.logger()
 lg.setLevel(rdkit.RDLogger.CRITICAL)
@@ -28,7 +28,6 @@ def get_parser():
 def main(model, config):
     set_seed(config.seed)
     device = torch.device(config.device)
-
     # For CUDNN to work properly:
     if device.type.startswith("cuda"):
         torch.cuda.set_device(device.index or 0)
@@ -39,6 +38,7 @@ def main(model, config):
             " to load weights does not exist: '{}'".format(config.lbann_weights_dir)
         )
     model_config = torch.load(config.config_load)
+    trainer = MODELS.get_model_trainer(model)(model_config)
     model_vocab = torch.load(config.vocab_load)
     model_state = torch.load(config.model_load)
 
@@ -50,6 +50,15 @@ def main(model, config):
         model.load_state_dict(model_state)
     model = model.to(device)
     model.eval()
+
+    if(config.save_reconstruction) :
+      test_data = read_smiles_csv(config.test_path)
+      print("Reconstructing ", len(test_data), " of ", config.test_path," test samples")
+      test_loader = trainer.get_dataloader(model, test_data, shuffle=False)
+      #tqdm_data = tqdm(test_loader, desc='Reconstruction (batch #{})'.format(batch+1))
+      tqdm_data = tqdm(test_loader, desc='Reconstruction')
+      model.reconstruct(tqdm_data,config.pred_save)
+      print("Reconstructed samples of ", config.test_path, " saved to ", config.pred_save)
 
     samples = []
     n = config.n_samples

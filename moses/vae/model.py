@@ -1,6 +1,9 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
+import glob
+import pandas as pd
 
 
 class VAE(nn.Module):
@@ -101,7 +104,8 @@ class VAE(nn.Module):
         z, kl_loss = self.forward_encoder(x)
 
         # Decoder: x, z -> recon_loss
-        recon_loss = self.forward_decoder(x, z)
+        pred = self.forward_decoder(x, z)
+        recon_loss = self.compute_loss(x,pred)
 
         return kl_loss, recon_loss
 
@@ -155,6 +159,9 @@ class VAE(nn.Module):
 
         output, _ = nn.utils.rnn.pad_packed_sequence(output, batch_first=True)
         y = self.decoder_fc(output)
+        return y
+
+    def compute_loss(x,y):
 
         recon_loss = F.cross_entropy(
             y[:, :-1].contiguous().view(-1, y.size(-1)),
@@ -163,6 +170,34 @@ class VAE(nn.Module):
         )
 
         return recon_loss
+    
+    def reconstruct(self, tqdm_data,save_path):
+        all_samples = []
+        for i, input_batch in enumerate(tqdm_data):
+          input_batch = tuple(data.to(self.device) for data in input_batch)
+          with torch.no_grad():
+            z, _ = self.forward_encoder(input_batch)
+            output = self.forward_decoder(input_batch,z)
+            output = F.log_softmax(output, dim=2) # (B,L,V)
+
+
+          smiles = []
+          for s in range(output.size(0)): #for each sample in batch
+            sample=[]
+            for c in range(output.size(1)): #char in sequence
+              v = torch.argmax(output[s][c]).item()
+              if(v == self.eos or v == self.pad):
+                break
+              else:
+                sample.append(v)
+            pred_sm = self.tensor2string(torch.Tensor(sample))
+            smiles.append(pred_sm)
+          
+          all_samples.extend(smiles)
+
+        all_samples = pd.DataFrame(all_samples, columns=['SMILES'])
+        all_samples.to_csv(save_path, index=False)
+        return
 
     def sample_z_prior(self, n_batch):
         """Sampling z ~ p(z) = N(0, I)
@@ -197,7 +232,7 @@ class VAE(nn.Module):
             x = torch.tensor([self.pad], device=self.device).repeat(n_batch, max_len)
             x[:, 0] = self.bos
             end_pads = torch.tensor([max_len], device=self.device).repeat(n_batch)
-            eos_mask = torch.zeros(n_batch, dtype=torch.uint8, device=self.device)
+            eos_mask = torch.zeros(n_batch, dtype=torch.bool, device=self.device)
 
             # Generating cycle
             for i in range(1, max_len):
@@ -220,3 +255,47 @@ class VAE(nn.Module):
                 new_x.append(x[i, :end_pads[i]])
                 
             return [self.tensor2string(i_x) for i_x in new_x]
+
+    def load_lbann_weights(self,weights_dir,epoch_count=-1):
+        print("Loading LBANN Weights ")
+        if(epoch_count < 0):
+          epoch_count = '*'
+ 
+        with torch.no_grad():
+          emb_weights = np.loadtxt(glob.glob(weights_dir+"*.epoch."+str(epoch_count)+"*-emb_matrix-Weights.txt")[0])
+          self.x_emb.weight.data.copy_(torch.from_numpy(np.transpose(emb_weights))) 
+
+          q_logvar_weights = np.loadtxt(glob.glob(weights_dir+"*.epoch."+str(epoch_count)+"*-molvae_module1_qlogvar_matrix-Weights.txt")[0])
+          self.q_logvar.weight.data.copy_(torch.from_numpy(q_logvar_weights))
+          q_logvar_bias = np.loadtxt(glob.glob(weights_dir+"*.epoch."+str(epoch_count)+"*-molvae_module1_qlogvar_bias-Weights.txt")[0])
+          self.q_logvar.bias.data.copy_(torch.from_numpy(q_logvar_bias))
+
+          q_mu_weights = np.loadtxt(glob.glob(weights_dir+"*.epoch."+str(epoch_count)+"*-molvae_module1_qmu_matrix-Weights.txt")[0])
+          self.q_mu.weight.data.copy_(torch.from_numpy(q_mu_weights))
+          q_mu_bias = np.loadtxt(glob.glob(weights_dir+"*.epoch."+str(epoch_count)+"*-molvae_module1_qmu_bias-Weights.txt")[0])
+          self.q_mu.bias.data.copy_(torch.from_numpy(q_mu_bias))
+
+          decoder_lat_weights = np.loadtxt(glob.glob(weights_dir+"*.epoch."+str(epoch_count)+"*-molvae_module1_decoder_lat_matrix-Weights.txt")[0])
+          self.decoder_lat.weight.data.copy_(torch.from_numpy(decoder_lat_weights))
+          decoder_lat_bias = np.loadtxt(glob.glob(weights_dir+"*.epoch."+str(epoch_count)+"*-molvae_module1_decoder_lat_bias-Weights.txt")[0])
+          self.decoder_lat.bias.data.copy_(torch.from_numpy(decoder_lat_bias))
+
+          #Load RNN weights/biases
+          param_idx = ['_ih_matrix','_hh_matrix','_ih_bias', '_hh_bias'] 
+          for l in range(self.encoder_rnn.num_layers):
+            for idx, val in enumerate(param_idx):
+              param_tensor = np.loadtxt(glob.glob(weights_dir+"*.epoch."+str(epoch_count)+"*-molvae_module1_encoder_rnn"+val+"-Weights.txt")[0])
+              self.encoder_rnn.all_weights[l][idx].copy_(torch.from_numpy(param_tensor))
+
+          for l in range(self.decoder_rnn.num_layers):
+            for idx, val in enumerate(param_idx):
+              param_tensor = np.loadtxt(glob.glob(weights_dir+"*.epoch."+str(epoch_count)+"*-molvae_module1_decoder_rnn"+str(l)+val+"-Weights.txt")[0])
+              self.decoder_rnn.all_weights[l][idx].copy_(torch.from_numpy(param_tensor))
+
+          #Load Linear layer weights/biases
+          decoder_fc_weights = np.loadtxt(glob.glob(weights_dir+"*.epoch."+str(epoch_count)+"*_decoder_fc_matrix-Weights.txt")[0])
+          self.decoder_fc.weight.data.copy_(torch.from_numpy(decoder_fc_weights))
+          decoder_fc_bias = np.loadtxt(glob.glob(weights_dir+"*.epoch."+str(epoch_count)+"*_decoder_fc_bias-Weights.txt")[0])
+          self.decoder_fc.bias.data.copy_(torch.from_numpy(decoder_fc_bias))
+
+          print("DONE loading LBANN weights ")

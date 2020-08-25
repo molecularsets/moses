@@ -80,6 +80,9 @@ def add_sample_args(parser):
     common_arg.add_argument('--gen_save',
                             type=str, required=True,
                             help='Where to save the gen molecules')
+    common_arg.add_argument('--pred_save',
+                            type=str, required=False,
+                            help='Where to save the reconstructed molecules')
     common_arg.add_argument("--n_batch",
                             type=int, default=32,
                             help="Size of batch")
@@ -90,6 +93,15 @@ def add_sample_args(parser):
                         help='Directory for LBANN weights for inference')
     common_arg.add_argument('--lbann_epoch_counts', type=int, default=30,
                         help='LBANN epoch count at which to load trained model')
+    common_arg.add_argument('--test_path',
+                            type=str, required=True,
+                            help='Input data in csv format for reconstruction')
+    common_arg.add_argument('--save_reconstruction', action='store_true', required=False)
+    '''
+    common_arg.add_argument("--save_reconstruction",
+                            type=bool, default=False, required=False,
+                            help="Optional flag to save reconstructed test data")
+    '''
 
     return parser
 
