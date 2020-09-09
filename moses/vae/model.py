@@ -9,7 +9,7 @@ import pandas as pd
 class VAE(nn.Module):
     def __init__(self, vocab, config):
         super().__init__()
-
+        print("loading VAE")
         self.vocabulary = vocab
         # Special symbols
         for ss in ('bos', 'eos', 'unk', 'pad'):
@@ -161,6 +161,7 @@ class VAE(nn.Module):
         y = self.decoder_fc(output)
         return y
 
+
     def compute_loss(x,y):
 
         recon_loss = F.cross_entropy(
@@ -299,3 +300,48 @@ class VAE(nn.Module):
           self.decoder_fc.bias.data.copy_(torch.from_numpy(decoder_fc_bias))
 
           print("DONE loading LBANN weights ")
+
+
+
+    def encode_smiles(self, smiles):
+        from tqdm import tqdm
+        tensor_list = []
+        for smile in tqdm(smiles, desc="converting smiles to tensors"):
+            tensor_list.append(self.string2tensor(smile).view(1,-1))
+
+
+        latent_list = []
+        for i, input_batch in enumerate(tensor_list):
+          input_batch = tuple(data.to(self.device) for data in input_batch)
+          with torch.no_grad():
+            z, _ = self.forward_encoder(input_batch)
+            output = self.forward_decoder(input_batch,z)
+            output = F.log_softmax(output, dim=2) # (B,L,V)
+            latent_list.append(output)
+
+        return latent_list, smiles
+
+    
+    def decode_smiles(self, latent_array):
+
+        all_samples = []
+        for latent in latent_array:
+            latent = torch.from_numpy(latent)        
+            smiles = []
+            for s in range(latent.shape[0]): #for each sample in batch
+                sample=[]
+                for c in range(latent.shape[1]): #char in sequence
+                    v = torch.argmax(latent[s][c]).item()
+                    if(v == self.eos or v == self.pad):
+                        break
+                    else:
+                        sample.append(v)
+                pred_sm = self.tensor2string(torch.Tensor(sample))
+                smiles.append(pred_sm)
+              
+            all_samples.extend(smiles)
+
+        all_samples = pd.DataFrame(all_samples, columns=['SMILES'])
+            
+        return all_samples, latent 
+         
