@@ -19,9 +19,9 @@ from moses.utils import mapper
 _base_dir = os.path.split(__file__)[0]
 _mcf = pd.read_csv(os.path.join(_base_dir, 'mcf.csv'))
 _pains = pd.read_csv(os.path.join(_base_dir, 'wehi_pains.csv'),
-                     names=['smarts', 'names'])
+                     names=['smarts', 'names'])[['names', 'smarts']]
 _filters = [Chem.MolFromSmarts(x) for x in
-            _mcf.append(_pains, sort=True)['smarts'].values]
+            _mcf.append(_pains)['smarts'].values]
 
 
 def get_mol(smiles_or_mol):
