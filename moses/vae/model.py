@@ -265,14 +265,14 @@ class VAE(nn.Module):
           emb_weights = np.loadtxt(glob.glob(weights_dir+"*.epoch."+str(epoch_count)+"*-emb_matrix-Weights.txt")[0])
           self.x_emb.weight.data.copy_(torch.from_numpy(np.transpose(emb_weights))) 
 
-          q_logvar_weights = np.loadtxt(glob.glob(weights_dir+"*.epoch."+str(epoch_count)+"*-molvae_module1_qlogvar_matrix-Weights.txt")[0])
+          q_logvar_weights = np.loadtxt(glob.glob(weights_dir+"*.epoch."+str(epoch_count)+"*-molvae_module1_encoder_qlogvar_matrix-Weights.txt")[0])
           self.q_logvar.weight.data.copy_(torch.from_numpy(q_logvar_weights))
-          q_logvar_bias = np.loadtxt(glob.glob(weights_dir+"*.epoch."+str(epoch_count)+"*-molvae_module1_qlogvar_bias-Weights.txt")[0])
+          q_logvar_bias = np.loadtxt(glob.glob(weights_dir+"*.epoch."+str(epoch_count)+"*-molvae_module1_encoder_qlogvar_bias-Weights.txt")[0])
           self.q_logvar.bias.data.copy_(torch.from_numpy(q_logvar_bias))
 
-          q_mu_weights = np.loadtxt(glob.glob(weights_dir+"*.epoch."+str(epoch_count)+"*-molvae_module1_qmu_matrix-Weights.txt")[0])
+          q_mu_weights = np.loadtxt(glob.glob(weights_dir+"*.epoch."+str(epoch_count)+"*-molvae_module1_encoder_qmu_matrix-Weights.txt")[0])
           self.q_mu.weight.data.copy_(torch.from_numpy(q_mu_weights))
-          q_mu_bias = np.loadtxt(glob.glob(weights_dir+"*.epoch."+str(epoch_count)+"*-molvae_module1_qmu_bias-Weights.txt")[0])
+          q_mu_bias = np.loadtxt(glob.glob(weights_dir+"*.epoch."+str(epoch_count)+"*-molvae_module1_encoder_qmu_bias-Weights.txt")[0])
           self.q_mu.bias.data.copy_(torch.from_numpy(q_mu_bias))
 
           decoder_lat_weights = np.loadtxt(glob.glob(weights_dir+"*.epoch."+str(epoch_count)+"*-molvae_module1_decoder_lat_matrix-Weights.txt")[0])
@@ -284,12 +284,12 @@ class VAE(nn.Module):
           param_idx = ['_ih_matrix','_hh_matrix','_ih_bias', '_hh_bias'] 
           for l in range(self.encoder_rnn.num_layers):
             for idx, val in enumerate(param_idx):
-              param_tensor = np.loadtxt(glob.glob(weights_dir+"*.epoch."+str(epoch_count)+"*-molvae_module1_encoder_rnn"+val+"-Weights.txt")[0])
+              param_tensor = np.loadtxt(glob.glob(weights_dir+"*.epoch."+str(epoch_count)+"*-molvae_module1_encoder_rnn_layer"+str(l)+val+"-Weights.txt")[0])
               self.encoder_rnn.all_weights[l][idx].copy_(torch.from_numpy(param_tensor))
 
           for l in range(self.decoder_rnn.num_layers):
             for idx, val in enumerate(param_idx):
-              param_tensor = np.loadtxt(glob.glob(weights_dir+"*.epoch."+str(epoch_count)+"*-molvae_module1_decoder_rnn"+str(l)+val+"-Weights.txt")[0])
+              param_tensor = np.loadtxt(glob.glob(weights_dir+"*.epoch."+str(epoch_count)+"*-molvae_module1_decoder_rnn_layer"+str(l)+val+"-Weights.txt")[0])
               self.decoder_rnn.all_weights[l][idx].copy_(torch.from_numpy(param_tensor))
 
           #Load Linear layer weights/biases
