@@ -201,7 +201,7 @@ def sample_from_model(config, model,test_path):
 
 
 def eval_metrics(
-    config, model, test_path, test_scaffolds_path, ptest_path, ptest_scaffolds_path
+    config, model, test_path, test_scaffolds_path, ptest_path, ptest_scaffolds_path, smiles_path,
 ):
     eval_parser = eval_script.get_parser()
     eval_config = eval_parser.parse_args(
@@ -215,7 +215,8 @@ def eval_metrics(
             "--ptest_scaffolds_path",
             ptest_scaffolds_path,
             "--gen_path",
-            get_generation_path(config, model),
+            #get_generation_path(config, model),
+            smiles_path,
             "--n_jobs",
             str(config.n_jobs),
             "--gpu",
@@ -261,19 +262,31 @@ def main(config):
             train_model(config, model, train_path)
         sample_from_model(config, model,test_path)
     metrics = []
+    smiles_paths_tag = ['sampling']
+    smiles_paths = [get_generation_path(config,model)]
+    if(config.save_reconstruction) :
+      smiles_paths.append(get_reconstruction_path(config,model))
+      smiles_paths_tag.append('exact recon')
     for model in models:
-        model_metrics = eval_metrics(
+        for i in range(len(smiles_paths)):
+          model_metrics = eval_metrics(
             config,
             model,
             test_path,
             test_scaffolds_path,
             ptest_path,
             ptest_scaffolds_path,
-        )
-        model_metrics.update({"model": model})
-        metrics.append(model_metrics)
+            smiles_paths[i],
+          )
+          model_metrics.update({"train size": config.train_size})
+          model_metrics.update({"test size": config.test_size})
+          model_metrics.update({"model": model})
+          model_metrics.update({"mode": smiles_paths_tag[i]})
+          metrics.append(model_metrics)
     
     table = pd.DataFrame(metrics)
+    if(config.lbann_weights_dir):
+      config.metrics = os.path.join(config.lbann_weights_dir + 'e' + str(config.lbann_epoch_counts) + model + config.experiment_suff + '_metric.csv')
     print("Saving computed metrics to ", config.metrics)
     table.to_csv(config.metrics, index=False)
 if __name__ == "__main__":
