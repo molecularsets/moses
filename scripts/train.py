@@ -6,11 +6,13 @@ import rdkit
 
 from moses.script_utils import add_train_args, read_smiles_csv, set_seed
 from moses.models_storage import ModelsStorage
+from atom_models.gpt import GPT2Mol, GPT2MolTrainer, gpt2mol_parser
 
 lg = rdkit.RDLogger.logger()
 lg.setLevel(rdkit.RDLogger.CRITICAL)
 
 MODELS = ModelsStorage()
+MODELS.add_model('gpt2mol', GPT2Mol, GPT2MolTrainer, gpt2mol_parser)
 
 def get_parser():
     parser = argparse.ArgumentParser()

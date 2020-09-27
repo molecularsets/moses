@@ -22,7 +22,7 @@ MODELS.add_model('gpt2mol', GPT2Mol, GPT2MolTrainer, gpt2mol_parser)
 split_dataset = load_module("split_dataset", "split_dataset.py")
 eval_script = load_module("eval", "metrics/eval.py")
 trainer_script = load_module("train", "train.py")
-sampler_script = load_module("sample", "samplev1.py")
+sampler_script = load_module("sample", "sample.py")
 
 
 def get_model_path(config, model):
