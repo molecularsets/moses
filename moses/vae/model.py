@@ -16,9 +16,8 @@ class VAE(nn.Module):
             setattr(self, ss, getattr(vocab, ss))
 
         # Word embeddings layer
-        n_vocab, d_emb = len(vocab), vocab.vectors.size(1)
+        n_vocab, d_emb = len(vocab), len(vocab)
         self.x_emb = nn.Embedding(n_vocab, d_emb, self.pad)
-        self.x_emb.weight.data.copy_(vocab.vectors)
         if config.freeze_embeddings:
             self.x_emb.weight.requires_grad = False
 
@@ -210,7 +209,7 @@ class VAE(nn.Module):
         return torch.randn(n_batch, self.q_mu.out_features,
                            device=self.x_emb.weight.device)
 
-    def sample(self, n_batch, max_len=100, z=None, temp=1.0):
+    def sample(self, n_batch, max_len=100, z=None, temp=1.0, return_latent=False):
         """Generating n_batch samples in eval mode (`z` could be
         not on same device)
 
@@ -218,6 +217,7 @@ class VAE(nn.Module):
         :param max_len: max len of samples
         :param z: (n_batch, d_z) of floats, latent vector z or None
         :param temp: temperature of softmax
+        :param return_latent: whether to return latent vectors as well as SMILES
         :return: list of tensors of strings, samples sequence x
         """
         with torch.no_grad():
@@ -233,7 +233,9 @@ class VAE(nn.Module):
             x = torch.tensor([self.pad], device=self.device).repeat(n_batch, max_len)
             x[:, 0] = self.bos
             end_pads = torch.tensor([max_len], device=self.device).repeat(n_batch)
-            eos_mask = torch.zeros(n_batch, dtype=torch.bool, device=self.device)
+            # The changes in this section are only because the version of pytorch in our standard dev
+            # environment (1.0) doesn't have the torch.bool datatype. 
+            eos_mask = torch.zeros(n_batch, dtype=torch.uint8, device=self.device)
 
             # Generating cycle
             for i in range(1, max_len):
@@ -245,17 +247,22 @@ class VAE(nn.Module):
                 y = F.softmax(y / temp, dim=-1)
 
                 w = torch.multinomial(y, 1)[:, 0]
-                x[~eos_mask, i] = w[~eos_mask]
-                i_eos_mask = ~eos_mask & (w == self.eos)
+                x[eos_mask==0, i] = w[eos_mask==0]
+                i_eos_mask = (eos_mask==0) & (w == self.eos)
                 end_pads[i_eos_mask] = i + 1
-                eos_mask = eos_mask | i_eos_mask
+                eos_mask = (eos_mask==1) | i_eos_mask
+
+            # End of changes for pytorch 1.0 support
 
             # Converting `x` to list of tensors
             new_x = []
             for i in range(x.size(0)):
                 new_x.append(x[i, :end_pads[i]])
                 
-            return [self.tensor2string(i_x) for i_x in new_x]
+            if return_latent:
+                return [self.tensor2string(i_x) for i_x in new_x], np.array(z_0)
+            else:
+                return [self.tensor2string(i_x) for i_x in new_x]
 
     def load_lbann_weights(self,weights_dir,epoch_count=-1):
         print("Loading LBANN Weights ")
@@ -304,6 +311,10 @@ class VAE(nn.Module):
 
 
     def encode_smiles(self, smiles):
+        """
+        Encode the given SMILES strings and return the actual latent vectors as a list
+        of numpy arrays
+        """
         from tqdm import tqdm
         tensor_list = []
         for smile in tqdm(smiles, desc="converting smiles to tensors"):
@@ -315,33 +326,17 @@ class VAE(nn.Module):
           input_batch = tuple(data.to(self.device) for data in input_batch)
           with torch.no_grad():
             z, _ = self.forward_encoder(input_batch)
-            output = self.forward_decoder(input_batch,z)
-            output = F.log_softmax(output, dim=2) # (B,L,V)
-            latent_list.append(output)
+            latent_list.append(np.squeeze(np.array(z)))
 
         return latent_list, smiles
 
     
-    def decode_smiles(self, latent_array):
-
-        all_samples = []
-        for latent in latent_array:
-            latent = torch.from_numpy(latent)        
-            smiles = []
-            for s in range(latent.shape[0]): #for each sample in batch
-                sample=[]
-                for c in range(latent.shape[1]): #char in sequence
-                    v = torch.argmax(latent[s][c]).item()
-                    if(v == self.eos or v == self.pad):
-                        break
-                    else:
-                        sample.append(v)
-                pred_sm = self.tensor2string(torch.Tensor(sample))
-                smiles.append(pred_sm)
-              
-            all_samples.extend(smiles)
-
-        all_samples = pd.DataFrame(all_samples, columns=['SMILES'])
-            
-        return all_samples, latent 
          
+    def decode_smiles(self, latent_list):
+        """
+        Decode the given list of latent vectors
+        """
+        lat_arr = np.stack(latent_list)
+        lat_tens = torch.from_numpy(lat_arr)
+        return self.sample(n_batch=len(latent_list), max_len=100, z=lat_tens, return_latent=True)
+
