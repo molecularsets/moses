@@ -1,0 +1,18 @@
+#!/usr/bin/bash
+
+#python compute_latent_sample_exp.py --model vae --lbann-weights-dir /usr/workspace/atom/lbann/1BEnamine/weights/ --lbann-load-epoch 76 --lbann-load-step 284772 --gen-save foo_test --test-path /p/lustre1/jones289/lbann/data/newEnamineFrom2020q1-2/newEnamineFrom2020q1-2_test100kSMILES.csv --vocab-path /usr/workspace/atom/lbann/1BEnamine/newEnamineFrom2020q1-2.pt --model-config zinc10Kckpt/vae_config.pt --weight-prefix sgd.training --seed-molecules newEnamineFrom2020q1-2_test100kSMILES_subsample1k.csv --k-neighbor-samples 1000 --scale-factor 0.5 --output 1BEnamine_scale_factor_0.5_results.csv
+
+
+#python compute_latent_sample_exp.py --model vae --lbann-weights-dir /usr/workspace/atom/lbann/1BEnamine/weights/ --lbann-load-epoch 76 --lbann-load-step 284772 --gen-save foo_test --test-path /p/lustre1/jones289/lbann/data/newEnamineFrom2020q1-2/newEnamineFrom2020q1-2_test100kSMILES.csv --vocab-path /usr/workspace/atom/lbann/1BEnamine/newEnamineFrom2020q1-2.pt --model-config zinc10Kckpt/vae_config.pt --weight-prefix sgd.training --seed-molecules newEnamineFrom2020q1-2_test100kSMILES_subsample1k.csv --k-neighbor-samples 1000 --scale-factor 1.0 --output 1BEnamine_scale_factor_1.0_results.csv
+
+
+#python compute_latent_sample_exp.py --model vae --lbann-weights-dir /usr/workspace/atom/lbann/1BEnamine/weights/ --lbann-load-epoch 76 --lbann-load-step 284772 --gen-save foo_test --test-path /p/lustre1/jones289/lbann/data/newEnamineFrom2020q1-2/newEnamineFrom2020q1-2_test100kSMILES.csv --vocab-path /usr/workspace/atom/lbann/1BEnamine/newEnamineFrom2020q1-2.pt --model-config zinc10Kckpt/vae_config.pt --weight-prefix sgd.training --seed-molecules newEnamineFrom2020q1-2_test100kSMILES_subsample1k.csv --k-neighbor-samples 1000 --scale-factor 1.5 --output 1BEnamine_scale_factor_1.5_results.csv
+
+python compute_latent_sample_exp.py --model vae --lbann-weights-dir /usr/workspace/atom/lbann/1BEnamine/weights/ --lbann-load-epoch 76 --lbann-load-step 284772 --gen-save foo_test --test-path /p/lustre1/jones289/lbann/data/newEnamineFrom2020q1-2/newEnamineFrom2020q1-2_test100kSMILES.csv --vocab-path /usr/workspace/atom/lbann/1BEnamine/newEnamineFrom2020q1-2.pt --model-config zinc10Kckpt/vae_config.pt --weight-prefix sgd.training --seed-molecules newEnamineFrom2020q1-2_test100kSMILES_subsample1k.csv --k-neighbor-samples 1000 --scale-factor 2.0 --output 1BEnamine_scale_factor_2.0_results.csv 
+
+python compute_latent_sample_exp.py --model vae --lbann-weights-dir /usr/workspace/atom/lbann/1BEnamine/weights/ --lbann-load-epoch 76 --lbann-load-step 284772 --gen-save foo_test --test-path /p/lustre1/jones289/lbann/data/newEnamineFrom2020q1-2/newEnamineFrom2020q1-2_test100kSMILES.csv --vocab-path /usr/workspace/atom/lbann/1BEnamine/newEnamineFrom2020q1-2.pt --model-config zinc10Kckpt/vae_config.pt --weight-prefix sgd.training --seed-molecules newEnamineFrom2020q1-2_test100kSMILES_subsample1k.csv --k-neighbor-samples 1000 --scale-factor 2.5 --output 1BEnamine_scale_factor_2.5_results.csv 
+
+python compute_latent_sample_exp.py --model vae --lbann-weights-dir /usr/workspace/atom/lbann/1BEnamine/weights/ --lbann-load-epoch 76 --lbann-load-step 284772 --gen-save foo_test --test-path /p/lustre1/jones289/lbann/data/newEnamineFrom2020q1-2/newEnamineFrom2020q1-2_test100kSMILES.csv --vocab-path /usr/workspace/atom/lbann/1BEnamine/newEnamineFrom2020q1-2.pt --model-config zinc10Kckpt/vae_config.pt --weight-prefix sgd.training --seed-molecules newEnamineFrom2020q1-2_test100kSMILES_subsample1k.csv --k-neighbor-samples 1000 --scale-factor 3.0 --output 1BEnamine_scale_factor_3.0_results.csv 
+
+
+
