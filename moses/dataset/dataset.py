@@ -11,14 +11,11 @@ def get_dataset(split='train'):
     Loads MOSES dataset
 
     Arguments:
-        split (str or list): split to load. If str, must be
-            one of: 'train', 'test', 'test_scaffolds'. If
-            list, will load all splits from the list.
-            None by default---loads all splits
+        split (str): split to load. Must be
+            one of: 'train', 'test', 'test_scaffolds'
 
     Returns:
-        dict with splits. Keys---split names, values---lists
-        of SMILES strings.
+        list with SMILES strings
     """
     if split not in AVAILABLE_SPLITS:
         raise ValueError(
