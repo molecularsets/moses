@@ -8,11 +8,11 @@ __For more details, please refer to the [paper](https://arxiv.org/abs/1811.12823
 
 If you are using MOSES in your research paper, please cite us as
 ```
-@article{polykovskiy2018molecular,
+@article{10.3389/fphar.2020.565644,
   title={{M}olecular {S}ets ({MOSES}): {A} {B}enchmarking {P}latform for {M}olecular {G}eneration {M}odels},
-  author={Polykovskiy, Daniil and Zhebrak, Alexander and Sanchez-Lengeling, Benjamin and Golovanov, Sergey and Tatanov, Oktai and Belyaev, Stanislav and Kurbanov, Rauf and Artamonov, Aleksey and Aladinskiy, Vladimir and Veselov, Mark and Kadurin, Artur and Nikolenko, Sergey and Aspuru-Guzik, Alan and Zhavoronkov, Alex},
-  journal={arXiv preprint arXiv:1811.12823},
-  year={2018}
+  author={Polykovskiy, Daniil and Zhebrak, Alexander and Sanchez-Lengeling, Benjamin and Golovanov, Sergey and Tatanov, Oktai and Belyaev, Stanislav and Kurbanov, Rauf and Artamonov, Aleksey and Aladinskiy, Vladimir and Veselov, Mark and Kadurin, Artur and Johansson, Simon and  Chen, Hongming and Nikolenko, Sergey and Aspuru-Guzik, Alan and Zhavoronkov, Alex},
+  journal={Frontiers in Pharmacology},
+  year={2020}
 }
 ```
 
@@ -142,7 +142,7 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
       <td>CharRNN</td>
       <td>0.9748±0.0264</td>
       <td><b>1.0±0.0</b></td>
-      <td><b>0.9994±0.0003</b></td>
+      <td>0.9994±0.0003</td>
       <td><b>0.0732±0.0247</b></td>
       <td><b>0.5204±0.0379</b></td>
       <td>0.6015±0.0206</td>
@@ -194,21 +194,21 @@ Besides standard uniqueness and validity metrics, MOSES provides other metrics t
     </tr>
     <tr>
       <td>JTN-VAE</td>
-      <td><b>1.0</b></td>
-      <td><b>1.0</b></td>
-      <td>0.9992</td>
-      <td>0.4224</td>
-      <td>0.9962</td>
-      <td>0.5561</td>
-      <td>0.5273</td>
-      <td>0.9962</td>
-      <td>0.9948</td>
-      <td>0.8925</td>
-      <td>0.1005</td>
-      <td>0.8512</td>
-      <td>0.8453</td>
-      <td>0.9778</td>
-      <td>0.9153</td>
+      <td><b>1.0±0.0</b></td>
+      <td><b>1.0±0.0</b></td>
+      <td><b>0.9996±0.0003</b></td>
+      <td>0.3954±0.0234</td>
+      <td>0.9382±0.0531</td>
+      <td>0.5477±0.0076</td>
+      <td>0.5194±0.007</td>
+      <td>0.9965±0.0003</td>
+      <td>0.9947±0.0002</td>
+      <td>0.8964±0.0039</td>
+      <td>0.1009±0.0105</td>
+      <td>0.8551±0.0034</td>
+      <td>0.8493±0.0035</td>
+      <td>0.976±0.0016</td>
+      <td>0.9143±0.0058</td>
     </tr>
     <tr>
       <td>LatentGAN</td>
@@ -300,7 +300,7 @@ bash install_latentgan_dependencies.sh
 
 * Install MOSES as described in the previous section.
 
-* Retrieve `train`, `test` and `test_scaffolds` datasets using the following code:
+* Get `train`, `test` and `test_scaffolds` datasets using the following code:
 
 ```python
 import moses

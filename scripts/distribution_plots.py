@@ -8,15 +8,13 @@ from scipy.stats import wasserstein_distance
 
 from moses.metrics import weight, logP, SA, QED
 from moses.metrics.utils import get_mol, mapper
+from moses import get_dataset
 from moses.utils import disable_rdkit_log
 
 
 def get_parser():
     parser = argparse.ArgumentParser(
         "Prepares distribution plots for weight, logP, SA, and QED\n"
-    )
-    parser.add_argument(
-        '--test', type=str, default='test.csv', help='Path to the test set'
     )
     parser.add_argument(
         '--config', '-c', type=str, default='config.csv',
@@ -44,7 +42,8 @@ if __name__ == "__main__":
 
     os.makedirs(config.img_folder, exist_ok=True)
 
-    generated = OrderedDict({'MOSES': pd.read_csv(config.test)})
+    generated = OrderedDict(
+        {'MOSES': pd.DataFrame({'SMILES': get_dataset('test')})})
     models = pd.read_csv(config.config)
     for path, name in zip(models['path'], models['name']):
         generated[name] = pd.read_csv(path)

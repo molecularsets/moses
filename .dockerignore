@@ -10,3 +10,4 @@ pip-delete-this-directory.txt
 .cache
 *.log
 .ipynb_checkpoints/*
+.git
