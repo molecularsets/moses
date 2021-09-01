@@ -16,7 +16,7 @@ setup(name='molsets',
           'torch>=1.1.0',
           'fcd_torch>=1.0.5',
           'seaborn>=0.9.0',
-          'pomegranate==0.12.0',
+          'pomegranate',
       ],
       description=('Molecular Sets (MOSES): '
                    'A Benchmarking Platform for Molecular Generation Models'),
