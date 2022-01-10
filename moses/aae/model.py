@@ -17,7 +17,7 @@ class Encoder(nn.Module):
         batch_size = x.shape[0]
 
         x = self.embedding_layer(x)
-        x = pack_padded_sequence(x, lengths, batch_first=True)
+        x = pack_padded_sequence(x, lengths.cpu(), batch_first=True)
         _, (_, x) = self.lstm_layer(x)
         x = x.permute(1, 2, 0).contiguous().view(batch_size, -1)
         x = self.linear_layer(x)
