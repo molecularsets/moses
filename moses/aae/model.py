@@ -164,6 +164,7 @@ class AAE(nn.Module):
                 if is_end.sum() == max_len:
                     break
 
+                is_end = is_end.bool()
                 currents[is_end, :] = self.vocabulary.pad
                 samples.append(currents.cpu())
                 lengths[~is_end] += 1

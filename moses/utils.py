@@ -3,14 +3,27 @@ from multiprocessing import Pool
 from collections import UserList, defaultdict
 import numpy as np
 import pandas as pd
-from matplotlib import pyplot as plt
-import torch
-from rdkit import rdBase
-from rdkit import Chem
+# from matplotlib import pyplot as plt
+# import torch
+# from rdkit import rdBase
+# from rdkit import Chem
 
+# Lazy imports to avoid heavy DLL initialization at module import time (Windows)
+def _torch():
+    import torch
+    return torch
+
+def _plt():
+    from matplotlib import pyplot as plt
+    return plt
+
+def _rdkit():
+    from rdkit import rdBase, Chem
+    return rdBase, Chem
 
 # https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader
 def set_torch_seed_to_all_gens(_):
+    torch = _torch()
     seed = torch.initial_seed() % (2**32 - 1)
     random.seed(seed)
     np.random.seed(seed)
@@ -99,6 +112,7 @@ class CharVocab:
 
 class OneHotVocab(CharVocab):
     def __init__(self, *args, **kwargs):
+        torch = _torch()
         super(OneHotVocab, self).__init__(*args, **kwargs)
         self.vectors = torch.eye(len(self.c2i))
 
@@ -173,6 +187,7 @@ class LogPlotter:
         ax.set_title(name)
 
     def grid(self, names, size=7):
+        plt = _plt()
         _, axs = plt.subplots(nrows=len(names) // 2, ncols=2,
                               figsize=(size * 2, size * (len(names) // 2)))
 
@@ -204,10 +219,12 @@ class CircularBuffer:
 
 
 def disable_rdkit_log():
+    rdBase, Chem = _rdkit()
     rdBase.DisableLog('rdApp.*')
 
 
 def enable_rdkit_log():
+    rdBase, Chem = _rdkit()
     rdBase.EnableLog('rdApp.*')
 
 
@@ -215,6 +232,7 @@ def get_mol(smiles_or_mol):
     '''
     Loads SMILES/molecule into RDKit's object
     '''
+    rdBase, Chem = _rdkit()
     if isinstance(smiles_or_mol, str):
         if len(smiles_or_mol) == 0:
             return None
@@ -265,6 +283,7 @@ class StringDataset:
                 EOS (end of a sentence) token
             * smiles is an original SMILES from the dataset
         """
+        torch = _torch()
         tokens = self.tokens[index]
         with_bos = torch.tensor([self.bos] + tokens, dtype=torch.long)
         with_eos = torch.tensor(tokens + [self.eos], dtype=torch.long)
@@ -291,6 +310,7 @@ class StringDataset:
             decreasing order, since this is a default format for torch
             RNN implementations
         """
+        torch = _torch()
         with_bos, with_eos, data = list(zip(*batch))
         lengths = [len(x) for x in with_bos]
         order = np.argsort(lengths)[::-1]
@@ -310,6 +330,7 @@ class StringDataset:
 
 
 def batch_to_device(batch, device):
+    torch = _torch()
     return [
         x.to(device) if isinstance(x, torch.Tensor) else x
         for x in batch

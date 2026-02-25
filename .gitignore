@@ -1,7 +1,0 @@
-.DS_store
-.idea/
-*__pycache__*
-build/
-dist/
-moses.egg-info/
-
