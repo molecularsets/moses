@@ -30,9 +30,9 @@ def main(model, config):
     if device.type.startswith('cuda'):
         torch.cuda.set_device(device.index or 0)
 
-    model_config = torch.load(config.config_load, weights_only=False)
-    model_vocab = torch.load(config.vocab_load, weights_only=False)
-    model_state = torch.load(config.model_load, weights_only=False)
+    model_config = torch.load(config.config_load)
+    model_vocab = torch.load(config.vocab_load)
+    model_state = torch.load(config.model_load)
 
     model = MODELS.get_model_class(model)(model_vocab, model_config)
     model.load_state_dict(model_state)
